@@ -479,6 +479,8 @@ const kpiPanelVisible = ref(true)
 
 /* ==================== 高德地图 ==================== */
 const AMAP_KEY = 'd9902108686d1a72769e105fb5f8343e'
+// 高德 JS API 2.0 安全密钥：DistrictSearch 等 restapi 服务必需，缺失会返回 INVALID_USER_SCODE
+const AMAP_SECURITY_CODE = import.meta.env.VITE_AMAP_SECURITY_CODE || ''
 const amapContainerRef = ref(null)
 let amapInstance = null
 let amapDistrictPolygons = []
@@ -487,6 +489,9 @@ let amapLabels = []
 
 function loadAmapScript() {
   return new Promise((resolve, reject) => {
+    if (AMAP_SECURITY_CODE) {
+      window._AMapSecurityConfig = { securityJsCode: AMAP_SECURITY_CODE }
+    }
     if (window.AMap) { resolve(); return }
     if (document.querySelector('script[src*="webapi.amap.com"]')) {
       const wait = setInterval(() => { if (window.AMap) { clearInterval(wait); resolve() } }, 100)
@@ -567,9 +572,11 @@ function loadDistrictBoundary() {
           const polygon = new window.AMap.Polygon({
             path,
             fillColor: '#1890ff',
-            fillOpacity: 0.08,
-            strokeColor: 'rgba(77,208,255,0.35)',
-            strokeWeight: 1,
+            fillOpacity: 0.06,
+            strokeColor: '#f5222d',
+            strokeWeight: 2,
+            strokeStyle: 'solid',
+            strokeOpacity: 0.9,
             cursor: 'pointer'
           })
           polygon.on('click', () => {
