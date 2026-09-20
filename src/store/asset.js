@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { chengtouAssets as initialAssets } from '../data/mock'
 import { useProjectStore } from './project'
+import { useChangeLogStore } from './changeLog'
 
 function roomToAsset(r, b, p, f) {
   return {
@@ -37,6 +38,8 @@ function roomToAsset(r, b, p, f) {
 
 export const useAssetStore = defineStore('asset', () => {
   const baseAssets = ref([...initialAssets])
+  const overrides = ref({})
+  const removedIds = ref([])
 
   const roomAssets = computed(() => {
     const projectStore = useProjectStore()
@@ -53,7 +56,11 @@ export const useAssetStore = defineStore('asset', () => {
     return list
   })
 
-  const assets = computed(() => [...baseAssets.value, ...roomAssets.value])
+  const assets = computed(() =>
+    [...baseAssets.value, ...roomAssets.value]
+      .filter(a => !removedIds.value.includes(a.id))
+      .map(a => (overrides.value[a.id] ? { ...a, ...overrides.value[a.id] } : a))
+  )
 
   const allAssets = computed(() => assets.value)
 
@@ -78,22 +85,49 @@ export const useAssetStore = defineStore('asset', () => {
     const newId = `CT-${String(baseAssets.value.length + 1).padStart(3, '0')}`
     const newAsset = { ...asset, id: newId }
     baseAssets.value.push(newAsset)
+    useChangeLogStore().record({
+      assetId: newId, assetName: newAsset.name, module: '资产', type: '入库登记',
+      before: '—', after: newAsset.sourceType ? `${newAsset.sourceType}入库` : '新增资产'
+    })
     return newAsset
   }
 
   function updateAsset(id, updates) {
+    const before = getAssetById(id)
     const baseIdx = baseAssets.value.findIndex(a => a.id === id)
     if (baseIdx !== -1) {
       baseAssets.value[baseIdx] = { ...baseAssets.value[baseIdx], ...updates }
-      return
+    } else if (assets.value.some(a => a.id === id)) {
+      overrides.value = { ...overrides.value, [id]: { ...overrides.value[id], ...updates } }
+    }
+    if (before) {
+      const changed = Object.keys(updates).filter(k => before[k] !== updates[k])
+      if (changed.length) {
+        const statusChanged = changed.includes('status')
+        useChangeLogStore().record({
+          assetId: id, assetName: before.name, module: '资产',
+          type: statusChanged ? '状态变更' : '信息变更',
+          before: statusChanged ? before.status : changed.join('、'),
+          after: statusChanged ? updates.status : changed.map(k => `${k}→${updates[k] ?? '空'}`).join('；')
+        })
+      }
     }
   }
 
   function deleteAsset(id) {
+    const before = getAssetById(id)
     const baseIdx = baseAssets.value.findIndex(a => a.id === id)
     if (baseIdx !== -1) {
       baseAssets.value.splice(baseIdx, 1)
+    } else if (assets.value.some(a => a.id === id) && !removedIds.value.includes(id)) {
+      removedIds.value.push(id)
+    } else {
+      return
     }
+    useChangeLogStore().record({
+      assetId: id, assetName: before?.name || id, module: '资产', type: '资产删除',
+      before: '在库', after: '已删除'
+    })
   }
 
   function getAssetById(id) {
@@ -101,6 +135,10 @@ export const useAssetStore = defineStore('asset', () => {
   }
 
   return {
+    // 暴露原始 state，使 persist 插件能通过 $state 保存/恢复资产变更
+    baseAssets,
+    overrides,
+    removedIds,
     assets,
     allAssets,
     certRecords,

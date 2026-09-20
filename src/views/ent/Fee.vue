@@ -861,10 +861,12 @@
 import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useContractStore } from '../../store/contract'
+import { useAssetStore } from '../../store/asset'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Upload, Bell, Refresh, Filter, MoreFilled } from '@element-plus/icons-vue'
 
 const contractStore = useContractStore()
+const assetStore = useAssetStore()
 const { feeRecords } = storeToRefs(contractStore)
 
 const activeTab = ref('hall')
@@ -889,64 +891,65 @@ const hallRentType = ref('')
 const hallPage = ref(1)
 const hallSize = ref(10)
 
-const hallRecords = ref([
-  {
-    id: 1, contractNo: 'HT-2026-001', tenantName: '福州长乐融辉贸易有限公司', tenantType: '企业', contact: '陈立群', phone: '13905912345', idCard: '350182198803154219',
-    signTime: '2026-01-10', usage: '商业经营', contractType: '商铺租赁合同', contractStatus: ['履约中', '已备案'], agreement: '押二付三，逾期按日加收0.5‰滞纳金',
-    rentType: '固定租金', leaseStart: '2026-01-15', leaseEnd: '2028-01-14', expired: false, payCycle: '按季', dueDate: '2026-09-30',
-    monthlyRent: 8500, reduction: 850, arrearsMonths: 2, newRentTime: '2026-01-15', deposit: 17000, monthPaid: 8500, yearPaid: 68000,
-    assets: [
-      { region: '福建省福州市长乐区', project: '吴航街道商业街', zone: 'A区', assetNo: 'ZC-CL-0001', address: '吴航街道商业街A-01商铺', company: '长乐区国有资产投资经营有限公司', leaseType: '整体出租' },
-      { region: '福建省福州市长乐区', project: '吴航街道商业街', zone: 'A区', assetNo: 'ZC-CL-0002', address: '吴航街道商业街A-02商铺', company: '长乐区国有资产投资经营有限公司', leaseType: '部分出租' }
-    ]
-  },
-  {
-    id: 2, contractNo: 'HT-2026-002', tenantName: '福建省长乐市鸿运纺织有限公司', tenantType: '企业', contact: '林鸿运', phone: '13788886666', idCard: '350182197506082316',
-    signTime: '2026-02-01', usage: '工业生产', contractType: '厂房租赁合同', contractStatus: ['履约中'], agreement: '免租期2个月，租金每年递增3%',
-    rentType: '递增租金', leaseStart: '2026-02-01', leaseEnd: '2031-01-31', expired: false, payCycle: '按半年', dueDate: '2026-08-01',
-    monthlyRent: 26000, reduction: 52000, arrearsMonths: 0, newRentTime: '2026-02-01', deposit: 52000, monthPaid: 26000, yearPaid: 156000,
-    assets: [
-      { region: '福建省福州市长乐区', project: '航城工业集中区', zone: 'B区', assetNo: 'ZC-CL-0108', address: '航城标准厂房1#楼整栋', company: '长乐区产业发展投资集团有限公司', leaseType: '整体出租' }
-    ]
-  },
-  {
-    id: 3, contractNo: 'HT-2025-018', tenantName: '长乐区鑫源投资有限公司', tenantType: '企业', contact: '王鑫', phone: '15060123456', idCard: '350182199211203348',
-    signTime: '2025-06-10', usage: '办公', contractType: '办公楼租赁合同', contractStatus: ['履约中', '已备案'], agreement: '含物业费，水电按表另计',
-    rentType: '固定租金', leaseStart: '2025-07-01', leaseEnd: '2028-06-30', expired: false, payCycle: '按季', dueDate: '2026-10-01',
-    monthlyRent: 12800, reduction: 0, arrearsMonths: 1, newRentTime: '2025-07-01', deposit: 25600, monthPaid: 0, yearPaid: 38400,
-    assets: [
-      { region: '福建省福州市长乐区', project: '漳港总部经济区', zone: 'C区', assetNo: 'ZC-CL-0233', address: '漳港办公楼2层整层', company: '长乐区国有资产投资经营有限公司', leaseType: '部分出租' }
-    ]
-  },
-  {
-    id: 4, contractNo: 'HT-2024-035', tenantName: '福州航城物流有限公司', tenantType: '企业', contact: '郑航', phone: '18659112233', idCard: '350182198409127751',
-    signTime: '2024-03-20', usage: '仓储物流', contractType: '仓库租赁合同', contractStatus: ['已到期'], agreement: '到期可优先续租，续租租金上浮5%',
-    rentType: '提成租金', leaseStart: '2024-04-01', leaseEnd: '2026-03-31', expired: true, payCycle: '按月', dueDate: '2026-03-05',
-    monthlyRent: 15600, reduction: 3000, arrearsMonths: 3, newRentTime: '2024-04-01', deposit: 31200, monthPaid: 0, yearPaid: 31200,
-    assets: [
-      { region: '福建省福州市长乐区', project: '航城物流园', zone: 'D区', assetNo: 'ZC-CL-0311', address: '航城物流园3号仓库', company: '长乐区交通建设投资集团有限公司', leaseType: '整体出租' },
-      { region: '福建省福州市长乐区', project: '航城物流园', zone: 'D区', assetNo: 'ZC-CL-0312', address: '航城物流园堆场2000㎡', company: '长乐区交通建设投资集团有限公司', leaseType: '整体出租' }
-    ]
-  },
-  {
-    id: 5, contractNo: 'HT-2026-009', tenantName: '陈秀英', tenantType: '个人', contact: '陈秀英', phone: '13599998888', idCard: '350182196812054427',
-    signTime: '2026-03-01', usage: '餐饮经营', contractType: '商铺租赁合同', contractStatus: ['履约中'], agreement: '前3个月半价扶持',
-    rentType: '固定租金', leaseStart: '2026-03-01', leaseEnd: '2029-02-28', expired: false, payCycle: '按月', dueDate: '2026-09-05',
-    monthlyRent: 3200, reduction: 4800, arrearsMonths: 0, newRentTime: '2026-03-01', deposit: 6400, monthPaid: 3200, yearPaid: 19200,
-    assets: [
-      { region: '福建省福州市长乐区', project: '首占新区商业街', zone: 'E区', assetNo: 'ZC-CL-0455', address: '首占商铺C-08', company: '长乐区国有资产投资经营有限公司', leaseType: '部分出租' }
-    ]
-  },
-  {
-    id: 6, contractNo: 'HT-2025-027', tenantName: '长乐吴航街道陈氏食品店', tenantType: '个体户', contact: '陈志明', phone: '15980234567', idCard: '350182199507182213',
-    signTime: '2025-11-15', usage: '零售经营', contractType: '摊位租赁合同', contractStatus: ['履约中', '已备案'], agreement: '无转让权，摊位仅限本人经营',
-    rentType: '固定租金', leaseStart: '2025-12-01', leaseEnd: '2027-11-30', expired: false, payCycle: '按季', dueDate: '2026-09-15',
-    monthlyRent: 1500, reduction: 0, arrearsMonths: 0, newRentTime: '2025-12-01', deposit: 3000, monthPaid: 1500, yearPaid: 13500,
-    assets: [
-      { region: '福建省福州市长乐区', project: '吴航农贸市场', zone: 'F区', assetNo: 'ZC-CL-0521', address: '农贸市场1号摊位', company: '长乐区国有资产投资经营有限公司', leaseType: '部分出租' }
-    ]
-  }
-])
+// 收费大厅：由合同 store + 收费台账派生，保证与其他模块同一套合同数据
+const contractTypeByUsage = {
+  '商铺': '商铺租赁合同', '写字楼': '办公楼租赁合同', '厂房': '厂房租赁合同',
+  '仓储': '仓库租赁合同', '保障房': '住宅租赁合同', '公寓': '住宅租赁合同',
+  '住宅': '住宅租赁合同', '农贸市场': '摊位租赁合同', '综合用房': '商铺租赁合同', '园区': '办公楼租赁合同'
+}
+
+const hallRecords = computed(() => {
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const quarterEnd = new Date(now.getFullYear(), Math.ceil((now.getMonth() + 1) / 3) * 3, 0).toISOString().slice(0, 10)
+  return contractStore.contracts
+    .filter(c => c.status !== '已终止' && c.status !== '退租')
+    .map(c => {
+      const fee = feeRecords.value.find(f => f.contractId === c.id)
+      const asset = assetStore.getAssetById(c.assetId)
+      const usage = asset?.type || ''
+      const monthlyRent = Math.round((c.annualRent || 0) * 10000 / 12)
+      const arrearsWan = fee?.arrears ?? c.arrears ?? 0
+      const arrearsMonths = monthlyRent > 0 ? Math.round(arrearsWan * 10000 / monthlyRent) : 0
+      const summary = asset ? contractStore.getLeaseSummary(asset) : null
+      return {
+        id: c.id,
+        contractNo: c.id,
+        tenantName: c.tenant,
+        tenantType: /公司|集团|中心/.test(c.tenant || '') ? '企业' : '个人',
+        contact: c.tenant,
+        phone: '—',
+        idCard: '—',
+        signTime: c.startDate,
+        usage: usage || '—',
+        contractType: contractTypeByUsage[usage] || '租赁合同',
+        contractStatus: ['履约中', ...(c.electronic ? ['已备案'] : [])],
+        agreement: `租金${c.increment || '无递增'}，保证金 ${c.deposit || 0} 万元，逾期按日加收0.5‰滞纳金`,
+        rentType: c.increment && c.increment !== '无递增' ? '递增租金' : '固定租金',
+        leaseStart: c.startDate,
+        leaseEnd: c.endDate,
+        expired: c.endDate < todayStr,
+        payCycle: '按季',
+        dueDate: quarterEnd,
+        monthlyRent,
+        reduction: 0,
+        arrearsMonths,
+        newRentTime: c.startDate,
+        deposit: Math.round((c.deposit || 0) * 10000),
+        monthPaid: arrearsMonths > 0 ? 0 : monthlyRent,
+        yearPaid: Math.round((fee?.yearActual ?? 0) * 10000),
+        assets: asset ? [{
+          region: '福建省福州市长乐区',
+          project: asset.location || '—',
+          zone: '—',
+          assetNo: asset.id,
+          address: c.assetName || asset.name,
+          company: asset.group || '—',
+          leaseType: summary && summary.availableArea > 0 ? '部分出租' : '整体出租'
+        }] : []
+      }
+    })
+})
 
 const filteredHall = computed(() => hallRecords.value.filter(r => {
   if (hallKeyword.value && !(r.contractNo.includes(hallKeyword.value) || r.tenantName.includes(hallKeyword.value))) return false
@@ -998,12 +1001,11 @@ function openRentCollect(row) {
 
 function submitRentCollect() {
   const row = hallCurrent.value
-  row.monthPaid = row.monthlyRent * rentPayForm.value.months
-  row.yearPaid += row.monthPaid
-  row.arrearsMonths = 0
-  row.reduction = 0
+  const amountYuan = Number(rentPayAmount.value)
+  // payFee 以万元计，与合同年租金/收费台账同一单位
+  contractStore.payFee(row.contractNo, Math.round(amountYuan / 100) / 100)
   showRentCollect.value = false
-  ElMessage.success(`已收取 ${row.tenantName} 租金 ￥${rentPayAmount.value}（${rentPayForm.value.payType} · ${rentPayForm.value.payMethod}）`)
+  ElMessage.success(`已收取 ${row.tenantName} 租金 ￥${amountYuan.toLocaleString()}（${rentPayForm.value.payType} · ${rentPayForm.value.payMethod}），收费台账已同步`)
 }
 
 function previewHallContract(row) {
@@ -1066,39 +1068,34 @@ function batchUrgeHall() {
 }
 
 function importHallData() {
-  const maxId = hallRecords.value.reduce((m, r) => Math.max(m, r.id), 0)
-  const today = new Date().toISOString().slice(0, 10)
   const mockImports = [
-    {
-      id: maxId + 1, contractNo: 'HT-2026-IMP-001', tenantName: '福州长乐旺达商贸有限公司', tenantType: '企业', contact: '黄志强', phone: '13705912345', idCard: '350182199001015678',
-      signTime: '2026-06-01', usage: '商业经营', contractType: '商铺租赁合同', contractStatus: ['履约中'], agreement: '押二付三，逾期按日加收0.5‰滞纳金',
-      rentType: '固定租金', leaseStart: '2026-06-01', leaseEnd: '2028-05-31', expired: false, payCycle: '按季', dueDate: '2026-12-31',
-      monthlyRent: 6800, reduction: 0, arrearsMonths: 0, newRentTime: '2026-06-01', deposit: 13600, monthPaid: 6800, yearPaid: 20400,
-      assets: [
-        { region: '福建省福州市长乐区', project: '吴航街道商业街', zone: 'A区', assetNo: 'ZC-CL-0067', address: '吴航街道商业街A-15商铺', company: '长乐区国有资产投资经营有限公司', leaseType: '部分出租' }
-      ]
-    },
-    {
-      id: maxId + 2, contractNo: 'HT-2026-IMP-002', tenantName: '福建长乐恒信电子科技有限公司', tenantType: '企业', contact: '刘文建', phone: '15805916789', idCard: '350182198505062345',
-      signTime: '2026-05-15', usage: '工业生产', contractType: '厂房租赁合同', contractStatus: ['履约中'], agreement: '免租期1个月，租金按年递增2%',
-      rentType: '递增租金', leaseStart: '2026-05-15', leaseEnd: '2029-05-14', expired: false, payCycle: '按半年', dueDate: '2026-11-15',
-      monthlyRent: 18500, reduction: 18500, arrearsMonths: 0, newRentTime: '2026-05-15', deposit: 37000, monthPaid: 18500, yearPaid: 55500,
-      assets: [
-        { region: '福建省福州市长乐区', project: '航城工业集中区', zone: 'B区', assetNo: 'ZC-CL-0125', address: '航城标准厂房3#楼2层', company: '长乐区产业发展投资集团有限公司', leaseType: '部分出租' }
-      ]
-    },
-    {
-      id: maxId + 3, contractNo: 'HT-2026-IMP-003', tenantName: '长乐区首占镇小李水果店', tenantType: '个体户', contact: '李小明', phone: '18959123456', idCard: '350182199303156789',
-      signTime: '2026-07-01', usage: '零售经营', contractType: '摊位租赁合同', contractStatus: ['履约中', '已备案'], agreement: '无转让权，按月缴纳',
-      rentType: '固定租金', leaseStart: '2026-07-01', leaseEnd: '2027-06-30', expired: false, payCycle: '按月', dueDate: '2026-10-05',
-      monthlyRent: 2200, reduction: 0, arrearsMonths: 1, newRentTime: '2026-07-01', deposit: 4400, monthPaid: 0, yearPaid: 6600,
-      assets: [
-        { region: '福建省福州市长乐区', project: '首占农贸市场', zone: 'G区', assetNo: 'ZC-CL-0688', address: '首占农贸市场2号摊位', company: '长乐区国有资产投资经营有限公司', leaseType: '部分出租' }
-      ]
-    },
+    { tenantName: '福州长乐旺达商贸有限公司', assetName: '吴航街道商业街A-15商铺', monthlyRent: 6800, leaseStart: '2026-06-01', leaseEnd: '2028-05-31', deposit: 13600, arrearsMonths: 0, increment: '无递增' },
+    { tenantName: '福建长乐恒信电子科技有限公司', assetName: '航城标准厂房3#楼2层', monthlyRent: 18500, leaseStart: '2026-05-15', leaseEnd: '2029-05-14', deposit: 37000, arrearsMonths: 0, increment: '每年递增2%' },
+    { tenantName: '长乐区首占镇小李水果店', assetName: '首占农贸市场2号摊位', monthlyRent: 2200, leaseStart: '2026-07-01', leaseEnd: '2027-06-30', deposit: 4400, arrearsMonths: 1, increment: '无递增' }
   ]
-  hallRecords.value.push(...mockImports)
-  ElMessage.success(`收费数据导入成功，共导入 ${mockImports.length} 条记录`)
+  for (const m of mockImports) {
+    const annualRent = Math.round(m.monthlyRent * 12) / 10000
+    const arrears = Math.round(m.monthlyRent * m.arrearsMonths) / 10000
+    const c = contractStore.signContract({
+      assetId: null,
+      assetName: m.assetName,
+      tenant: m.tenantName,
+      startDate: m.leaseStart,
+      endDate: m.leaseEnd,
+      leaseArea: 0,
+      annualRent,
+      deposit: Math.round(m.deposit / 10000 * 100) / 100,
+      increment: m.increment,
+      status: arrears > 0 ? '欠缴' : '正常',
+      electronic: false,
+      arrears,
+      overdueDays: 0
+    })
+    if (arrears > 0) {
+      contractStore.updateFeeRecord(c.id, { cumReceivable: annualRent, arrears, status: '欠缴' })
+    }
+  }
+  ElMessage.success(`收费数据导入成功，共导入 ${mockImports.length} 条合同及收费记录`)
 }
 
 function refreshHall() {
@@ -1371,6 +1368,9 @@ function viewBill(row) {
 function confirmPayment(row) {
   ElMessageBox.confirm(`确认 ${row.tenant} 的账单 ${row.billNo} 已收款 ${row.amount} 万元？`, '确认收款', { type: 'success' }).then(() => {
     row.billStatus = '已缴'
+    if (contractStore.getContractById(row.contractId)) {
+      contractStore.payFee(row.contractId, row.amount)
+    }
     ElMessage.success('收款确认成功')
   }).catch(() => {})
 }
@@ -1440,6 +1440,9 @@ function simulatePaid() {
   qrOrder.value.status = '已支付'
   qrOrder.value.payTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
   qrOrder.value.tradeNo = '4200001234' + Date.now()
+  if (contractStore.getContractById(qrOrder.value.contractId)) {
+    contractStore.payFee(qrOrder.value.contractId, qrOrder.value.amount)
+  }
   showQrDialog.value = false
   ElMessage.success(`订单 ${qrOrder.value.orderNo} 支付成功`)
 }
@@ -1448,6 +1451,9 @@ function confirmOrderPaid(row) {
   ElMessageBox.confirm(`确认已收到 ${row.tenant} 的 ${row.amount} 万元（${row.payMethod}）？`, '确认收款', { type: 'success' }).then(() => {
     row.status = '已支付'
     row.payTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+    if (contractStore.getContractById(row.contractId)) {
+      contractStore.payFee(row.contractId, row.amount)
+    }
     ElMessage.success('收款已登记')
   }).catch(() => {})
 }

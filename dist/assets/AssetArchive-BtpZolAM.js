@@ -1,1 +1,0 @@
-import{_ as o,c as a,a as s,d as c,h as n,k as r}from"./index-KLKBXkA2.js";const _={},d={class:"page-container"};function p(l,e){const t=n("el-empty");return r(),a("div",d,[e[0]||(e[0]=s("div",{class:"page-header"},[s("h2",null,"资产档案")],-1)),c(t,{description:"资产档案模块开发中"})])}const m=o(_,[["render",p],["__scopeId","data-v-a834e8b7"]]);export{m as default};

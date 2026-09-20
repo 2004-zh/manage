@@ -104,6 +104,8 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh, Download, Printer } from '@element-plus/icons-vue'
+import { useAssetStore } from '../../store/asset'
+import { useContractStore } from '../../store/contract'
 
 const route = useRoute()
 const pageTitle = computed(() => route.meta?.title || '报表中心')
@@ -304,7 +306,54 @@ const CONFIG = {
   }
 }
 
-const cfg = computed(() => CONFIG[route.name] || CONFIG.EntReportAssetStats)
+const assetStore = useAssetStore()
+const contractStore = useContractStore()
+
+const typeCategory = { '保障房': '房产类', '商铺': '经营类房屋店铺', '写字楼': '房产类', '厂房': '经营性生产设备类', '农贸市场': '农贸市场' }
+
+const assetStatsRows = computed(() => assetStore.assets.map(a => ({
+  category: a.assetCategory && a.assetCategory !== '房产类' ? a.assetCategory : (typeCategory[a.type] || '房产类'),
+  region: '福建省/福州市/长乐区',
+  project: a.projectName || a.name,
+  district: a.zoneName || '—',
+  company: a.group || '—',
+  code: a.code || a.assetNo || a.id,
+  name: a.name,
+  leaseStatus: (a.status === '已出租' || a.status === '部分出租') ? '已使用' : '未使用',
+  type: a.type,
+  layout: a.layout || '—'
+})))
+
+const operationRows = computed(() => contractStore.contracts.map(c => {
+  const asset = assetStore.getAssetById(c.assetId)
+  const terminated = c.status === '已终止' || c.status === '退租'
+  const rate = asset && asset.area ? Math.min(100, Math.round((c.leaseArea || asset.area) / asset.area * 100)) : 100
+  return {
+    category: asset ? (asset.assetCategory && asset.assetCategory !== '房产类' ? asset.assetCategory : (typeCategory[asset.type] || '房产类')) : '房产类',
+    code: c.id,
+    name: c.assetName || (asset ? asset.name : '—'),
+    tenant: c.tenant,
+    period: `${c.startDate || '—'} 至 ${c.endDate || '—'}`,
+    rent: Math.round((c.annualRent || 0) * 10000 / 12),
+    collection: (c.arrears || 0) > 0 ? '欠缴' : '已缴',
+    lease: terminated ? '未出租' : (rate < 100 ? '部分出租' : '已出租'),
+    rate: `${terminated ? 0 : rate}%`
+  }
+}))
+
+const dynamicRows = {
+  EntReportAssetStats: assetStatsRows,
+  EntReportOperationStats: operationRows
+}
+
+const cfg = computed(() => {
+  const c = CONFIG[route.name] || CONFIG.EntReportAssetStats
+  if (route.name === 'EntReportAssetStats') {
+    const groups = [...new Set(assetStore.assets.map(a => a.group).filter(Boolean))]
+    return { ...c, filters: c.filters.map(f => f.key === 'company' ? { ...f, options: groups } : f) }
+  }
+  return c
+})
 
 const initChipState = () => {
   Object.keys(chipState).forEach(k => delete chipState[k])
@@ -318,7 +367,8 @@ watch(() => route.name, () => {
 }, { immediate: true })
 
 const filteredRows = computed(() => {
-  let rows = cfg.value.rows
+  const dyn = dynamicRows[route.name]
+  let rows = dyn ? dyn.value : cfg.value.rows
   if (activeCategory.value) {
     rows = rows.filter(r => !r.category || r.category === activeCategory.value)
   }

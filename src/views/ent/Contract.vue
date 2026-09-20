@@ -60,7 +60,7 @@
           </el-table-column>
           <el-table-column prop="feeReduction" label="减免费用" width="100" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.feeReduction === '固定租金' ? '' : 'success'" size="small">{{ row.feeReduction || '—' }}</el-tag>
+              <el-tag :type="row.feeReduction === '固定租金' ? 'primary' : 'success'" size="small">{{ row.feeReduction || '—' }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="status" label="状态" width="90" align="center">
@@ -564,7 +564,7 @@
           <el-table-column prop="name" label="承租方名称" min-width="200" />
           <el-table-column prop="type" label="类型" width="80" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.type === '企业' ? '' : 'success'" size="small">{{ row.type }}</el-tag>
+              <el-tag :type="row.type === '企业' ? 'primary' : 'success'" size="small">{{ row.type }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="idNo" label="证件号码" width="200" />
@@ -810,8 +810,8 @@
 
       <div v-if="signStep === 0" class="sign-step-content">
         <el-form label-width="100px">
-          <el-form-item label="合同编号">{{ signContract?.id }}</el-form-item>
-          <el-form-item label="承租方">{{ signContract?.tenant }}</el-form-item>
+          <el-form-item label="合同编号">{{ signingRow?.id }}</el-form-item>
+          <el-form-item label="承租方">{{ signingRow?.tenant }}</el-form-item>
           <el-form-item label="选择模板">
             <el-select v-model="signTemplateId" style="width:100%">
               <el-option v-for="t in templates" :key="t.id" :label="t.name" :value="t.id" />
@@ -828,11 +828,11 @@
           <div class="contract-title">房屋租赁合同</div>
           <div class="contract-body">
             <p>甲方（出租方）：长乐区城投集团</p>
-            <p>乙方（承租方）：{{ signContract?.tenant }}</p>
-            <p>租赁标的：{{ signContract?.assetName }}</p>
-            <p>租赁期限：{{ signContract?.startDate }} 至 {{ signContract?.endDate }}</p>
-            <p>年租金：{{ signContract?.annualRent }} 万元</p>
-            <p>保证金：{{ signContract?.deposit }} 万元</p>
+            <p>乙方（承租方）：{{ signingRow?.tenant }}</p>
+            <p>租赁标的：{{ signingRow?.assetName }}</p>
+            <p>租赁期限：{{ signingRow?.startDate }} 至 {{ signingRow?.endDate }}</p>
+            <p>年租金：{{ signingRow?.annualRent }} 万元</p>
+            <p>保证金：{{ signingRow?.deposit }} 万元</p>
             <p style="margin-top:16px">第一条 甲方将上述资产出租给乙方使用，乙方应按时缴纳租金。</p>
             <p>第二条 租赁期间，乙方应妥善使用和维护租赁资产，不得擅自改变用途。</p>
             <p>第三条 租金按半年缴纳，每期到期前15日内支付下期租金。</p>
@@ -848,7 +848,7 @@
       <div v-if="signStep === 2" class="sign-step-content" style="text-align:center;padding:40px 0">
         <el-icon :size="48" color="#1890ff" style="margin-bottom:16px"><Loading /></el-icon>
         <p style="font-size:16px;margin-bottom:8px">正在等待双方签署...</p>
-        <p style="color:#999;margin-bottom:20px">已向 {{ signContract?.tenant }} 发送签署通知</p>
+        <p style="color:#999;margin-bottom:20px">已向 {{ signingRow?.tenant }} 发送签署通知</p>
         <el-button type="primary" @click="signStep = 3">模拟双方完成签署</el-button>
       </div>
 
@@ -1452,7 +1452,7 @@ const pagedLetters = computed(() => {
 })
 
 function letterStatusType(status) {
-  const map = { '洽谈中': '', '已签约': 'success', '已终止': 'danger' }
+  const map = { '洽谈中': 'primary', '已签约': 'success', '已终止': 'danger' }
   return map[status] || 'info'
 }
 
@@ -1620,9 +1620,7 @@ function convertToContract(letter) {
     { type: 'info' }
   ).then(() => {
     letter.status = '已签约'
-    const newContractId = nextContractId()
-    contractStore.contracts.push({
-      id: newContractId,
+    const newContract = contractStore.signContract({
       assetId: asset.id,
       assetName: asset.name,
       tenant: letter.lessee,
@@ -1637,10 +1635,9 @@ function convertToContract(letter) {
       overdueDays: 0,
       electronic: false
     })
-    applyLeaseToAsset(asset)
     dataVersion.value++
     showLetterDrawer.value = false
-    ElMessage.success(`已生成合同 ${newContractId}，${asset.name} 转为${contractStore.getLeaseSummary(asset).availableArea > 0 ? '部分出租' : '已出租'}`)
+    ElMessage.success(`已生成合同 ${newContract.id}，${asset.name} 转为${contractStore.getLeaseSummary(asset).availableArea > 0 ? '部分出租' : '已出租'}`)
     activeTab.value = 'list'
   }).catch(() => {})
 }
@@ -1690,25 +1687,6 @@ function resetCreateForm() {
   createForm.value = { id: '', assetId: '', assetName: '', leaseArea: 0, tenant: '', startDate: '', endDate: '', annualRent: 0, deposit: 0, increment: '每年递增3%', templateId: '' }
 }
 
-// 合同生效后按剩余可租面积回写资产状态：仍有剩余 → 部分出租，租满 → 已出租
-function applyLeaseToAsset(asset) {
-  if (!asset) return null
-  const after = contractStore.getLeaseSummary(asset)
-  asset.status = after.availableArea > 0 ? '部分出租' : '已出租'
-  return after
-}
-
-// 按当年最大流水号递增，避免删除合同后重号
-function nextContractId() {
-  const prefix = `HT-${new Date().getFullYear()}-`
-  const max = contractStore.contracts.reduce((m, c) => {
-    if (!String(c.id).startsWith(prefix)) return m
-    const n = Number(String(c.id).slice(prefix.length))
-    return Number.isFinite(n) && n > m ? n : m
-  }, 0)
-  return `${prefix}${String(max + 1).padStart(3, '0')}`
-}
-
 function statusType(status) {
   const map = { '正常': 'success', '欠缴': 'danger', '临期': 'warning', '已到期': 'info' }
   return map[status] || 'info'
@@ -1742,9 +1720,7 @@ function handleCreateContract() {
     ElMessage.error(`租赁面积 ${f.leaseArea} ㎡ 超出该资产剩余可租面积 ${available} ㎡`)
     return
   }
-  const newId = nextContractId()
-  contractStore.contracts.push({
-    id: newId,
+  const newContract = contractStore.signContract({
     assetId: asset.id,
     assetName: asset.name,
     tenant: f.tenant,
@@ -1759,14 +1735,14 @@ function handleCreateContract() {
     arrears: 0,
     overdueDays: 0
   })
-  const after = applyLeaseToAsset(asset)
+  const after = contractStore.getLeaseSummary(asset)
   dataVersion.value++
   showCreateDialog.value = false
   resetCreateForm()
   ElMessage.success(
     after.availableArea > 0
-      ? `合同 ${newId} 已生效，${asset.name} 转为部分出租，剩余 ${after.availableArea.toLocaleString()} ㎡ 可继续招租`
-      : `合同 ${newId} 已生效，${asset.name} 已整宗出租`
+      ? `合同 ${newContract.id} 已生效，${asset.name} 转为部分出租，剩余 ${after.availableArea.toLocaleString()} ㎡ 可继续招租`
+      : `合同 ${newContract.id} 已生效，${asset.name} 已整宗出租`
   )
 }
 
@@ -1807,11 +1783,8 @@ function confirmMerge() {
   const rows = mergeSelection.value
   const preview = mergePreview.value
   if (!rows.length || !preview) return
-  const asset = assetStore.assets.find(a => a.id === rows[0].assetId)
   const tenants = [...new Set(rows.map(c => c.tenant))]
-  const newId = nextContractId()
-  contractStore.contracts.push({
-    id: newId,
+  const newContract = contractStore.signContract({
     assetId: rows[0].assetId,
     assetName: preview.assetName,
     tenant: tenants.length === 1 ? tenants[0] : tenants.join('、'),
@@ -1828,14 +1801,13 @@ function confirmMerge() {
     mergedFrom: rows.map(c => c.id)
   })
   const ids = new Set(rows.map(c => c.id))
-  for (let i = contractStore.contracts.length - 1; i >= 0; i--) {
-    if (ids.has(contractStore.contracts[i].id)) contractStore.contracts.splice(i, 1)
+  for (const c of rows) {
+    contractStore.terminateContract(c.id, `已合并至 ${newContract.id}`)
   }
-  applyLeaseToAsset(asset)
   dataVersion.value++
   mergeDialogVisible.value = false
   mergeSelection.value = []
-  ElMessage.success(`已将 ${ids.size} 份合同合并为 ${newId}`)
+  ElMessage.success(`已将 ${ids.size} 份合同合并为 ${newContract.id}，原合同标记为已终止`)
 }
 
 function applyTemplate(templateId) {
@@ -1949,12 +1921,12 @@ const signStats = computed(() => {
 const pendingSignContracts = computed(() => contractStore.contracts)
 
 const showSignDialog = ref(false)
-const signContract = ref(null)
+const signingRow = ref(null)
 const signStep = ref(0)
 const signTemplateId = ref('TPL-001')
 
 function startSign(row) {
-  signContract.value = row
+  signingRow.value = row
   const matchTpl = templates.value.find(t => {
     if (row.assetName?.includes('商铺')) return t.type === '商铺租赁'
     if (row.assetName?.includes('厂房')) return t.type === '厂房租赁'
@@ -1968,14 +1940,14 @@ function startSign(row) {
 }
 
 function previewSign(row) {
-  signContract.value = row
+  signingRow.value = row
   signStep.value = 1
   showSignDialog.value = true
 }
 
 function finishSign() {
-  if (signContract.value) {
-    signContract.value.electronic = true
+  if (signingRow.value) {
+    signingRow.value.electronic = true
   }
   showSignDialog.value = false
   signStep.value = 0
@@ -2380,9 +2352,7 @@ function submitSettlement() {
       ElMessage.warning('请填写续租期限')
       return
     }
-    const newId = nextContractId()
-    contractStore.contracts.push({
-      id: newId,
+    const newContract = contractStore.signContract({
       assetId: c.assetId,
       assetName: c.assetName,
       tenant: c.tenant,
@@ -2402,31 +2372,33 @@ function submitSettlement() {
     c.settlementDate = new Date().toISOString().slice(0, 10)
     c.settlementAction = 'renew'
     c.settlementItems = calcSettlementItems(c, 'renew')
-    c.newContractId = newId
+    c.newContractId = newContract.id
     c.renewStart = renewForm.value.startDate
     c.renewEnd = renewForm.value.endDate
     c.newAnnualRent = renewForm.value.annualRent
+    // 原合同转为退租，避免与新合同重复占用租赁面积
+    contractStore.updateContract(c.id, { status: '退租' })
+    contractStore.syncAssetLeaseState(c.assetId)
     dataVersion.value++
-    ElMessage.success(`续租完成，已生成新合同 ${newId}`)
+    ElMessage.success(`续租完成，已生成新合同 ${newContract.id}`)
   } else {
     if (!terminateForm.value.date) {
       ElMessage.warning('请填写退租日期')
       return
     }
-    c.status = '退租'
-    c.settlementStatus = '已退租'
-    c.settlementDate = new Date().toISOString().slice(0, 10)
-    c.settlementAction = 'terminate'
-    c.settlementItems = calcSettlementItems(c, 'terminate')
-    c.terminateDate = terminateForm.value.date
-    c.terminateReason = terminateForm.value.reason
-
-    const asset = assetStore.assets.find(a => a.id === c.assetId)
-    if (asset) {
-      const summary = contractStore.getLeaseSummary(asset)
-      asset.status = summary.availableArea >= asset.area ? '闲置' : summary.availableArea > 0 ? '部分出租' : '闲置'
-      dataVersion.value++
-    }
+    const items = calcSettlementItems(c, 'terminate')
+    // 状态置为退租后不再占用租赁面积，再由 syncAssetLeaseState 释放资产
+    contractStore.updateContract(c.id, {
+      status: '退租',
+      settlementStatus: '已退租',
+      settlementDate: new Date().toISOString().slice(0, 10),
+      settlementAction: 'terminate',
+      settlementItems: items,
+      terminateDate: terminateForm.value.date,
+      terminateReason: terminateForm.value.reason
+    })
+    contractStore.syncAssetLeaseState(c.assetId)
+    dataVersion.value++
     ElMessage.success('退租结算完成，资产已释放')
   }
 

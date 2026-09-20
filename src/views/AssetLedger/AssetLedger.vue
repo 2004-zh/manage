@@ -746,9 +746,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Upload, Download, Search, Refresh, Filter, Location, Picture, Delete, MoreFilled, Back, OfficeBuilding, Close, Box, Key, Files, DataAnalysis, TrendCharts, Wallet, Coin, Money, Document } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import AssetDetailDrawer from '../../components/AssetDetailDrawer.vue'
+import { useAssetStore } from '../../store/asset'
+import { useProjectStore } from '../../store/project'
 
 const route = useRoute()
 const router = useRouter()
+const assetStore = useAssetStore()
+const projectStore = useProjectStore()
 const isCodeMode = computed(() => route.name === 'EntOneAssetOneCode')
 
 const searchForm = reactive({
@@ -773,69 +777,53 @@ const viewMode = ref('list')
 const filterVisible = ref(true)
 
 const categoryByType = { '保障房': '房产类', '商铺': '经营类房屋店铺', '写字楼': '房产类', '厂房': '经营性生产设备类', '农贸市场': '农贸市场' }
-const projectNames = ['阳光花园项目', '阳光花园项目', '阳光花园项目', '万达广场项目', '万达广场项目', '万达广场项目', '国贸中心项目', '国贸中心项目', '国贸中心项目', '高新产业园项目', '高新产业园项目', '朝阳农贸市场项目', '朝阳农贸市场项目']
 const districtNames = ['A分区', 'B分区', 'C分区']
-const regionNames = ['北京市/朝阳区', '湖北省/武汉市/武昌区', '湖北省/武汉市/洪山区', '广东省/广州市/天河区']
+const CHANGLE_REGION = '福建省/福州市/长乐区'
 const operateCompanies = ['城投经营有限公司', '文旅经营有限公司', '农投经营有限公司']
 const propertyCompanies = ['市国有资产产权管理有限公司', '城投产权管理有限公司']
 const assetNatures = ['经营性资产', '非经营性资产', '准经营性资产']
 const photoColors = ['linear-gradient(135deg, #4f8ef7, #7db4ff)', 'linear-gradient(135deg, #36cfc9, #87e8de)', 'linear-gradient(135deg, #ffa940, #ffd591)', 'linear-gradient(135deg, #9254de, #d3adf7)', 'linear-gradient(135deg, #73d13d, #b7eb8f)']
 
-const rawAssets = [
-  { code: 'ZC2024001', name: '阳光花园1号楼101室', type: '保障房', area: 65, location: '朝阳区阳光路100号', status: '出租', rentPrice: 2500, owner: '市住房保障中心', remark: '精装修，拎包入住' },
-  { code: 'ZC2024002', name: '阳光花园1号楼102室', type: '保障房', area: 68, location: '朝阳区阳光路100号', status: '出租', rentPrice: 2600, owner: '市住房保障中心', remark: '' },
-  { code: 'ZC2024003', name: '阳光花园2号楼201室', type: '保障房', area: 72, location: '朝阳区阳光路100号', status: '闲置', rentPrice: 2800, owner: '市住房保障中心', remark: '待维修' },
-  { code: 'ZC2024010', name: '万达广场商铺A101', type: '商铺', area: 120, location: '朝阳区建国路88号', status: '出租', rentPrice: 25000, owner: '市国资委', remark: '临街商铺' },
-  { code: 'ZC2024011', name: '万达广场商铺A102', type: '商铺', area: 95, location: '朝阳区建国路88号', status: '出租', rentPrice: 20000, owner: '市国资委', remark: '' },
-  { code: 'ZC2024012', name: '万达广场商铺B201', type: '商铺', area: 150, location: '朝阳区建国路88号', status: '闲置', rentPrice: 30000, owner: '市国资委', remark: '二楼商铺' },
-  { code: 'ZC2024020', name: '国贸写字楼A座1501', type: '写字楼', area: 280, location: '朝阳区国贸中心A座', status: '出租', rentPrice: 56000, owner: '市国资委', remark: '精装修办公室' },
-  { code: 'ZC2024021', name: '国贸写字楼A座1502', type: '写字楼', area: 220, location: '朝阳区国贸中心A座', status: '自用', rentPrice: 0, owner: '市国资委', remark: '自用办公' },
-  { code: 'ZC2024022', name: '国贸写字楼B座801', type: '写字楼', area: 180, location: '朝阳区国贸中心B座', status: '出租', rentPrice: 36000, owner: '市国资委', remark: '' },
-  { code: 'ZC2024030', name: '高新技术产业园厂房C1', type: '厂房', area: 2000, location: '海淀区中关村科技园', status: '出租', rentPrice: 80000, owner: '市国资委', remark: '标准厂房' },
-  { code: 'ZC2024031', name: '高新技术产业园厂房C2', type: '厂房', area: 1500, location: '海淀区中关村科技园', status: '闲置', rentPrice: 60000, owner: '市国资委', remark: '待招租' },
-  { code: 'ZC2024040', name: '朝阳农贸市场1号厅', type: '农贸市场', area: 500, location: '朝阳区朝阳路200号', status: '出租', rentPrice: 35000, owner: '市商务局', remark: '蔬菜区' },
-  { code: 'ZC2024041', name: '朝阳农贸市场2号厅', type: '农贸市场', area: 450, location: '朝阳区朝阳路200号', status: '出租', rentPrice: 32000, owner: '市商务局', remark: '肉类区' }
-]
-
+const statusToLedger = { '已出租': '出租', '部分出租': '出租', '空置': '闲置' }
+const ledgerToStoreStatus = { '出租': '已出租', '闲置': '闲置', '自用': '自用' }
 const leaseStatusMap = { '出租': '已租赁', '闲置': '未租赁', '自用': '自用中' }
 
-const buildAssetRow = (item, index) => ({
-  category: categoryByType[item.type] || '房产类',
-  project: item.name,
-  projectAddress: item.location,
-  district: districtNames[index % districtNames.length],
-  sourceType: sourceTypeOptions[1 + (index % (sourceTypeOptions.length - 1))],
-  region: regionNames[index % regionNames.length],
-  operateCompany: operateCompanies[index % operateCompanies.length],
-  propertyCompany: propertyCompanies[index % propertyCompanies.length],
-  ownership: ownershipOptions[1 + (index % (ownershipOptions.length - 1))],
-  assetNature: assetNatures[index % assetNatures.length],
-  assetAddress: item.location,
-  leaseStatus: leaseStatusMap[item.status] || '未租赁',
-  createdAt: '2025-09-01 10:00:00',
-  updatedAt: '2025-09-01 10:00:00',
-  totalCount: 1,
-  totalArea: item.area || 0,
-  activeCount: item.status === '闲置' ? 0 : 1,
-  idleCount: item.status === '闲置' ? 1 : 0,
-  photoColor: photoColors[index % photoColors.length]
-})
-
-const assetList = ref(rawAssets.map((item, index) => {
-  const project = projectNames[index] || '其他项目'
+const toLedgerRow = (a, i) => {
+  const status = statusToLedger[a.status] || a.status
   return {
-    ...item,
-    ...buildAssetRow(item, index),
-    project,
-    projectAddress: item.location,
-    createdAt: `2024-0${(index % 9) + 1}-1${index % 9} 09:${10 + index}:00`,
-    updatedAt: `2025-0${(index % 9) + 1}-2${index % 9} 15:${20 + index}:00`,
-    totalCount: 3 + (index % 5),
-    totalArea: item.area * (2 + (index % 3)),
-    activeCount: index % 4,
-    idleCount: item.status === '闲置' ? 1 + (index % 3) : index % 2
+    id: a.id,
+    code: a.code || a.assetNo || a.id,
+    name: a.name,
+    type: a.type,
+    area: a.area,
+    location: a.location,
+    status,
+    rentPrice: a.rentPrice ?? (a.monthlyRent || 0),
+    owner: a.owner || a.group || '',
+    remark: a.remark || '',
+    category: a.assetCategory && a.assetCategory !== '房产类' ? a.assetCategory : (categoryByType[a.type] || '房产类'),
+    project: a.projectName || a.name,
+    projectAddress: a.projectAddress || a.location,
+    assetAddress: a.assetAddress || a.location,
+    district: a.zoneName || districtNames[i % districtNames.length],
+    sourceType: a.sourceType || '划入',
+    region: CHANGLE_REGION,
+    operateCompany: a.operateCompany || a.group || operateCompanies[i % operateCompanies.length],
+    propertyCompany: a.propertyCompany || propertyCompanies[i % propertyCompanies.length],
+    ownership: a.ownership || (status === '自用' ? '自有' : '委托经营'),
+    assetNature: a.assetNature || assetNatures[i % assetNatures.length],
+    leaseStatus: a.leaseStatus && a.leaseStatus.includes('租赁') ? a.leaseStatus : (leaseStatusMap[status] || '未租赁'),
+    createdAt: a.createdAt || '2025-01-05 09:00:00',
+    updatedAt: a.updatedAt || '2025-09-01 10:00:00',
+    totalCount: 1,
+    totalArea: a.area || 0,
+    activeCount: status === '闲置' ? 0 : 1,
+    idleCount: status === '闲置' ? 1 : 0,
+    photoColor: photoColors[i % photoColors.length]
   }
-}))
+}
+
+const assetList = computed(() => assetStore.assets.map(toLedgerRow))
 
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -879,7 +867,7 @@ const getStatusType = (status) => {
 
 const assetFormRef = ref(null)
 const certFormRef = ref(null)
-const editingIndex = ref(-1)
+const editingId = ref(null)
 const certDialogVisible = ref(false)
 const certForm = reactive({
   type: '',
@@ -945,14 +933,14 @@ const handleReset = () => {
 
 const handleAdd = () => {
   isEdit.value = false
-  editingIndex.value = -1
+  editingId.value = null
   Object.assign(assetForm, { code: '', name: '', type: '', status: '闲置', area: 0, rentPrice: 0, location: '', owner: '', remark: '' })
   formDialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   isEdit.value = true
-  editingIndex.value = assetList.value.findIndex(item => item.code === row.code)
+  editingId.value = row.id
   Object.assign(assetForm, { ...row })
   formDialogVisible.value = true
 }
@@ -973,25 +961,36 @@ const handleDelete = (row) => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    const index = assetList.value.findIndex(item => item.code === row.code)
-    if (index > -1) {
-      assetList.value.splice(index, 1)
-      ElMessage.success('删除成功')
-    }
+    assetStore.deleteAsset(row.id)
+    ElMessage.success('删除成功')
   }).catch(() => {})
 }
+
+const toAssetPayload = () => ({
+  name: assetForm.name,
+  type: assetForm.type,
+  area: Number(assetForm.area) || 0,
+  location: assetForm.location,
+  status: ledgerToStoreStatus[assetForm.status] || assetForm.status,
+  rentPrice: Number(assetForm.rentPrice) || 0,
+  owner: assetForm.owner,
+  remark: assetForm.remark || '',
+  code: (assetForm.code || '').trim(),
+  assetCategory: categoryByType[assetForm.type] || '房产类',
+  group: assetForm.owner || '城投集团',
+  sourceType: '划入',
+  bookValue: 0
+})
 
 const handleSubmit = () => {
   assetFormRef.value.validate((valid) => {
     if (!valid) return
     submitLoading.value = true
     setTimeout(() => {
-      if (isEdit.value && editingIndex.value > -1) {
-        Object.assign(assetList.value[editingIndex.value], { ...assetForm })
-        assetList.value[editingIndex.value].category = categoryByType[assetForm.type] || assetList.value[editingIndex.value].category
-        assetList.value[editingIndex.value].leaseStatus = leaseStatusMap[assetForm.status] || '未租赁'
+      if (isEdit.value && editingId.value) {
+        assetStore.updateAsset(editingId.value, toAssetPayload())
       } else {
-        assetList.value.unshift({ ...buildAssetRow(assetForm, assetList.value.length), ...assetForm })
+        assetStore.addAsset(toAssetPayload())
       }
       submitLoading.value = false
       formDialogVisible.value = false
@@ -1035,18 +1034,23 @@ const handleImportSubmit = () => {
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(',')
       if (cols.length >= 4) {
-        const imported = {
+        const status = cols[5] ? cols[5].trim() : '闲置'
+        const type = cols[2].trim() || '保障房'
+        assetStore.addAsset({
           code: cols[0].trim(),
           name: cols[1].trim(),
-          type: cols[2].trim() || '保障房',
+          type,
           area: parseFloat(cols[3]) || 0,
           location: cols[4] ? cols[4].trim() : '',
-          status: cols[5] ? cols[5].trim() : '闲置',
+          status: ledgerToStoreStatus[status] || status,
           rentPrice: parseFloat(cols[6]) || 0,
           owner: cols[7] ? cols[7].trim() : '',
-          remark: ''
-        }
-        assetList.value.unshift({ ...buildAssetRow(imported, assetList.value.length), ...imported })
+          remark: '',
+          assetCategory: categoryByType[type] || '房产类',
+          group: (cols[7] || '').trim() || '城投集团',
+          sourceType: '划入',
+          bookValue: 0
+        })
         count++
       }
     }
@@ -1128,7 +1132,7 @@ const handleDisable = (row) => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    row.status = '停用'
+    assetStore.updateAsset(row.id, { status: '停用' })
     ElMessage.success('已禁用')
   }).catch(() => {})
 }
@@ -1241,65 +1245,65 @@ const handleCurrentChange = (val) => {
   currentPage.value = val
 }
 
-/* ---------- 一产一码（项目详情） ---------- */
 const STATUS_COLORS = { '已租赁': '#b8bec6', '未租赁': '#4f8ef7', '审批中': '#73d13d', '已占用': '#c9a06c', '处置中': '#f759ab', '流转中': '#9254de', '调拨中': '#36cfc9' }
-const ROOM_STATUS = ['已租赁', '已租赁', '未租赁', '已租赁', '未租赁', '已租赁', '已占用', '已租赁', '审批中', '未租赁']
-const ROOM_TENANTS = ['城投商贸有限公司', '文旅经营有限公司', '农投服务有限公司', '国贸物业公司']
 const UNRENTABLE = ['已占用', '处置中', '流转中', '调拨中']
 
-const makeRooms = (bName, floor, seed) => Array.from({ length: 8 }, (_, i) => {
-  const status = ROOM_STATUS[(i + seed) % ROOM_STATUS.length]
-  const area = 86 + ((i * 37 + seed * 13) % 240)
+const codeRoomStatus = (s) => {
+  if (s === '已出租' || s === '部分出租') return '已租赁'
+  if (s === '空置' || s === '闲置') return '未租赁'
+  if (s === '自用') return '已占用'
+  return s || '未租赁'
+}
+
+const codeProjects = computed(() => projectStore.projects.map(b => {
+  const floors = [...new Set(b.partitions.flatMap(p => p.floors.map(f => f.name)))]
+  const rooms = b.partitions.flatMap(p => p.floors.flatMap(f => f.rooms.map(r => ({
+    code: r.assetNo || r.id,
+    assetId: r.id,
+    roomNo: r.name,
+    name: `${b.name} ${f.name} ${r.name}`,
+    floor: f.name,
+    area: r.area || 0,
+    status: codeRoomStatus(r.status),
+    idleDays: r.vacancyDays ?? (codeRoomStatus(r.status) === '未租赁' ? 60 : 0),
+    tenant: r.tenant || '',
+    rent: r.monthlyRent || 0
+  }))))
+  const leased = rooms.filter(r => r.status === '已租赁').length
+  const utilization = rooms.length ? Math.round(leased / rooms.length * 10000) / 100 : 0
   return {
-    code: `ZC2024-${bName.slice(0, 2)}-${floor}-${String(i + 1).padStart(2, '0')}`,
-    roomNo: `${floor.replace('F', '')}${String(i + 1).padStart(2, '0')}`,
-    name: `${bName} ${floor} ${i + 1}号`,
-    floor,
-    area,
-    status,
-    idleDays: status === '未租赁' ? [45, 120, 210][(i + seed) % 3] : 0,
-    tenant: status === '已租赁' ? ROOM_TENANTS[(i + seed) % 4] : '',
-    rent: status === '已租赁' ? area * (38 + ((i + seed) % 5) * 6) : 0
-  }
-})
-
-const makeBuilding = (name, floors, seed) => ({
-  name,
-  floors,
-  rooms: floors.flatMap(f => makeRooms(name, f, seed + f.charCodeAt(0)))
-})
-
-const codeProjects = ref([
-  {
-    key: 'p1', name: '红联壹城', code: 'ZC2024101', company: '江苏安东控股集团有限公司',
-    address: '江苏省淮安市涟水县涟城街道红日大道中联壹城红莲小区', createTime: '2026-07-12 11:28:16',
-    status: '正常', type: '房产类', bizStatus: '部分租赁', utilization: 63.09, idleArea: 2024.14,
-    cumIncome: 240.5, yearIncome: 240.5, rentRate: 63.09, feeRate: 0, leasedCount: 6, totalCount: 9, pendingFee: 0, arrears: 5,
-    useDonut: [7, 8], monthly: [0, 0, 0, 0, 0, 0, 240.5, 0, 0, 0, 0, 0],
+    key: b.id,
+    name: b.name,
+    code: b.id,
+    company: b.group,
+    address: b.address,
+    createTime: '2026-01-01 09:00:00',
+    status: '正常',
+    type: b.type,
+    bizStatus: leased === 0 ? '未租赁' : leased === rooms.length ? '整体租赁' : '部分租赁',
+    utilization,
+    idleArea: Math.round(rooms.filter(r => r.status === '未租赁').reduce((s, r) => s + r.area, 0) * 100) / 100,
+    cumIncome: b.cumIncome || 0,
+    yearIncome: b.yearIncome || 0,
+    rentRate: utilization,
+    feeRate: 0,
+    leasedCount: leased,
+    totalCount: rooms.length,
+    pendingFee: 0,
+    arrears: 0,
+    useDonut: [leased, rooms.length - leased],
+    monthly: Array.from({ length: 12 }, () => Math.round((b.yearIncome || 0) / 12 * 10) / 10),
     photo: 'linear-gradient(135deg, #8ea6c8, #c7d3e4)',
-    buildings: [makeBuilding('23#楼', ['1F', '2F'], 1), makeBuilding('48#楼', ['1F'], 3), makeBuilding('C22#楼', ['1F', '3F'], 5)]
-  },
-  {
-    key: 'p2', name: '国贸中心A座', code: 'ZC2024020', company: '城投集团资产管理有限公司',
-    address: '北京市朝阳区建国路88号', createTime: '2025-11-03 09:41:22',
-    status: '正常', type: '房产类', bizStatus: '大部分租赁', utilization: 81.4, idleArea: 640.5,
-    cumIncome: 1286.4, yearIncome: 452.8, rentRate: 81.4, feeRate: 92.5, leasedCount: 13, totalCount: 16, pendingFee: 2, arrears: 1,
-    useDonut: [13, 3], monthly: [32, 28, 35, 41, 38, 36, 44, 40, 37, 42, 39, 36.8],
-    photo: 'linear-gradient(135deg, #5b7db1, #94b8d8)',
-    buildings: [makeBuilding('A座', ['15F', '16F'], 2), makeBuilding('B座', ['8F'], 6)]
-  },
-  {
-    key: 'p3', name: '朝阳农贸市场', code: 'ZC2024040', company: '农投经营有限公司',
-    address: '北京市朝阳区朝阳路200号', createTime: '2025-05-18 15:07:49',
-    status: '维修中', type: '市场类', bizStatus: '部分租赁', utilization: 46.2, idleArea: 1180,
-    cumIncome: 386.2, yearIncome: 121.6, rentRate: 46.2, feeRate: 78.3, leasedCount: 6, totalCount: 13, pendingFee: 3, arrears: 2,
-    useDonut: [6, 7], monthly: [8, 9, 10, 11, 9, 12, 10, 11, 12, 10, 9, 9.6],
-    photo: 'linear-gradient(135deg, #7fa06c, #b4cf9e)',
-    buildings: [makeBuilding('1号厅', ['1F'], 4), makeBuilding('2号厅', ['1F'], 8)]
+    buildings: [{ name: b.name, floors, rooms }]
   }
-])
+}))
 
-const codeAssetKey = ref('p1')
+const codeAssetKey = ref(null)
+watch(codeProjects, (list) => {
+  if (!list.length) return
+  if (!list.some(p => p.key === codeAssetKey.value)) codeAssetKey.value = list[0].key
+}, { immediate: true })
+
 const distTab = ref('map')
 const activeBuilding = ref('')
 const activeFloor = ref('')

@@ -260,6 +260,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import QRCode from 'qrcode'
 import { assetDetailData, costRecords, evaluationRecords, assetArchives, urgeRecords } from '../data/mock'
 import { useContractStore } from '../store/contract'
+import { useChangeLogStore } from '../store/changeLog'
 
 const contractStore = useContractStore()
 
@@ -339,11 +340,8 @@ const detailData = computed(() => {
 const changeHistory = computed(() => {
   if (!props.asset) return []
   const aid = props.asset.id || props.asset.assetId || props.asset.code
-  if (aid === 'CT-001') return [
-    { date: '2020-06-15', type: '用途变更', before: '空置', after: '商铺出租', operator: '陈××' },
-    { date: '2018-03-20', type: '入库登记', before: '—', after: '自购入库', operator: '陈××' }
-  ]
-  return []
+  if (!aid) return []
+  return useChangeLogStore().entriesOfAsset(aid)
 })
 
 const transferRecords = computed(() => [])
@@ -374,7 +372,7 @@ function getAssetArchives() {
 }
 
 function statusTagType(status) {
-  const map = { '已出租': 'success', '出租': 'success', '闲置': 'warning', '空置': 'warning', '自用': '', '部分出租': '', '处置中': 'danger' }
+  const map = { '已出租': 'success', '出租': 'success', '闲置': 'warning', '空置': 'warning', '自用': 'primary', '部分出租': 'primary', '处置中': 'danger' }
   return map[status] || 'info'
 }
 

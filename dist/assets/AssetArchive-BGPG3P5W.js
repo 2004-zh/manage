@@ -1,0 +1,1 @@
+import{_ as o,c as a,a as s,d as c,h as n,k as r}from"./index-16H5fotP.js";const d={},_={class:"page-container"};function p(l,e){const t=n("el-empty");return r(),a("div",_,[e[0]||(e[0]=s("div",{class:"page-header"},[s("h2",null,"资产档案")],-1)),c(t,{description:"资产档案模块开发中"})])}const m=o(d,[["render",p],["__scopeId","data-v-57df8251"]]);export{m as default};
