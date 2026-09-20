@@ -18,6 +18,7 @@
               <el-option label="闲置超期" value="闲置超期" />
               <el-option label="未办证" value="未办证" />
               <el-option label="闲置盘活" value="闲置盘活" />
+              <el-option label="督办逾期" value="督办逾期" />
             </el-select>
           </el-col>
           <el-col :span="4">
@@ -174,15 +175,18 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { Search, Download } from '@element-plus/icons-vue'
 import { useWarningStore } from '../../store/warning'
 import { ElMessage } from 'element-plus'
 
+const route = useRoute()
 const warningStore = useWarningStore()
 
 const activeTab = ref('tasks')
 
-const taskSearch = ref('')
+// 支持从督办详情带 ?keyword=DB-2026-009 跳入，直接定位该督办生成的预警任务
+const taskSearch = ref(route.query.keyword || '')
 const taskTypeFilter = ref('')
 const taskStatusFilter = ref('')
 const groupFilter = ref('')
@@ -194,7 +198,7 @@ const detailVisible = ref(false)
 const currentRow = ref(null)
 const detailType = ref('task')
 
-const typeTagMap = { '欠费催缴': 'danger', '合同临期': 'warning', '闲置超期': 'warning', '未办证': 'info', '闲置盘活': '' }
+const typeTagMap = { '欠费催缴': 'danger', '合同临期': 'warning', '闲置超期': 'warning', '未办证': 'info', '闲置盘活': '', '督办逾期': 'danger' }
 const priorityTagMap = { '高': 'danger', '中': 'warning', '低': 'info' }
 const statusTagMap = { '待处理': 'warning', '进行中': '', '已完成': 'success' }
 const invStatusMap = { '进行中': '', '已完成': 'success', '已审核': 'success' }

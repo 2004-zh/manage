@@ -23,6 +23,34 @@ export const useWarningStore = defineStore('warning', () => {
     }
   }
 
+  function nextTaskId() {
+    let max = 0
+    warningTasks.value.forEach(t => {
+      const n = Number(String(t.id).replace(/\D/g, ''))
+      if (n > max) max = n
+    })
+    return `WT-${String(max + 1).padStart(3, '0')}`
+  }
+
+  // 幂等：同 billNo + type 只生成一条，避免重复扫描督办单造成任务堆积
+  function addTask(task) {
+    if (task.billNo && warningTasks.value.some(t => t.billNo === task.billNo && t.type === task.type)) return null
+    const created = {
+      id: nextTaskId(),
+      name: task.name || '',
+      asset: task.asset || '',
+      type: task.type || '其它预警',
+      deadline: task.deadline || '',
+      status: '待处理',
+      priority: task.priority || '中',
+      assignee: task.assignee || '资产管理员',
+      group: task.group || '',
+      billNo: task.billNo || ''
+    }
+    warningTasks.value.unshift(created)
+    return created
+  }
+
   return {
     warningTasks,
     inventoryTasks,
@@ -30,6 +58,7 @@ export const useWarningStore = defineStore('warning', () => {
     warningList,
     getTasksByCompany,
     getInventoryByCompany,
-    updateTaskStatus
+    updateTaskStatus,
+    addTask
   }
 })

@@ -11,7 +11,7 @@ function calcProjectStats(project) {
   const rooms = project.partitions.flatMap(p => p.floors.flatMap(f => f.rooms))
   const totalAssets = rooms.length
   const totalArea = Math.round(rooms.reduce((s, r) => s + (r.area || 0), 0) * 100) / 100
-  const rentedCount = rooms.filter(r => r.status === '已出租').length
+  const rentedCount = rooms.filter(r => r.status === '已出租' || r.status === '部分出租').length
   const idleCount = rooms.filter(r => r.status === '空置' || r.status === '闲置').length
   const rentalRate = totalAssets ? Math.round(rentedCount / totalAssets * 10000) / 100 : 0
   return { totalAssets, totalArea, rentedCount, idleCount, rentalRate }
@@ -156,12 +156,47 @@ export const useProjectStore = defineStore('project', () => {
     Object.assign(project, stats)
   }
 
+  function findRoom(roomId) {
+    for (const b of projects.value) {
+      for (const p of (b.partitions || [])) {
+        for (const f of (p.floors || [])) {
+          const r = (f.rooms || []).find(rm => rm.id === roomId)
+          if (r) return { building: b, partition: p, floor: f, room: r }
+        }
+      }
+    }
+    return null
+  }
+
+  // 房间级资产的写入口：把资产层字段翻译成房间层字段，并重算项目统计
+  function updateRoom(roomId, updates) {
+    const hit = findRoom(roomId)
+    if (!hit) return false
+    const r = hit.room
+    if ('status' in updates) r.status = updates.status
+    if ('tenant' in updates) r.tenant = updates.tenant
+    if ('leaseExpiry' in updates) r.leaseExpiry = updates.leaseExpiry
+    if ('vacancyDays' in updates) r.vacancyDays = updates.vacancyDays
+    if ('area' in updates) r.area = Number(updates.area) || 0
+    if ('name' in updates) r.name = updates.name
+    if ('certStatus' in updates) r.hasPropertyRight = updates.certStatus === '已办证'
+    if ('certDetail' in updates) r.certDetail = updates.certDetail || ''
+    if ('annualRent' in updates && updates.annualRent != null) {
+      r.monthlyRent = Math.round(Number(updates.annualRent) * 10000 / 12)
+    }
+    if ('monthlyRent' in updates) r.monthlyRent = Number(updates.monthlyRent) || 0
+    Object.assign(hit.building, calcProjectStats(hit.building))
+    return true
+  }
+
   return {
     projects,
     allProjects,
     getProjectById,
     addProject,
     addRoomsToFloor,
-    addPartition
+    addPartition,
+    findRoom,
+    updateRoom
   }
 })

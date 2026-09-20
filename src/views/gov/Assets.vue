@@ -61,12 +61,19 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAssetStore } from '../../store/asset'
 
+const route = useRoute()
 const assetStore = useAssetStore()
 
 const groups = ['城投集团', '产投集团', '水投集团', '领航公司']
-const filter = ref({ group: '', status: '', keyword: '' })
+// 支持从督办/预警等页面带参跳转（?keyword=CT-001&group=城投集团）
+const filter = ref({
+  group: route.query.group || '',
+  status: route.query.status || '',
+  keyword: route.query.keyword || ''
+})
 const currentPage = ref(1)
 const pageSize = 20
 

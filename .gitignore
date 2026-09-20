@@ -16,6 +16,9 @@ dist-ssr
 .env.*
 !.env.example
 
+# 分析类文档归档在迁移包根目录，不入仓库
+*.pdf
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

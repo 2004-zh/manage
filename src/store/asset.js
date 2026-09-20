@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { chengtouAssets as initialAssets } from '../data/mock'
 import { useProjectStore } from './project'
+import { useAuditStore } from './audit'
 
 function roomToAsset(r, b, p, f) {
   return {
@@ -74,26 +75,75 @@ export const useAssetStore = defineStore('asset', () => {
     return assets.value.filter(a => a.group === companyName)
   }
 
-  function addAsset(asset) {
+  function addAsset(asset, meta = {}) {
     const newId = `CT-${String(baseAssets.value.length + 1).padStart(3, '0')}`
     const newAsset = { ...asset, id: newId }
     baseAssets.value.push(newAsset)
+    useAuditStore().recordEvent({
+      assetId: newId,
+      assetName: newAsset.name,
+      group: newAsset.group,
+      module: meta.module || '资产登记',
+      action: '新增资产',
+      billNo: meta.billNo,
+      remark: meta.remark || `新增资产：${newAsset.name}`,
+      detail: `面积 ${newAsset.area || 0}㎡ / 原值 ${newAsset.bookValue || 0}万元`
+    })
     return newAsset
   }
 
-  function updateAsset(id, updates) {
+  /**
+   * 统一写入口：base 资产直接改，房间级资产回写项目层级。
+   * 任何字段变化都会自动产出字段级留痕（H1 业务变更记录）。
+   * meta = { module, action, billNo, remark }
+   */
+  function updateAsset(id, updates, meta = {}) {
+    const before = getAssetById(id)
+    if (!before) return false
+    const beforeSnap = { ...before }
+
     const baseIdx = baseAssets.value.findIndex(a => a.id === id)
+    let ok
     if (baseIdx !== -1) {
       baseAssets.value[baseIdx] = { ...baseAssets.value[baseIdx], ...updates }
-      return
+      ok = true
+    } else {
+      ok = useProjectStore().updateRoom(id, updates)
     }
+    if (!ok) return false
+
+    const after = getAssetById(id) || {}
+    useAuditStore().recordDiff({
+      assetId: id,
+      assetName: after.name || beforeSnap.name,
+      group: after.group || beforeSnap.group,
+      module: meta.module || '资产台账',
+      action: meta.action || '修改',
+      before: beforeSnap,
+      after,
+      billNo: meta.billNo,
+      remark: meta.remark,
+      fields: Object.keys(updates)
+    })
+    return true
   }
 
-  function deleteAsset(id) {
+  function deleteAsset(id, meta = {}) {
     const baseIdx = baseAssets.value.findIndex(a => a.id === id)
-    if (baseIdx !== -1) {
-      baseAssets.value.splice(baseIdx, 1)
-    }
+    if (baseIdx === -1) return false
+    const gone = baseAssets.value[baseIdx]
+    useAuditStore().recordEvent({
+      assetId: id,
+      assetName: gone.name,
+      group: gone.group,
+      module: meta.module || '资产台账',
+      action: '删除资产',
+      billNo: meta.billNo,
+      remark: meta.remark || `删除资产：${gone.name}`,
+      detail: `面积 ${gone.area || 0}㎡ / 原值 ${gone.bookValue || 0}万元`
+    })
+    baseAssets.value.splice(baseIdx, 1)
+    return true
   }
 
   function getAssetById(id) {

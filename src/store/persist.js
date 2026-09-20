@@ -1,6 +1,10 @@
 import { watch } from 'vue'
 
-const PERSIST_IDS = ['asset', 'contract', 'project']
+const PERSIST_IDS = [
+  'asset', 'contract', 'project', 'audit', 'party', 'notify',
+  'revitalize', 'finance', 'inventory', 'control', 'credential',
+  'special', 'supervise', 'mortgage', 'warning'
+]
 const PREFIX = 'ams:'
 
 function readSaved(id) {

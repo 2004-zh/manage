@@ -19,6 +19,7 @@
     <el-card>
 
       <el-alert type="info" :closable="false" show-icon style="margin-bottom: 16px">
+        当前资产台账识别出闲置/空置资产 <b>{{ idleTotal.count }}</b> 宗、<b>{{ idleTotal.area.toLocaleString() }}</b> ㎡，是本年度盘活目标的底数来源；
         目标下达后，各公司每一次租金收缴、资产处置、招租签约、闲置盘活产生的金额都会自动计入盘活进度，并汇总到全区盘活数据中。
       </el-alert>
 
@@ -113,9 +114,9 @@
             <span :class="{ 'text-danger': allocatedRatio(row) > 100 }">{{ allocatedRatio(row) }}%</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small">{{ row.status }}</el-tag>
+            <el-tag :type="statusType(revitalizeStore.statusOf(row.year))" size="small">{{ revitalizeStore.statusOf(row.year) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="issueTime" label="下达时间" width="120">
@@ -258,6 +259,9 @@
 
         <el-table :data="allocateRows" size="small" border>
           <el-table-column prop="company" label="下属公司" width="140" />
+          <el-table-column label="闲置底数" width="130">
+            <template #default="{ row }">{{ idleOf(row.company) }} 宗 / {{ idleAreaOf(row.company) }} ㎡</template>
+          </el-table-column>
           <el-table-column label="分摊比例(%)" width="150">
             <template #default="{ row }">
               <el-input-number v-model="row.ratio" :min="0" :max="100" :step="5" size="small" controls-position="right" style="width:120px" />
@@ -280,6 +284,7 @@
           </el-tag>
           <span>分摊金额 {{ allocateTotalAmount.toLocaleString() }} 万元 / 目标 {{ allocateTarget.amountTarget.toLocaleString() }} 万元</span>
           <span>未分摊 {{ (allocateTarget.amountTarget - allocateTotalAmount).toLocaleString() }} 万元</span>
+          <el-button link type="primary" size="small" @click="idleAllocate">按闲置底数分摊</el-button>
           <el-button link type="primary" size="small" @click="averageAllocate">平均分摊</el-button>
         </div>
       </template>
@@ -384,86 +389,28 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, EditPen, Check } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
+import { useRevitalizeStore } from '../../store/revitalize'
 
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
+const revitalizeStore = useRevitalizeStore()
 
-const companies = ['城投集团', '产投集团', '水投集团', '领航公司']
+const companies = revitalizeStore.companies
 const sourceTypes = ['租金收缴', '资产处置', '招租签约', '闲置盘活', '股权转让']
 
 const currentYear = String(new Date().getFullYear())
 const yearFilter = ref(currentYear)
 
-const targets = ref([
-  {
-    id: 'MB-2026',
-    year: '2026',
-    name: '2026年度长乐区国有资产盘活目标',
-    amountTarget: 50000,
-    countTarget: 20,
-    status: '进行中',
-    issueTime: '2026-01-15',
-    remark: '按区国资委年度盘活考核口径下达',
-    allocations: [
-      { company: '城投集团', ratio: 35 },
-      { company: '产投集团', ratio: 25 },
-      { company: '水投集团', ratio: 22 },
-      { company: '领航公司', ratio: 18 }
-    ]
-  },
-  {
-    id: 'MB-2025',
-    year: '2025',
-    name: '2025年度长乐区国有资产盘活目标',
-    amountTarget: 42000,
-    countTarget: 10,
-    status: '已完成',
-    issueTime: '2025-01-20',
-    remark: '',
-    allocations: [
-      { company: '城投集团', ratio: 38 },
-      { company: '产投集团', ratio: 24 },
-      { company: '水投集团', ratio: 20 },
-      { company: '领航公司', ratio: 18 }
-    ]
-  },
-  {
-    id: 'MB-2027',
-    year: '2027',
-    name: '2027年度长乐区国有资产盘活目标（草案）',
-    amountTarget: 56000,
-    countTarget: 22,
-    status: '未下达',
-    issueTime: '',
-    remark: '待区政府审议后下达',
-    allocations: companies.map(c => ({ company: c, ratio: 0 }))
-  }
-])
+// 目标与流水都是 store 状态：签约/收缴/处置写入的流水会实时反映到完成率上
+const targets = computed(() => revitalizeStore.targets)
+const flows = computed(() => revitalizeStore.flows)
+const idleTotal = computed(() => revitalizeStore.idleTotal)
 
 const yearOptions = computed(() => {
   const years = new Set(targets.value.map(t => String(t.year)))
   for (let y = Number(currentYear) - 1; y <= Number(currentYear) + 3; y++) years.add(String(y))
   return [...years].sort()
 })
-
-const flows = ref([
-  { id: 1, year: '2026', time: '2026-09-05 09:40', sourceType: '闲置盘活', docNo: 'PH-2026-018', company: '城投集团', assetName: '鹤上镇闲置仓库短期出租', amount: 380, count: 1, auto: false, remark: '闲置一年以上资产临时入市' },
-  { id: 2, year: '2026', time: '2026-08-28 10:12', sourceType: '租金收缴', docNo: 'HT-2025-006', company: '城投集团', assetName: '航城商务楼 3F 本年实收租金', amount: 117, count: 0, auto: true, remark: '由应收实收台账自动归集' },
-  { id: 3, year: '2026', time: '2026-08-05 15:20', sourceType: '资产处置', docNo: 'CZ-2026-009', company: '城投集团', assetName: '首占新区闲置用地政府收储补偿', amount: 12800, count: 1, auto: false, remark: '' },
-  { id: 4, year: '2026', time: '2026-07-15 15:40', sourceType: '闲置盘活', docNo: 'PH-2026-011', company: '城投集团', assetName: '吴航街道闲置商铺 3 间整体招租', amount: 420, count: 3, auto: false, remark: '闲置两年以上资产重新入市' },
-  { id: 5, year: '2026', time: '2026-06-30 09:05', sourceType: '资产处置', docNo: 'CZ-2026-004', company: '产投集团', assetName: '营前街道旧厂房拆除后土地使用权转让', amount: 1860, count: 1, auto: false, remark: '' },
-  { id: 6, year: '2026', time: '2026-06-12 11:18', sourceType: '股权转让', docNo: 'GQ-2026-002', company: '产投集团', assetName: '参股企业股权退出回收资金', amount: 8600, count: 0, auto: false, remark: '' },
-  { id: 7, year: '2026', time: '2026-05-20 14:22', sourceType: '招租签约', docNo: 'ZL-2026-008', company: '水投集团', assetName: '漳港街道标准厂房 2# 招租签约', amount: 3120, count: 1, auto: false, remark: '三年期合同，年租金 1040 万元' },
-  { id: 8, year: '2026', time: '2026-04-11 11:30', sourceType: '租金收缴', docNo: 'HT-2024-015', company: '领航公司', assetName: '吴航农贸市场摊位本年实收租金', amount: 64.6, count: 0, auto: true, remark: '由应收实收台账自动归集' },
-  { id: 9, year: '2026', time: '2026-03-08 16:48', sourceType: '闲置盘活', docNo: 'PH-2026-003', company: '水投集团', assetName: '江田镇闲置仓储用地临时出租', amount: 960, count: 1, auto: false, remark: '' },
-  { id: 10, year: '2026', time: '2026-02-18 09:20', sourceType: '招租签约', docNo: 'ZL-2026-002', company: '领航公司', assetName: '梅花镇农贸市场摊位重新招租', amount: 1450, count: 2, auto: false, remark: '' },
-  { id: 11, year: '2025', time: '2025-12-20 10:00', sourceType: '资产处置', docNo: 'CZ-2025-019', company: '城投集团', assetName: '首占新区闲置用地收储补偿', amount: 18600, count: 1, auto: false, remark: '' },
-  { id: 12, year: '2025', time: '2025-11-05 14:10', sourceType: '闲置盘活', docNo: 'PH-2025-022', company: '产投集团', assetName: '古槐镇闲置厂房改造出租', amount: 5400, count: 2, auto: false, remark: '' },
-  { id: 13, year: '2025', time: '2025-10-16 09:55', sourceType: '股权转让', docNo: 'GQ-2025-006', company: '产投集团', assetName: '子公司股权划转回收资金', amount: 9800, count: 0, auto: false, remark: '' },
-  { id: 14, year: '2025', time: '2025-09-18 09:35', sourceType: '招租签约', docNo: 'ZL-2025-031', company: '领航公司', assetName: '梅花镇商铺打包招租', amount: 3188, count: 4, auto: false, remark: '' },
-  { id: 15, year: '2025', time: '2025-07-22 16:05', sourceType: '资产处置', docNo: 'CZ-2025-011', company: '水投集团', assetName: '旧泵站设备报废处置残值回收', amount: 860, count: 1, auto: false, remark: '' },
-  { id: 16, year: '2025', time: '2025-05-09 10:30', sourceType: '闲置盘活', docNo: 'PH-2025-008', company: '水投集团', assetName: '漳港闲置综合楼整体出租', amount: 4600, count: 2, auto: false, remark: '' }
-])
 
 const filteredTargets = computed(() => targets.value.filter(t => t.year === yearFilter.value))
 const yearTarget = computed(() => filteredTargets.value.find(t => t.allocations.some(a => a.ratio > 0)) || null)
@@ -502,6 +449,15 @@ function doneOfCompany(year, company) {
     amount: Math.round(list.reduce((s, f) => s + f.amount, 0) * 100) / 100,
     count: list.reduce((s, f) => s + f.count, 0)
   }
+}
+
+// 闲置底数直接取资产台账的闲置/空置，不是手工填报
+function idleOf(company) {
+  return revitalizeStore.idleBase[company]?.count || 0
+}
+
+function idleAreaOf(company) {
+  return (revitalizeStore.idleBase[company]?.area || 0).toLocaleString()
 }
 
 function targetRate(target) {
@@ -547,7 +503,7 @@ function companyRows(target) {
 const rankRows = computed(() => (yearTarget.value ? companyRows(yearTarget.value) : []))
 
 function statusType(status) {
-  return { 已完成: 'success', 进行中: 'warning', 已下达: 'primary', 未下达: 'info' }[status] || 'info'
+  return { 已达标: 'success', 已完成: 'success', 进行中: 'warning', 未达标: 'danger', 已下达: 'primary', 未下达: 'info' }[status] || 'info'
 }
 
 function sourceTagType(source) {
@@ -569,13 +525,18 @@ const saveAssetPctTotal = computed(() => saveRows.value.reduce((s, r) => s + (r.
 const saveFundPctTotal = computed(() => saveRows.value.reduce((s, r) => s + (r.fundPct || 0), 0))
 
 function openSaveTarget() {
+  const t = targets.value.find(x => String(x.year) === yearFilter.value)
   Object.assign(saveForm, {
-    name: `${yearFilter.value}年度国有资产盘活目标`,
+    name: t ? t.name : `${yearFilter.value}年度长乐区国有资产盘活目标`,
     period: [`${yearFilter.value}-01-01`, `${yearFilter.value}-12-31`],
-    assetAmount: 500000000,
-    fundAmount: 300000000
+    // 表单按元录入，目标口径为万元，打开时换算回元
+    assetAmount: t ? Math.round((t.amountTarget || 0) * 10000) : 500000000,
+    fundAmount: t ? Math.round((t.fundAmount || 30000) * 10000) : 300000000
   })
-  saveRows.value = companies.map(c => ({ company: c, assetPct: 25, fundPct: 25 }))
+  saveRows.value = companies.map(c => {
+    const a = t?.allocations.find(x => x.company === c)
+    return { company: c, assetPct: a?.ratio || 0, fundPct: a?.fundRatio ?? (a?.ratio || 0) }
+  })
   saveTargetVisible.value = true
 }
 
@@ -590,14 +551,19 @@ function submitSaveTarget() {
       ElMessage.error('按公司分解比例合计不能超过 100%')
       return
     }
-    const target = targets.value.find(t => t.name === saveForm.name)
-    if (target) {
-      target.allocations = saveRows.value.map(r => ({ ...r, ratio: r.assetPct }))
-      target.amountTarget = saveForm.assetAmount
-      target.fundAmount = saveForm.fundAmount
+    const target = targets.value.find(t => String(t.year) === yearFilter.value)
+    if (!target) {
+      ElMessage.warning(`${yearFilter.value} 年度目标不存在，请先「新建年度目标」`)
+      return
     }
+    revitalizeStore.updateTarget(target.year, {
+      name: saveForm.name.trim(),
+      amountTarget: Math.round(saveForm.assetAmount / 10000),
+      fundAmount: Math.round(saveForm.fundAmount / 10000),
+      allocations: saveRows.value.map(r => ({ company: r.company, ratio: r.assetPct || 0, fundRatio: r.fundPct || 0 }))
+    })
     saveTargetVisible.value = false
-    ElMessage.success(`目标"${saveForm.name}"已保存，分解至 ${saveRows.value.length} 家公司`)
+    ElMessage.success(`目标"${saveForm.name}"已保存，分解至 ${saveRows.value.filter(r => r.assetPct > 0).length} 家公司`)
   })
 }
 
@@ -628,33 +594,27 @@ function submitTarget() {
   }
   if (targetForm.id) {
     const target = targets.value.find(t => t.id === targetForm.id)
-    const ratioChanged = target.amountTarget !== targetForm.amountTarget || target.countTarget !== targetForm.countTarget
-    Object.assign(target, {
+    if (!target) return
+    const amountChanged = target.amountTarget !== targetForm.amountTarget || target.countTarget !== targetForm.countTarget
+    const allocated = target.allocations.some(a => a.ratio > 0)
+    revitalizeStore.updateTarget(target.year, {
       name: targetForm.name.trim(),
       amountTarget: targetForm.amountTarget,
       countTarget: targetForm.countTarget,
       remark: targetForm.remark
     })
-    if (ratioChanged && target.allocations.some(a => a.ratio > 0)) {
-      ElMessage.success('目标已调整，各公司分摊金额与宗数已按比例重算')
-    } else {
-      ElMessage.success('目标已保存')
-    }
+    ElMessage.success(amountChanged && allocated ? '目标已调整，各公司分摊金额与宗数已按比例重算' : '目标已保存')
   } else {
-    if (targets.value.some(t => t.year === targetForm.year)) {
+    if (targets.value.some(t => String(t.year) === String(targetForm.year))) {
       ElMessage.warning(`${targetForm.year} 年度目标已存在，请直接调整`)
       return
     }
-    targets.value.unshift({
-      id: `MB-${targetForm.year}`,
+    revitalizeStore.addTarget({
       year: targetForm.year,
       name: targetForm.name.trim(),
       amountTarget: targetForm.amountTarget,
       countTarget: targetForm.countTarget,
-      status: '未下达',
-      issueTime: '',
-      remark: targetForm.remark,
-      allocations: companies.map(c => ({ company: c, ratio: 0 }))
+      remark: targetForm.remark
     })
     yearFilter.value = targetForm.year
     ElMessage.success(`${targetForm.year} 年度盘活目标已创建，请设置分摊方案后下达`)
@@ -663,14 +623,13 @@ function submitTarget() {
 }
 
 function handleDeleteTarget(row) {
-  const count = flows.value.filter(f => f.year === row.year).length
+  const count = flows.value.filter(f => String(f.year) === String(row.year)).length
   ElMessageBox.confirm(
     count ? `该年度已归集 ${count} 条盘活流水，删除目标后流水将保留但不再关联考核。确认删除？` : `确认删除"${row.name}"？`,
     '删除确认',
     { type: 'warning' }
   ).then(() => {
-    const idx = targets.value.findIndex(t => t.id === row.id)
-    if (idx > -1) targets.value.splice(idx, 1)
+    revitalizeStore.removeTarget(row.id)
     ElMessage.success('目标已删除')
   }).catch(() => {})
 }
@@ -690,8 +649,8 @@ const allocateCounts = computed(() => distributeCount(
 ))
 
 function openAllocate(row) {
-  if (row.status === '已完成') {
-    ElMessage.warning('该年度目标已完成归档，不可再调整分摊')
+  if (revitalizeStore.statusOf(row.year) === '已达标') {
+    ElMessage.warning('该年度目标已达标归档，不可再调整分摊')
     return
   }
   allocateTarget.value = row
@@ -708,6 +667,22 @@ function averageAllocate() {
   ElMessage.success('已按公司数量平均分摊')
 }
 
+// 按台账识别出的闲置底数建议比例，确认后由 issueTarget 落库
+function idleAllocate() {
+  const year = allocateTarget.value?.year
+  if (!year) return
+  const suggested = revitalizeStore.suggestAllocation(year)
+  if (!suggested.length) {
+    ElMessage.warning('暂无闲置底数，无法按闲置情况分摊')
+    return
+  }
+  allocateRows.value = companies.map(c => ({
+    company: c,
+    ratio: suggested.find(s => s.company === c)?.ratio || 0
+  }))
+  ElMessage.success(`已按闲置底数建议分摊（全区闲置 ${idleTotal.value.count} 宗 / ${idleTotal.value.area.toLocaleString()} ㎡）`)
+}
+
 function submitAllocate() {
   const total = allocateTotalRatio.value
   if (total <= 0) {
@@ -719,11 +694,9 @@ function submitAllocate() {
     return
   }
   const doIssue = () => {
-    allocateTarget.value.allocations = allocateRows.value.map(r => ({ company: r.company, ratio: r.ratio }))
-    allocateTarget.value.status = '进行中'
-    allocateTarget.value.issueTime = new Date().toISOString().slice(0, 10)
+    revitalizeStore.issueTarget(allocateTarget.value.year, allocateRows.value)
     allocateDialogVisible.value = false
-    ElMessage.success(`目标已下达：${allocateRows.value.filter(r => r.ratio > 0).length} 家公司分摊 ${total}%，后续收费与处置金额将自动计入进度`)
+    ElMessage.success(`目标已下达：${allocateRows.value.filter(r => r.ratio > 0).length} 家公司分摊 ${total}%，后续签约、收缴与处置金额将自动计入进度`)
   }
   if (total < 100) {
     const remain = allocateTarget.value.amountTarget - allocateTotalAmount.value
@@ -761,27 +734,24 @@ function syncBusinessData() {
   contractStore.contracts.forEach(c => {
     const fee = contractStore.feeRecords.find(f => f.contractId === c.id)
     if (!fee || fee.yearActual <= 0) return
-    const asset = assetStore.assets.find(a => a.id === c.assetId)
-    const company = asset ? asset.group : '城投集团'
+    const asset = assetStore.getAssetById(c.assetId)
     const docNo = `${c.id}-${year}`
-    if (flows.value.some(f => f.docNo === docNo && f.sourceType === '租金收缴')) {
-      skipped++
-      return
-    }
-    flows.value.push({
-      id: Date.now() + added,
+    const now = new Date()
+    const flow = revitalizeStore.recordRevitalize({
       year,
-      time: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')} ${new Date().toTimeString().slice(0, 5)}`,
+      time: `${year}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${now.toTimeString().slice(0, 5)}`,
       sourceType: '租金收缴',
       docNo,
-      company,
+      company: asset ? asset.group : '城投集团',
+      assetId: c.assetId,
       assetName: `${c.assetName} 本年实收租金`,
       amount: fee.yearActual,
       count: 0,
       auto: true,
       remark: '由应收实收台账自动归集'
     })
-    added++
+    if (flow) added++
+    else skipped++
   })
   if (added) {
     ElMessage.success(`同步完成：新增 ${added} 条自动归集流水${skipped ? `，${skipped} 条已存在跳过` : ''}`)
@@ -824,12 +794,12 @@ function submitManualFlow() {
     ElMessage.warning(`发生日期需在 ${flowTarget.value.year} 年度内，否则不计入本目标`)
     return
   }
-  flows.value.push({
-    id: Date.now(),
+  const docNo = flowForm.docNo.trim() || `SD-${Date.now().toString().slice(-6)}`
+  const flow = revitalizeStore.recordRevitalize({
     year: flowForm.date.slice(0, 4),
     time: `${flowForm.date} ${new Date().toTimeString().slice(0, 5)}`,
     sourceType: flowForm.sourceType,
-    docNo: flowForm.docNo.trim() || `SD-${Date.now().toString().slice(-6)}`,
+    docNo,
     company: flowForm.company,
     assetName: flowForm.assetName.trim(),
     amount: flowForm.amount,
@@ -837,6 +807,10 @@ function submitManualFlow() {
     auto: false,
     remark: flowForm.remark
   })
+  if (!flow) {
+    ElMessage.warning(`单据 ${docNo} 的${flowForm.sourceType}流水已存在，未重复计入`)
+    return
+  }
   manualFlowVisible.value = false
   ElMessage.success(`已登记盘活 ${flowForm.amount.toLocaleString()} 万元，${flowForm.company} 完成进度已更新`)
 }
@@ -844,8 +818,7 @@ function submitManualFlow() {
 function deleteFlow(row) {
   ElMessageBox.confirm(`确认剔除该条盘活流水（${row.amount.toLocaleString()} 万元）？剔除后对应公司完成进度将同步回退。`, '剔除确认', { type: 'warning' })
     .then(() => {
-      const idx = flows.value.findIndex(f => f.id === row.id)
-      if (idx > -1) flows.value.splice(idx, 1)
+      revitalizeStore.removeFlow(row.id)
       ElMessage.success('流水已剔除')
     })
     .catch(() => {})

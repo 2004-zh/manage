@@ -21,6 +21,7 @@
           <el-option label="闲置超期" value="闲置超期" />
           <el-option label="未办证" value="未办证" />
           <el-option label="闲置盘活" value="闲置盘活" />
+          <el-option label="督办逾期" value="督办逾期" />
         </el-select>
       </el-col>
       <el-col :span="3">

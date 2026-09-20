@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { contracts as initialContracts, feeRecords as initialFees } from '../data/mock'
 import { useAssetStore } from './asset'
+import { useAuditStore } from './audit'
+import { usePartyStore } from './party'
+import { useRevitalizeStore } from './revitalize'
+import { useNotifyStore } from './notify'
 
 export const useContractStore = defineStore('contract', () => {
   const contracts = ref([...initialContracts])
@@ -62,11 +66,16 @@ export const useContractStore = defineStore('contract', () => {
     return contracts.value.filter(c => c.assetId === assetId && c.status !== '已终止' && c.status !== '退租')
   }
 
-  function syncAssetLeaseState(assetId) {
+  function syncAssetLeaseState(assetId, meta = {}) {
     const assetStore = useAssetStore()
     const asset = assetStore.getAssetById(assetId)
     if (!asset) return
     const actives = activeContractsOfAsset(assetId)
+    const m = {
+      module: meta.module || '合同管理',
+      action: meta.action || '租赁状态联动',
+      billNo: meta.billNo || ''
+    }
     if (!actives.length) {
       assetStore.updateAsset(assetId, {
         status: '闲置',
@@ -74,7 +83,7 @@ export const useContractStore = defineStore('contract', () => {
         isLeased: '否',
         tenant: null,
         leaseExpiry: null
-      })
+      }, m)
       return
     }
     const totalLeased = actives.reduce((s, c) => s + (c.leaseArea || asset.area || 0), 0)
@@ -87,10 +96,22 @@ export const useContractStore = defineStore('contract', () => {
       tenant: latest.tenant,
       leaseExpiry: latest.endDate,
       annualRent: actives.reduce((s, c) => s + (c.annualRent || 0), 0)
-    })
+    }, m)
+  }
+
+  function contractYears(c) {
+    const start = new Date(c.startDate)
+    const end = new Date(c.endDate)
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1
+    const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
+    return Math.max(1, Math.round(months / 12))
   }
 
   function signContract(payload) {
+    const assetStore = useAssetStore()
+    const before = assetStore.getAssetById(payload.assetId)
+    const wasIdle = !!before && (before.status === '闲置' || before.status === '空置')
+
     const contract = addContract(payload)
     const num = feeRecords.value.length + 1
     feeRecords.value.push({
@@ -105,16 +126,68 @@ export const useContractStore = defineStore('contract', () => {
       arrears: 0,
       status: '正常'
     })
-    syncAssetLeaseState(contract.assetId)
+    syncAssetLeaseState(contract.assetId, { action: '签约联动', billNo: contract.id })
+
+    // 承租方一律落客商档案，不允许只留自由文本
+    usePartyStore().resolveParty({ name: contract.tenant, contact: contract.contact, phone: contract.phone })
+
+    const asset = assetStore.getAssetById(contract.assetId)
+    useAuditStore().recordEvent({
+      assetId: contract.assetId,
+      assetName: contract.assetName,
+      group: asset?.group || '',
+      module: '合同管理',
+      action: '签订合同',
+      billNo: contract.id,
+      remark: `承租方 ${contract.tenant}，年租金 ${contract.annualRent || 0} 万元`,
+      detail: `${contract.startDate} 至 ${contract.endDate} / 面积 ${contract.leaseArea || 0}㎡`
+    })
+
+    // 主链 I：签约成果自动归集到盘活流水，完成率随之上升
+    const years = contractYears(contract)
+    useRevitalizeStore().recordRevitalize({
+      year: String(contract.startDate || '').slice(0, 4) || String(new Date().getFullYear()),
+      sourceType: wasIdle ? '闲置盘活' : '招租签约',
+      docNo: contract.id,
+      company: asset?.group || '',
+      assetId: contract.assetId,
+      assetName: contract.assetName,
+      amount: Math.round((contract.annualRent || 0) * years * 100) / 100,
+      count: 1,
+      auto: true,
+      remark: `${years} 年期合同，年租金 ${contract.annualRent || 0} 万元`
+    })
+
+    useNotifyStore().sendByTemplate('contract_signed', {
+      contractNo: contract.id,
+      asset: contract.assetName,
+      tenant: contract.tenant,
+      rent: contract.annualRent || 0
+    }, { target: asset?.group || 'ent', bizType: 'contract', bizId: contract.id, route: '/ent/contract-approval' })
+
     return contract
   }
 
   function renewContract(contractId, months) {
     const c = getContractById(contractId)
     if (!c) return null
+    const oldEnd = c.endDate
     const newEnd = addMonths(c.endDate, months)
     updateContract(contractId, { endDate: newEnd, status: '正常', overdueDays: 0 })
-    syncAssetLeaseState(c.assetId)
+    const asset = useAssetStore().getAssetById(c.assetId)
+    useAuditStore().recordChange({
+      assetId: c.assetId,
+      assetName: c.assetName,
+      group: asset?.group || '',
+      module: '合同管理',
+      action: '合同续租',
+      field: 'endDate',
+      before: oldEnd,
+      after: newEnd,
+      billNo: contractId,
+      remark: `续租 ${months} 个月`
+    })
+    syncAssetLeaseState(c.assetId, { action: '续租联动', billNo: contractId })
     return newEnd
   }
 
@@ -122,7 +195,18 @@ export const useContractStore = defineStore('contract', () => {
     const c = getContractById(contractId)
     if (!c) return
     updateContract(contractId, { status: '已终止', terminateReason: reason || '', arrears: c.arrears || 0 })
-    syncAssetLeaseState(c.assetId)
+    const asset = useAssetStore().getAssetById(c.assetId)
+    useAuditStore().recordEvent({
+      assetId: c.assetId,
+      assetName: c.assetName,
+      group: asset?.group || '',
+      module: '合同管理',
+      action: '合同终止',
+      billNo: contractId,
+      remark: reason || '退租',
+      detail: `承租方 ${c.tenant}，终止时欠费 ${c.arrears || 0} 万元`
+    })
+    syncAssetLeaseState(c.assetId, { action: '退租联动', billNo: contractId })
   }
 
   function payFee(contractId, amount) {
@@ -132,6 +216,7 @@ export const useContractStore = defineStore('contract', () => {
     const paid = (fee.cumActual || 0) + amount
     const arrears = Math.max(0, Math.round(((fee.cumReceivable || 0) - paid) * 100) / 100)
     const status = arrears > 0 ? '欠缴' : '正常'
+    const beforeActual = fee.cumActual || 0
     feeRecords.value[feeRecords.value.indexOf(fee)] = {
       ...fee,
       cumActual: paid,
@@ -140,6 +225,20 @@ export const useContractStore = defineStore('contract', () => {
       status
     }
     updateContract(contractId, { arrears, status: arrears > 0 ? '欠缴' : c.status })
+    const asset = useAssetStore().getAssetById(c.assetId)
+    useAuditStore().recordChange({
+      assetId: c.assetId,
+      assetName: c.assetName,
+      group: asset?.group || '',
+      module: '收费大厅',
+      action: '收费入账',
+      field: 'cumActual',
+      before: beforeActual,
+      after: paid,
+      billNo: contractId,
+      remark: `本次收缴 ${amount} 万元，剩余欠费 ${arrears} 万元`
+    })
+    return { paid, arrears, status }
   }
 
   return {

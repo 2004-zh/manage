@@ -20,6 +20,26 @@
             <el-option label="其他" value="其他" />
           </el-select>
         </el-form-item>
+        <el-form-item label="督办事项">
+          <el-input v-model="form.subject" placeholder="一句话概括本次督办要求，用于消息标题" />
+        </el-form-item>
+        <el-form-item label="涉及资产">
+          <el-select
+            v-model="form.assetId"
+            filterable
+            clearable
+            placeholder="可不选，按单位整体督办"
+            style="width: 100%"
+            @change="onAssetChange"
+          >
+            <el-option
+              v-for="a in assetOptions"
+              :key="a.id"
+              :label="`${a.id} ${a.name}`"
+              :value="a.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="督办事由" required>
           <el-input v-model="form.reason" type="textarea" :rows="3" placeholder="请描述督办原因和要求" />
         </el-form-item>
@@ -55,21 +75,39 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSuperviseStore } from '../../store/supervise'
+import { useAssetStore } from '../../store/asset'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
 const superviseStore = useSuperviseStore()
+const assetStore = useAssetStore()
 
 const groups = ['城投集团', '产投集团', '水投集团', '领航公司']
 
 const form = ref({
   group: '',
   type: '',
+  subject: '',
   reason: '',
   deadline: '',
-  contact: ''
+  contact: '',
+  phone: '',
+  assetId: '',
+  asset: ''
 })
+
+const assetOptions = computed(() => {
+  if (!form.value.group) return assetStore.assets
+  return assetStore.assets.filter(a => a.group === form.value.group)
+})
+
+function onAssetChange(id) {
+  const a = assetStore.getAssetById(id)
+  form.value.asset = a ? `${a.id} ${a.name}` : ''
+  if (a && !form.value.group) form.value.group = a.group
+  if (a && !form.value.subject) form.value.subject = `${a.name} 专项督办`
+}
 
 const currentContact = computed(() => {
   return superviseStore.contacts.find(c => c.group === form.value.group) || null
@@ -77,7 +115,17 @@ const currentContact = computed(() => {
 
 function onGroupChange(group) {
   const c = superviseStore.contacts.find(ct => ct.group === group)
-  if (c) form.value.contact = c.contact
+  if (c) {
+    form.value.contact = c.contact
+    form.value.phone = c.phone
+  }
+  if (form.value.assetId) {
+    const a = assetStore.getAssetById(form.value.assetId)
+    if (a && a.group !== group) {
+      form.value.assetId = ''
+      form.value.asset = ''
+    }
+  }
 }
 
 function copyPhone() {
@@ -92,26 +140,30 @@ function handleSubmit() {
     ElMessage.warning('请填写完整督办信息')
     return
   }
-  const newId = 'DB-2026-' + String(superviseStore.orders.length + 1).padStart(3, '0')
-  superviseStore.orders.unshift({
-    id: newId,
+  const order = superviseStore.createOrder({
     group: form.value.group,
     type: form.value.type,
+    subject: form.value.subject || form.value.reason,
     reason: form.value.reason,
     deadline: form.value.deadline,
     contact: form.value.contact,
-    status: '待处理',
-    createTime: new Date().toISOString().slice(0, 10),
-    timeline: [{ time: new Date().toISOString().slice(0, 10), action: '发起督办', operator: '系统' }]
+    phone: currentContact.value?.phone || form.value.phone,
+    assetId: form.value.assetId,
+    asset: form.value.asset,
+    source: route.query.source || '人工发起'
   })
-  ElMessage.success(`督办单已生成，编号 ${newId}，状态：待处理`)
+  ElMessage.success(`督办单已生成，编号 ${order.id}，已通知 ${order.group}，状态：待处理`)
   router.push('/gov/supervise')
 }
 
-// 从预警页跳转过来时预填事由
+// 从预警页/督办跳转过来时预填事由与资产
 if (route.query.reason) {
   form.value.reason = route.query.reason
   form.value.type = route.query.type || ''
   form.value.group = route.query.group || ''
+}
+if (route.query.assetId) {
+  form.value.assetId = route.query.assetId
+  form.value.asset = route.query.asset || route.query.assetId
 }
 </script>
