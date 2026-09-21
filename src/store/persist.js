@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 
 const PERSIST_IDS = [
-  'asset', 'contract', 'project', 'audit', 'party', 'notify',
+  'asset', 'contract', 'project', 'audit', 'changeLog', 'party', 'notify',
   'revitalize', 'finance', 'inventory', 'control', 'credential',
   'special', 'supervise', 'mortgage', 'warning'
 ]

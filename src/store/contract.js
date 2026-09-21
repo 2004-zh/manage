@@ -6,6 +6,7 @@ import { useAuditStore } from './audit'
 import { usePartyStore } from './party'
 import { useRevitalizeStore } from './revitalize'
 import { useNotifyStore } from './notify'
+import { useChangeLogStore } from './changeLog'
 
 export const useContractStore = defineStore('contract', () => {
   const contracts = ref([...initialContracts])
@@ -18,10 +19,21 @@ export const useContractStore = defineStore('contract', () => {
     return contracts.value.filter(c => c.assetId === assetId)
   }
 
+  function nextContractId() {
+    const year = new Date().getFullYear()
+    const prefix = `HT-${year}-`
+    const max = contracts.value.reduce((m, c) => {
+      if (typeof c.id === 'string' && c.id.startsWith(prefix)) {
+        const n = parseInt(c.id.slice(prefix.length), 10)
+        if (!isNaN(n) && n > m) return n
+      }
+      return m
+    }, 0)
+    return `${prefix}${String(max + 1).padStart(3, '0')}`
+  }
+
   function addContract(contract) {
-    const num = contracts.value.length + 1
-    const newId = `HT-2026-${String(num).padStart(3, '0')}`
-    const newContract = { ...contract, id: newId }
+    const newContract = { ...contract, id: nextContractId() }
     contracts.value.push(newContract)
     return newContract
   }
@@ -29,7 +41,15 @@ export const useContractStore = defineStore('contract', () => {
   function updateContract(id, updates) {
     const idx = contracts.value.findIndex(c => c.id === id)
     if (idx !== -1) {
-      contracts.value[idx] = { ...contracts.value[idx], ...updates }
+      const before = contracts.value[idx]
+      contracts.value[idx] = { ...before, ...updates }
+      if (updates.status && updates.status !== before.status && (updates.status === '退租' || updates.status === '已终止')) {
+        useChangeLogStore().record({
+          assetId: before.assetId, assetName: before.assetName, module: '合同',
+          type: updates.status === '退租' ? '合同退租' : '合同终止',
+          before: before.status, after: `${before.id} ${updates.status}`
+        })
+      }
     }
   }
 
@@ -117,6 +137,7 @@ export const useContractStore = defineStore('contract', () => {
     feeRecords.value.push({
       id: num,
       contractId: contract.id,
+      assetId: contract.assetId || null,
       assetName: contract.assetName,
       tenant: contract.tenant,
       cumReceivable: 0,
@@ -165,6 +186,11 @@ export const useContractStore = defineStore('contract', () => {
       rent: contract.annualRent || 0
     }, { target: asset?.group || 'ent', bizType: 'contract', bizId: contract.id, route: '/ent/contract-approval' })
 
+    // 变更记录页目前读 changeLog，双写保证两侧都看得到
+    useChangeLogStore().record({
+      assetId: contract.assetId, assetName: contract.assetName, module: '合同', type: '合同签约',
+      before: '—', after: `${contract.id} ${contract.tenant}`
+    })
     return contract
   }
 
@@ -188,6 +214,10 @@ export const useContractStore = defineStore('contract', () => {
       remark: `续租 ${months} 个月`
     })
     syncAssetLeaseState(c.assetId, { action: '续租联动', billNo: contractId })
+    useChangeLogStore().record({
+      assetId: c.assetId, assetName: c.assetName, module: '合同', type: '合同续租',
+      before: `${contractId} 到期 ${oldEnd}`, after: `延长至 ${newEnd}`
+    })
     return newEnd
   }
 
@@ -237,6 +267,10 @@ export const useContractStore = defineStore('contract', () => {
       after: paid,
       billNo: contractId,
       remark: `本次收缴 ${amount} 万元，剩余欠费 ${arrears} 万元`
+    })
+    useChangeLogStore().record({
+      assetId: c.assetId, assetName: c.assetName, module: '收费', type: '缴费登记',
+      before: `欠缴 ${c.arrears || 0} 万元`, after: `${contractId} 缴纳 ${amount} 万元，余欠 ${arrears} 万元`
     })
     return { paid, arrears, status }
   }

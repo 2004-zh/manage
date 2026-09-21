@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { chengtouAssets as initialAssets } from '../data/mock'
 import { useProjectStore } from './project'
 import { useAuditStore } from './audit'
+import { useChangeLogStore } from './changeLog'
 
 function roomToAsset(r, b, p, f) {
   return {
@@ -38,6 +39,8 @@ function roomToAsset(r, b, p, f) {
 
 export const useAssetStore = defineStore('asset', () => {
   const baseAssets = ref([...initialAssets])
+  const overrides = ref({})
+  const removedIds = ref([])
 
   const roomAssets = computed(() => {
     const projectStore = useProjectStore()
@@ -54,7 +57,11 @@ export const useAssetStore = defineStore('asset', () => {
     return list
   })
 
-  const assets = computed(() => [...baseAssets.value, ...roomAssets.value])
+  const assets = computed(() =>
+    [...baseAssets.value, ...roomAssets.value]
+      .filter(a => !removedIds.value.includes(a.id))
+      .map(a => (overrides.value[a.id] ? { ...a, ...overrides.value[a.id] } : a))
+  )
 
   const allAssets = computed(() => assets.value)
 
@@ -89,11 +96,17 @@ export const useAssetStore = defineStore('asset', () => {
       remark: meta.remark || `新增资产：${newAsset.name}`,
       detail: `面积 ${newAsset.area || 0}㎡ / 原值 ${newAsset.bookValue || 0}万元`
     })
+    // 变更记录页目前读 changeLog，双写保证两侧都看得到
+    useChangeLogStore().record({
+      assetId: newId, assetName: newAsset.name, module: '资产', type: '入库登记',
+      before: '—', after: newAsset.sourceType ? `${newAsset.sourceType}入库` : '新增资产'
+    })
     return newAsset
   }
 
   /**
-   * 统一写入口：base 资产直接改，房间级资产回写项目层级。
+   * 统一写入口：base 资产直接改，房间级资产回写项目层级源数据，
+   * 两者都不适用时才落到 overrides 覆盖层兜底。
    * 任何字段变化都会自动产出字段级留痕（H1 业务变更记录）。
    * meta = { module, action, billNo, remark }
    */
@@ -107,8 +120,11 @@ export const useAssetStore = defineStore('asset', () => {
     if (baseIdx !== -1) {
       baseAssets.value[baseIdx] = { ...baseAssets.value[baseIdx], ...updates }
       ok = true
-    } else {
-      ok = useProjectStore().updateRoom(id, updates)
+    } else if (useProjectStore().updateRoom(id, updates)) {
+      ok = true
+    } else if (assets.value.some(a => a.id === id)) {
+      overrides.value = { ...overrides.value, [id]: { ...overrides.value[id], ...updates } }
+      ok = true
     }
     if (!ok) return false
 
@@ -125,24 +141,48 @@ export const useAssetStore = defineStore('asset', () => {
       remark: meta.remark,
       fields: Object.keys(updates)
     })
+
+    const changed = Object.keys(updates).filter(k => beforeSnap[k] !== updates[k])
+    if (changed.length) {
+      const statusChanged = changed.includes('status')
+      useChangeLogStore().record({
+        assetId: id, assetName: after.name || beforeSnap.name, module: '资产',
+        type: statusChanged ? '状态变更' : '信息变更',
+        before: statusChanged ? beforeSnap.status : changed.join('、'),
+        after: statusChanged
+          ? (updates.status ?? after.status)
+          : changed.map(k => `${k}→${updates[k] ?? '空'}`).join('；')
+      })
+    }
     return true
   }
 
+  /**
+   * base 资产真删；房间级资产来自项目派生数据，不能删源，用 removedIds 从台账口径剔除。
+   */
   function deleteAsset(id, meta = {}) {
+    const before = getAssetById(id)
+    if (!before) return false
     const baseIdx = baseAssets.value.findIndex(a => a.id === id)
-    if (baseIdx === -1) return false
-    const gone = baseAssets.value[baseIdx]
+    if (baseIdx !== -1) {
+      baseAssets.value.splice(baseIdx, 1)
+    } else {
+      removedIds.value.push(id)
+    }
     useAuditStore().recordEvent({
       assetId: id,
-      assetName: gone.name,
-      group: gone.group,
+      assetName: before.name,
+      group: before.group,
       module: meta.module || '资产台账',
       action: '删除资产',
       billNo: meta.billNo,
-      remark: meta.remark || `删除资产：${gone.name}`,
-      detail: `面积 ${gone.area || 0}㎡ / 原值 ${gone.bookValue || 0}万元`
+      remark: meta.remark || `删除资产：${before.name}`,
+      detail: `面积 ${before.area || 0}㎡ / 原值 ${before.bookValue || 0}万元`
     })
-    baseAssets.value.splice(baseIdx, 1)
+    useChangeLogStore().record({
+      assetId: id, assetName: before.name, module: '资产', type: '资产删除',
+      before: '在库', after: '已删除'
+    })
     return true
   }
 
@@ -151,6 +191,10 @@ export const useAssetStore = defineStore('asset', () => {
   }
 
   return {
+    // 暴露原始 state，使 persist 插件能通过 $state 保存/恢复资产变更
+    baseAssets,
+    overrides,
+    removedIds,
     assets,
     allAssets,
     certRecords,

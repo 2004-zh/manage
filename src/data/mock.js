@@ -171,6 +171,16 @@ export const feeRecords = [
   { id: 5, contractId: 'HT-2024-015', assetName: '吴航农贸市场', tenant: '长乐××市场管理有限公司', cumReceivable: 136, cumActual: 129.2, yearReceivable: 68, yearActual: 64.6, arrears: 0, status: '正常' }
 ]
 
+// ===== 资产变更留痕（历史基线，运行期变更由 changeLog store 追加）=====
+export const changeLogSeeds = [
+  { id: 'seed-1', date: '2023-05-01', time: '2023-05-01 09:20:00', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', module: '合同', type: '合同签约', before: '—', after: 'HT-2023-018 福州××商业管理有限公司', operator: '陈××' },
+  { id: 'seed-2', date: '2023-04-12', time: '2023-04-12 10:05:00', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', module: '资产', type: '用途变更', before: '空置', after: '商铺出租', operator: '陈××' },
+  { id: 'seed-3', date: '2020-06-15', time: '2020-06-15 08:30:00', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', module: '资产', type: '入库登记', before: '—', after: '自购入库', operator: '陈××' },
+  { id: 'seed-4', date: '2024-12-20', time: '2024-12-20 15:40:00', assetId: 'CT-002', assetName: '航城商务楼 3F', module: '资产', type: '入库登记', before: '—', after: '自建入库', operator: '林××' },
+  { id: 'seed-5', date: '2025-01-01', time: '2025-01-01 09:10:00', assetId: 'CT-002', assetName: '航城商务楼 3F', module: '合同', type: '合同签约', before: '—', after: 'HT-2025-006 福建××科技有限公司', operator: '林××' },
+  { id: 'seed-6', date: '2024-03-01', time: '2024-03-01 11:00:00', assetId: 'CT-003', assetName: '营前标准厂房 2#', module: '合同', type: '合同签约', before: '—', after: 'HT-2024-007 长乐××物流有限公司', operator: '王××' }
+]
+
 // ===== 预警数据（全区口径）=====
 export const warnings = {
   arrears: { total: 12, byGroup: { '城投集团': 5, '产投集团': 3, '水投集团': 2, '领航公司': 2 } },

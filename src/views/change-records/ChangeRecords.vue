@@ -94,7 +94,7 @@
         </el-table-column>
         <el-table-column prop="direction" label="流转方向" width="100">
           <template #default="{ row }">
-            <el-tag size="small" :type="row.direction === '内部流转' ? '' : 'warning'">{{ row.direction }}</el-tag>
+            <el-tag size="small" :type="row.direction === '内部流转' ? 'primary' : 'warning'">{{ row.direction }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="ownershipType" label="权属类型" width="120">
@@ -333,6 +333,11 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { MoreFilled, UploadFilled } from '@element-plus/icons-vue'
+import { useAssetStore } from '../../store/asset'
+import { useChangeLogStore } from '../../store/changeLog'
+
+const assetStore = useAssetStore()
+const changeLogStore = useChangeLogStore()
 
 const page = ref(1)
 const pageSize = ref(10)
@@ -369,7 +374,7 @@ const changeRecords = ref([
 ])
 
 const getChangeTypeTag = (type) => {
-  const map = { '信息变更': '', '状态变更': 'warning', '权属变更': 'danger' }
+  const map = { '信息变更': 'primary', '状态变更': 'warning', '权属变更': 'danger' }
   return map[type] || 'info'
 }
 
@@ -378,8 +383,39 @@ const getApprovalTag = (status) => {
   return map[status] || 'info'
 }
 
+const runtimeChangeRows = computed(() =>
+  changeLogStore.entries
+    .filter(e => e.module !== '流转')
+    .map(e => ({
+      id: e.id,
+      changeNo: `RT-${e.time.slice(5, 16).replace(/[-: ]/g, '')}`,
+      assetName: e.assetName || e.assetId || '—',
+      assetNo: e.assetId || '—',
+      assetType: '—',
+      location: '—',
+      assetStatus: '—',
+      changeType: e.type === '状态变更' || e.type === '用途变更' ? '状态变更' : e.type === '权属变更' ? '权属变更' : '信息变更',
+      changeContent: `${e.module}·${e.type}`,
+      beforeChange: e.before,
+      afterChange: e.after,
+      changePerson: e.operator,
+      changeTime: e.date,
+      direction: '内部流转',
+      ownershipType: '—',
+      beforeCompany: '—',
+      afterCompany: '—',
+      flowType: '—',
+      applicant: { name: e.operator, phone: '—' },
+      approvalStatus: '已通过',
+      approvalDeadline: '—',
+      approvalFinish: e.time,
+      remark: '',
+      oldOwner: '—'
+    }))
+)
+
 const filteredData = computed(() => {
-  return changeRecords.value.filter(item => {
+  return [...runtimeChangeRows.value, ...changeRecords.value].filter(item => {
     if (filters.value.keyword) {
       const kw = filters.value.keyword
       if (!item.assetName.includes(kw) && !item.changeNo.includes(kw)) return false
@@ -449,13 +485,14 @@ const defaultFlowForm = {
 }
 const flowForm = ref({ ...defaultFlowForm, assets: [] })
 
-const flowAssetPool = ref([
-  { assetNo: 'ZC-2001', assetName: '吴航街道商业街 A-03 商铺', location: '长乐区吴航街道商业街16号', assetType: '商铺' },
-  { assetNo: 'ZC-2002', assetName: '航城商务楼 8F', location: '长乐区航城街道商务楼8层', assetType: '办公楼' },
-  { assetNo: 'ZC-2003', assetName: '营前标准厂房 6#', location: '长乐区营前街道标准厂房6#', assetType: '厂房' },
-  { assetNo: 'ZC-2004', assetName: '首占新区保障房 5# 楼', location: '长乐区首占新区保障房5#楼', assetType: '住宅' },
-  { assetNo: 'ZC-2005', assetName: '鹤上镇物流园 A 区仓库', location: '长乐区鹤上镇物流园A区', assetType: '仓库' }
-])
+const flowAssetPool = computed(() =>
+  assetStore.assets.slice(0, 200).map(a => ({
+    assetNo: a.id,
+    assetName: a.name,
+    location: a.location || '—',
+    assetType: a.type || a.assetCategory || '—'
+  }))
+)
 
 const pickableFlowAssets = computed(() => {
   const chosen = new Set(flowForm.value.assets.map(a => a.assetNo))
@@ -524,6 +561,12 @@ function submitFlow() {
       oldOwner: f.originCompany || '—'
     })
     ElMessage.success('权属流转保存成功')
+    f.assets.forEach(a => {
+      changeLogStore.record({
+        assetId: a.assetNo, assetName: a.assetName, module: '流转', type: '权属变更',
+        before: f.originCompany || '—', after: `${f.flowType} · ${f.direction} · ${f.ownershipType}`
+      })
+    })
   }
   flowDialogVisible.value = false
 }
@@ -566,7 +609,12 @@ function handleCommand(cmd, row) {
   } else if (cmd === 'delete') {
     ElMessageBox.confirm(`确认删除变更记录"${row.changeNo}"？`, '提示', { type: 'warning' }).then(() => {
       const idx = changeRecords.value.findIndex(r => r.id === row.id)
-      if (idx !== -1) changeRecords.value.splice(idx, 1)
+      if (idx !== -1) {
+        changeRecords.value.splice(idx, 1)
+      } else {
+        const ei = changeLogStore.entries.findIndex(e => e.id === row.id)
+        if (ei !== -1) changeLogStore.entries.splice(ei, 1)
+      }
       ElMessage.success('删除成功')
     }).catch(() => {})
   }
