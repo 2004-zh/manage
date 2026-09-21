@@ -335,9 +335,19 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { MoreFilled, UploadFilled } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useChangeLogStore } from '../../store/changeLog'
+import { useUserStore } from '../../store/user'
 
 const assetStore = useAssetStore()
 const changeLogStore = useChangeLogStore()
+const userStore = useUserStore()
+
+// 企业端只看本公司相关的变更：种子记录看 oldOwner，运行期记录按资产编号回查归属
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
+function belongsToCompany(row) {
+  if (!userStore.isEnt) return true
+  if (row.oldOwner && row.oldOwner !== '—') return row.oldOwner === currentCompany.value
+  return assetStore.getAssetById(row.assetNo)?.group === currentCompany.value
+}
 
 const page = ref(1)
 const pageSize = ref(10)
@@ -347,7 +357,8 @@ const ownershipOptions = ['产权和经营权', '产权', '经营权']
 const approvalStatusOptions = ['已通过', '已拒绝', '审批中', '待审批']
 const flowTypeOptions = ['直接划拨', '协议转让', '公开竞价', '无偿划转']
 const companyOptions = ['城投集团', '产投集团', '水投集团', '领航公司']
-const oldOwnerOptions = ['城投集团', '产投集团', '水投集团', '领航公司', '区国资中心']
+// 变更后的去向公司仍可选其他集团（权属变更本来就可能跨集团），但筛选只按本公司
+const oldOwnerOptions = computed(() => userStore.isEnt ? [currentCompany.value] : ['城投集团', '产投集团', '水投集团', '领航公司', '区国资中心'])
 const applicantOptions = [
   { name: '张伟', phone: '13800001111' },
   { name: '李娜', phone: '13900002222' },
@@ -416,6 +427,7 @@ const runtimeChangeRows = computed(() =>
 
 const filteredData = computed(() => {
   return [...runtimeChangeRows.value, ...changeRecords.value].filter(item => {
+    if (!belongsToCompany(item)) return false
     if (filters.value.keyword) {
       const kw = filters.value.keyword
       if (!item.assetName.includes(kw) && !item.changeNo.includes(kw)) return false
@@ -486,7 +498,7 @@ const defaultFlowForm = {
 const flowForm = ref({ ...defaultFlowForm, assets: [] })
 
 const flowAssetPool = computed(() =>
-  assetStore.assets.slice(0, 200).map(a => ({
+  assetStore.visibleAssets.slice(0, 200).map(a => ({
     assetNo: a.id,
     assetName: a.name,
     location: a.location || '—',

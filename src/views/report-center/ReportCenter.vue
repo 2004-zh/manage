@@ -310,7 +310,7 @@ const CONFIG = {
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
 
-const assetStatsRows = computed(() => assetStore.assets.map(a => ({
+const assetStatsRows = computed(() => assetStore.visibleAssets.map(a => ({
   category: a.assetCategory || '房产类',
   region: '福建省/福州市/长乐区',
   project: a.projectName || a.name,
@@ -323,7 +323,7 @@ const assetStatsRows = computed(() => assetStore.assets.map(a => ({
   layout: a.layout || '—'
 })))
 
-const operationRows = computed(() => contractStore.contracts.map(c => {
+const operationRows = computed(() => contractStore.visibleContracts.map(c => {
   const asset = assetStore.getAssetById(c.assetId)
   const terminated = c.status === '已终止' || c.status === '退租'
   const rate = asset && asset.area ? Math.min(100, Math.round((c.leaseArea || asset.area) / asset.area * 100)) : 100
@@ -348,7 +348,7 @@ const dynamicRows = {
 const cfg = computed(() => {
   const c = CONFIG[route.name] || CONFIG.EntReportAssetStats
   if (route.name === 'EntReportAssetStats') {
-    const groups = [...new Set(assetStore.assets.map(a => a.group).filter(Boolean))]
+    const groups = [...new Set(assetStore.visibleAssets.map(a => a.group).filter(Boolean))]
     return { ...c, filters: c.filters.map(f => f.key === 'company' ? { ...f, options: groups } : f) }
   }
   return c

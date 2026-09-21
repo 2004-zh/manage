@@ -27,10 +27,8 @@
             <el-option label="已逾期" value="已逾期" />
           </el-select>
         </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.company" placeholder="所属公司" clearable>
-            <el-option v-for="g in groups" :key="g" :label="g" :value="g" />
-          </el-select>
+        <el-col :span="8">
+          <div class="scope-tag">所属公司锁定为「{{ currentCompany }}」，仅显示本公司抵押</div>
         </el-col>
         <el-col :span="3">
           <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -202,12 +200,16 @@
 import { ref, computed, reactive } from 'vue'
 import { useMortgageStore } from '../../store/mortgage'
 import { useAssetStore } from '../../store/asset'
+import { useUserStore } from '../../store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const mortgageStore = useMortgageStore()
 const assetStore = useAssetStore()
+const userStore = useUserStore()
 
-const groups = ['城投集团', '产投集团', '水投集团', '领航公司']
+// 企业端抵押只属于登录公司，不给挑别家
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
+const groups = computed(() => userStore.isEnt ? [currentCompany.value] : ['城投集团', '产投集团', '水投集团', '领航公司'])
 
 const filters = reactive({
   keyword: '',
@@ -219,7 +221,7 @@ const filters = reactive({
 const page = ref(1)
 
 const filteredMortgages = computed(() => {
-  let list = mortgageStore.mortgages
+  let list = userStore.isEnt ? mortgageStore.mortgages.filter(m => m.company === currentCompany.value) : mortgageStore.mortgages
   if (filters.keyword) {
     const kw = filters.keyword.toLowerCase()
     list = list.filter(m => m.assetName.toLowerCase().includes(kw) || m.id.toLowerCase().includes(kw))
@@ -234,7 +236,7 @@ const availableAssets = computed(() => {
   if (filters.company) {
     return assetStore.getAssetsByCompany(filters.company)
   }
-  return assetStore.allAssets
+  return assetStore.visibleAssets
 })
 
 const formVisible = ref(false)
@@ -389,6 +391,7 @@ function handleExport() {
 .page-container {
   padding: 20px;
 }
+.scope-tag { line-height: 32px; font-size: 13px; color: var(--el-text-color-regular); }
 .page-header {
   display: flex;
   justify-content: space-between;

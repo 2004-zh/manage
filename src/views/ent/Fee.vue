@@ -902,7 +902,7 @@ const hallRecords = computed(() => {
   const todayStr = new Date().toISOString().slice(0, 10)
   const now = new Date()
   const quarterEnd = new Date(now.getFullYear(), Math.ceil((now.getMonth() + 1) / 3) * 3, 0).toISOString().slice(0, 10)
-  return contractStore.contracts
+  return contractStore.visibleContracts
     .filter(c => c.status !== '已终止' && c.status !== '退租')
     .map(c => {
       const fee = feeRecords.value.find(f => f.contractId === c.id)

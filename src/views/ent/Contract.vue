@@ -1382,6 +1382,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
+import { useUserStore } from '../../store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Loading, CircleCheck, Search, Refresh, ArrowRight, Document, AlarmClock, WarningFilled,
@@ -1393,6 +1394,9 @@ import RichTextEditor from '../../components/RichTextEditor.vue'
 const router = useRouter()
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
+const userStore = useUserStore()
+// 审批台是本页自带的演示数据，按登录公司过滤；合同列表本身走 store 的 visibleContracts
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
 const activeTab = ref('list')
 
 const filterStatus = ref('')
@@ -1458,20 +1462,20 @@ function letterStatusType(status) {
 
 const letterAssetOptions = computed(() => {
   dataVersion.value
-  return assetStore.assets.filter(a => (a.area || 0) > 0)
+  return assetStore.visibleAssets.filter(a => (a.area || 0) > 0)
 })
 
-const letterPickedAsset = computed(() => assetStore.assets.find(a => a.id === letterForm.value.assetId) || null)
+const letterPickedAsset = computed(() => assetStore.visibleAssets.find(a => a.id === letterForm.value.assetId) || null)
 const letterAssetAvailable = computed(() => letterPickedAsset.value ? contractStore.getLeaseSummary(letterPickedAsset.value).availableArea : 0)
 
 function letterAvailableOf(letter) {
   dataVersion.value
-  const asset = assetStore.assets.find(a => a.id === letter.assetId) || assetStore.assets.find(a => a.name === letter.assetName)
+  const asset = assetStore.visibleAssets.find(a => a.id === letter.assetId) || assetStore.visibleAssets.find(a => a.name === letter.assetName)
   return asset ? contractStore.getLeaseSummary(asset).availableArea : 0
 }
 
 function handleLetterAssetPick(assetId) {
-  const asset = assetStore.assets.find(a => a.id === assetId)
+  const asset = assetStore.visibleAssets.find(a => a.id === assetId)
   if (!asset) return
   letterForm.value.assetName = asset.name
   letterForm.value.intentArea = contractStore.getLeaseSummary(asset).availableArea
@@ -1503,7 +1507,7 @@ function handleSaveLetter() {
     ElMessage.warning('请填写完整意向书信息')
     return
   }
-  const asset = assetStore.assets.find(a => a.id === f.assetId)
+  const asset = assetStore.visibleAssets.find(a => a.id === f.assetId)
   const available = asset ? contractStore.getLeaseSummary(asset).availableArea : 0
   if (!f.intentArea || f.intentArea <= 0) {
     ElMessage.warning('请填写意向面积')
@@ -1577,7 +1581,7 @@ function handleLetterFileChange(file) {
 }
 
 function handleImportLetters() {
-  const target = assetStore.assets.find(a => contractStore.getLeaseSummary(a).availableArea > 0)
+  const target = assetStore.visibleAssets.find(a => contractStore.getLeaseSummary(a).availableArea > 0)
   if (!target) {
     ElMessage.warning('台账中已无剩余可租面积的资产，无法导入意向书')
     return
@@ -1593,7 +1597,7 @@ function handleImportLetters() {
 }
 
 function convertToContract(letter) {
-  const asset = assetStore.assets.find(a => a.id === letter.assetId) || assetStore.assets.find(a => a.name === letter.assetName)
+  const asset = assetStore.visibleAssets.find(a => a.id === letter.assetId) || assetStore.visibleAssets.find(a => a.name === letter.assetName)
   if (!asset) {
     ElMessage.warning(`未在资产台账中匹配到"${letter.assetName}"，请先编辑意向书并选择台账资产`)
     return
@@ -1663,21 +1667,21 @@ function availableOf(asset) {
 }
 
 function remainingOf(contract) {
-  const asset = assetStore.assets.find(a => a.id === contract.assetId)
+  const asset = assetStore.visibleAssets.find(a => a.id === contract.assetId)
   return asset ? contractStore.getLeaseSummary(asset).availableArea : 0
 }
 
 const leasableAssets = computed(() => {
   dataVersion.value
-  return assetStore.assets.filter(a => (a.area || 0) > 0 && availableOf(a) > 0)
+  return assetStore.visibleAssets.filter(a => (a.area || 0) > 0 && availableOf(a) > 0)
 })
 
-const pickedAsset = computed(() => assetStore.assets.find(a => a.id === createForm.value.assetId) || null)
+const pickedAsset = computed(() => assetStore.visibleAssets.find(a => a.id === createForm.value.assetId) || null)
 const pickedLeased = computed(() => pickedAsset.value ? contractStore.getLeaseSummary(pickedAsset.value).leasedArea : 0)
 const pickedAvailable = computed(() => pickedAsset.value ? contractStore.getLeaseSummary(pickedAsset.value).availableArea : 0)
 
 function handleAssetPick(assetId) {
-  const asset = assetStore.assets.find(a => a.id === assetId)
+  const asset = assetStore.visibleAssets.find(a => a.id === assetId)
   if (!asset) return
   createForm.value.assetName = asset.name
   createForm.value.leaseArea = contractStore.getLeaseSummary(asset).availableArea
@@ -1694,7 +1698,7 @@ function statusType(status) {
 
 const filteredContracts = computed(() => {
   dataVersion.value
-  return contractStore.contracts.filter(c => {
+  return contractStore.visibleContracts.filter(c => {
     if (filterStatus.value && c.status !== filterStatus.value) return false
     if (keyword.value) {
       const kw = keyword.value.toLowerCase()
@@ -1714,7 +1718,7 @@ function handleCreateContract() {
     ElMessage.warning('请填写租赁面积')
     return
   }
-  const asset = assetStore.assets.find(a => a.id === f.assetId)
+  const asset = assetStore.visibleAssets.find(a => a.id === f.assetId)
   const available = contractStore.getLeaseSummary(asset).availableArea
   if (f.leaseArea > available) {
     ElMessage.error(`租赁面积 ${f.leaseArea} ㎡ 超出该资产剩余可租面积 ${available} ㎡`)
@@ -1908,17 +1912,17 @@ function handleCreateTemplate() {
 
 // 电子签章
 const signStats = computed(() => {
-  const total = contractStore.contracts.filter(c => c.electronic).length
-  const pending = contractStore.contracts.filter(c => !c.electronic).length
+  const total = contractStore.visibleContracts.filter(c => c.electronic).length
+  const pending = contractStore.visibleContracts.filter(c => !c.electronic).length
   return {
     total,
     pending,
     expired: 2,
-    rate: contractStore.contracts.length > 0 ? ((total / contractStore.contracts.length) * 100).toFixed(1) : '0.0'
+    rate: contractStore.visibleContracts.length > 0 ? ((total / contractStore.visibleContracts.length) * 100).toFixed(1) : '0.0'
   }
 })
 
-const pendingSignContracts = computed(() => contractStore.contracts)
+const pendingSignContracts = computed(() => contractStore.visibleContracts)
 
 const showSignDialog = ref(false)
 const signingRow = ref(null)
@@ -2134,7 +2138,7 @@ const filteredTenants = computed(() => tenantLedger.value.filter(t => {
 
 const tenantContracts = computed(() => {
   if (!currentTenant.value) return []
-  return contractStore.contracts.filter(c => c.tenant === currentTenant.value.name)
+  return contractStore.visibleContracts.filter(c => c.tenant === currentTenant.value.name)
 })
 
 function openTenantDialog(row) {
@@ -2210,7 +2214,7 @@ function classifySettlement(c) {
 
 const settlementContracts = computed(() => {
   dataVersion.value
-  return contractStore.contracts
+  return contractStore.visibleContracts
     .filter(c => c.status !== '已终止' && c.status !== '退租')
     .map(c => ({ ...c, settlementStatus: c.settlementStatus || classifySettlement(c) }))
     .filter(c => ['即将到期', '已到期', '已续租', '已退租'].includes(c.settlementStatus))
@@ -2411,7 +2415,7 @@ function viewSettlementDetail(row) {
 }
 
 // ===== 合同审批（资管云平台） =====
-const acCompanyOptions = ['城投集团', '产投集团', '水投集团', '领航公司']
+const acCompanyOptions = computed(() => userStore.isEnt ? [currentCompany.value] : ['城投集团', '产投集团', '水投集团', '领航公司'])
 const acFlowOptions = ['一级审批流程', '二级审批流程', '三级审批流程', '资产租赁审批流程']
 const acApproverOptions = ['李强（资产管理部）', '陈敏（财务部）', '郑国华（分管领导）', '王芳（经办人）']
 const acLevelOptions = ['一级审批', '二级审批', '三级审批']
@@ -2596,8 +2600,12 @@ const acContracts = ref([
   }
 ])
 
+const myAcContracts = computed(() =>
+  userStore.isEnt ? acContracts.value.filter(c => c.company === currentCompany.value) : acContracts.value
+)
+
 const acStats = computed(() => {
-  const list = acContracts.value
+  const list = myAcContracts.value
   const now = new Date()
   return {
     total: list.length,
@@ -2639,7 +2647,7 @@ function acStatusType(status) {
   return { '待审批': 'warning', '审批中': '', '审批完成': 'success', '已作废': 'info' }[status] || 'info'
 }
 
-const filteredAcContracts = computed(() => acContracts.value.filter(c => {
+const filteredAcContracts = computed(() => myAcContracts.value.filter(c => {
   const f = acFilter.value
   if (f.keyword) {
     const kw = f.keyword.toLowerCase()
@@ -2702,7 +2710,7 @@ function acBatchVoid() {
 }
 
 function acExportApproved() {
-  const approved = acContracts.value.filter(c => c.status === '审批完成')
+  const approved = myAcContracts.value.filter(c => c.status === '审批完成')
   const headers = ['合同编号', '甲方', '乙方', '乙方手机号', '资产名称', '签约日期', '租赁结束日期', '合同类型', '租金类型', '月租金(元)', '保证金(元)', '状态']
   const rows = approved.map(c => [c.id, c.partyA, c.partyB, c.phone, c.assets.map(a => a.name).join('/'), c.signDate, c.endDate, c.contractType, c.rentType, c.monthlyRent, c.deposit, c.status])
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
@@ -2913,7 +2921,7 @@ function handleAcImportConfirm() {
   }
   const mockContract = {
     id: `HT-${new Date().getFullYear()}-${String(acContracts.value.length + 30).padStart(3, '0')}`,
-    company: '城投集团', partyA: '长乐区城投集团', partyB: '导入承租方', phone: '13800000000',
+    company: currentCompany.value, partyA: `长乐区${currentCompany.value}`, partyB: '导入承租方', phone: '13800000000',
     lessee: { type: '企业', name: '导入承租方', contact: '联系人', phone: '13800000000', idNo: '91350112000000000X' },
     signDate: new Date().toISOString().slice(0, 10),
     leaseTime: `${new Date().toISOString().slice(0, 10)} ~ ${new Date(Date.now() + 3 * 365 * 86400000).toISOString().slice(0, 10)}`,
@@ -2921,7 +2929,7 @@ function handleAcImportConfirm() {
     contractType: '资产租赁', rentType: '固定租金', usage: '商业经营', payCycle: '季缴', payDeadline: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
     monthlyRent: 10000, reduction: 0, deposit: 30000, arrearsMonths: 0,
     flow: '一级审批流程', status: '待审批', attachment: acImportFileList.value[0]?.name || '导入合同.pdf', agreement: '',
-    assets: [{ region: '福建省福州市长乐区', project: '导入项目', zone: '-', name: '导入资产', code: 'IMPORT', location: '长乐区', company: '城投集团', leaseType: '整租' }],
+    assets: [{ region: '福建省福州市长乐区', project: '导入项目', zone: '-', name: '导入资产', code: 'IMPORT', location: '长乐区', company: currentCompany.value, leaseType: '整租' }],
     auditSteps: [{ title: '导入申请', auditor: '系统', time: new Date().toLocaleString('zh-CN', { hour12: false }) }]
   }
   acContracts.value.unshift(mockContract)

@@ -362,7 +362,7 @@ function getAssetEvaluations() {
 function getAssetContracts() {
   if (!props.asset) return []
   const aid = props.asset.id || props.asset.assetId || props.asset.code
-  return contractStore.contracts.filter(r => r.assetId === aid)
+  return contractStore.visibleContracts.filter(r => r.assetId === aid)
 }
 
 function getAssetArchives() {

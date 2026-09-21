@@ -268,7 +268,7 @@
           <el-col :span="12">
             <el-form-item label="资产" required>
               <el-select v-model="costForm.assetName" placeholder="请选择资产" filterable style="width: 100%">
-                <el-option v-for="a in assetStore.assets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
+                <el-option v-for="a in assetStore.visibleAssets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -344,7 +344,7 @@
       <el-form :model="form" label-width="100px">
         <el-form-item label="资产选择" required>
           <el-select v-model="form.assetName" placeholder="请选择资产" style="width:100%" filterable>
-            <el-option v-for="a in assetStore.assets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
+            <el-option v-for="a in assetStore.visibleAssets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
           </el-select>
         </el-form-item>
         <el-form-item label="评估类型" required>

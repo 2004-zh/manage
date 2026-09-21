@@ -313,8 +313,7 @@ const evalTotal = computed(() => {
 })
 
 const filteredAssets = computed(() => {
-  return assetStore.assets.filter(a => {
-    if (a.group !== currentCompany.value) return false
+  return assetStore.visibleAssets.filter(a => {
     if (filters.value.keyword) {
       const kw = filters.value.keyword
       const searchable = [a.name, a.id, a.assetNo, a.projectName, a.zoneName, a.floorName, a.location].filter(Boolean).join(' ')

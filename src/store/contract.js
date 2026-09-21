@@ -7,6 +7,7 @@ import { usePartyStore } from './party'
 import { useRevitalizeStore } from './revitalize'
 import { useNotifyStore } from './notify'
 import { useChangeLogStore } from './changeLog'
+import { useUserStore } from './user'
 
 export const useContractStore = defineStore('contract', () => {
   const contracts = ref([...initialContracts])
@@ -14,6 +15,26 @@ export const useContractStore = defineStore('contract', () => {
 
   const allContracts = computed(() => contracts.value)
   const allFees = computed(() => feeRecords.value)
+
+  // 合同/费用本身不带公司字段，归属看它挂在哪个资产上；企业端只放行本公司资产对应的记录
+  function entOrg() {
+    const user = useUserStore().user
+    return user && user.endpoint === 'ent' ? user.org : null
+  }
+
+  const visibleContracts = computed(() => {
+    const org = entOrg()
+    if (!org) return contracts.value
+    const assetStore = useAssetStore()
+    return contracts.value.filter(c => assetStore.getAssetById(c.assetId)?.group === org)
+  })
+
+  const visibleFees = computed(() => {
+    const org = entOrg()
+    if (!org) return feeRecords.value
+    const ids = new Set(visibleContracts.value.map(c => c.id))
+    return feeRecords.value.filter(f => ids.has(f.contractId))
+  })
 
   function getContractsByAsset(assetId) {
     return contracts.value.filter(c => c.assetId === assetId)
@@ -280,6 +301,8 @@ export const useContractStore = defineStore('contract', () => {
     feeRecords,
     allContracts,
     allFees,
+    visibleContracts,
+    visibleFees,
     getContractsByAsset,
     addContract,
     updateContract,

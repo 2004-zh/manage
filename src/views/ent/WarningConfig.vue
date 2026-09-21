@@ -119,8 +119,12 @@
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
+import { useUserStore } from '../../store/user'
 
-const companies = ['江苏安东控股集团有限公司', '江苏望风有限公司', '重庆凌飞有限公司', '城投集团', '产投集团', '水投集团', '领航公司']
+const userStore = useUserStore()
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
+// 预警规则按公司配置：企业端只允许给自己公司配
+const companies = computed(() => userStore.isEnt ? [currentCompany.value] : ['城投集团', '产投集团', '水投集团', '领航公司'])
 const levels = ['一般', '较急', '紧急', '特别紧急']
 
 const conditionOptions = [
@@ -154,6 +158,10 @@ function now(offsetDays = 0) {
 }
 
 const rows = ref([
+  ...['城投集团', '产投集团', '水投集团', '领航公司'].flatMap((c, i) => [
+    { company: c, type: '到期预警', condition: '合同到期', level: '紧急', min: 30, max: 90, unit: '天', enabled: true, updateTime: now(i + 1) },
+    { company: c, type: '闲置预警', condition: '资产闲置', level: '较急', min: 90, max: 180, unit: '天', enabled: true, updateTime: now(i + 2) }
+  ]),
   { company: '江苏安东控股集团有限公司', type: '到期预警', condition: '合同到期', level: '紧急', min: 2, max: 50, unit: '天', enabled: true, updateTime: now(1) },
   { company: '江苏安东控股集团有限公司', type: '到期预警', condition: '任务到期', level: '较急', min: 3, max: 30, unit: '天', enabled: true, updateTime: now(2) },
   { company: '江苏安东控股集团有限公司', type: '闲置预警', condition: '资产闲置', level: '一般', min: 90, max: 180, unit: '天', enabled: true, updateTime: now(3) },
@@ -178,6 +186,7 @@ const pageSize = ref(10)
 const filtered = computed(() =>
   rows.value.filter(
     r =>
+      (!userStore.isEnt || r.company === currentCompany.value) &&
       (!query.value.company || r.company.includes(query.value.company)) &&
       (!query.value.level || r.level === query.value.level)
   )

@@ -291,7 +291,7 @@ const assetStore = useAssetStore()
 const filterStatus = ref('')
 
 const certStats = computed(() => {
-  const all = assetStore.assets
+  const all = assetStore.visibleAssets
   return {
     certified: all.filter(a => a.certStatus === '已办证').length,
     processing: all.filter(a => a.certStatus.includes('办理中')).length,

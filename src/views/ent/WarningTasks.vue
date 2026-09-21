@@ -162,13 +162,18 @@ import { ref, computed } from 'vue'
 import { Search, Plus, Download, WarnTriangleFilled } from '@element-plus/icons-vue'
 import { warningTasks } from '../../data/mock'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '../../store/user'
+
+const userStore = useUserStore()
+// 预警任务跟着资产走，企业端只留本公司名下的
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
 
 const taskSearch = ref('')
 const taskTypeFilter = ref('')
 const taskStatusFilter = ref('')
 const taskPriorityFilter = ref('')
 const taskCompanyFilter = ref('')
-const companyGroups = ['城投集团', '产投集团', '水投集团', '领航公司']
+const companyGroups = computed(() => userStore.isEnt ? [currentCompany.value] : ['城投集团', '产投集团', '水投集团', '领航公司'])
 
 const taskDialogVisible = ref(false)
 const taskDialogTitle = ref('新建任务')
@@ -191,7 +196,7 @@ const taskExtras = {
 const levelTagMap = { '特别紧急': 'danger', '紧急': 'warning', '较急': 'primary', '一般': 'info' }
 const levelColors = { '一般': '#909399', '较急': '#1890ff', '紧急': '#fa8c16', '特别紧急': '#f5222d' }
 
-const localTasks = ref(warningTasks.map(t => ({
+const localTasks = ref((userStore.isEnt ? warningTasks.filter(t => t.group === currentCompany.value) : warningTasks).map(t => ({
   ...t,
   level: taskExtras[t.id]?.level || '一般',
   trigger: taskExtras[t.id]?.trigger || '—'
@@ -265,7 +270,7 @@ function submitTask() {
     level: { '高': '紧急', '中': '较急', '低': '一般' }[taskForm.value.priority] || '一般',
     trigger: '手动创建任务',
     assignee: taskForm.value.assignee,
-    group: '—'
+    group: currentCompany.value
   }
   localTasks.value.unshift(newTask)
   taskDialogVisible.value = false

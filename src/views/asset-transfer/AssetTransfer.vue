@@ -30,7 +30,7 @@
         </el-col>
         <el-col :span="4">
           <el-select v-model="filters.group" placeholder="所属公司" clearable>
-            <el-option v-for="g in groups" :key="g" :label="g" :value="g" />
+            <el-option v-for="g in groupOptions" :key="g" :label="g" :value="g" />
           </el-select>
         </el-col>
         <el-col :span="3">
@@ -104,7 +104,7 @@
       <el-form :model="form" label-width="100px">
         <el-form-item label="资产选择" required>
           <el-select v-model="form.assetName" placeholder="请选择资产" style="width:100%" filterable>
-            <el-option v-for="a in assetStore.assets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
+            <el-option v-for="a in assetStore.visibleAssets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
           </el-select>
         </el-form-item>
         <el-form-item label="调出单位" required>
@@ -144,7 +144,7 @@
           <el-col :span="12">
             <el-form-item label="所属公司" required>
               <el-select v-model="saveForm.company" placeholder="请选择所属公司" style="width:100%">
-                <el-option v-for="g in groups" :key="g" :label="g" :value="g" />
+                <el-option v-for="g in groupOptions" :key="g" :label="g" :value="g" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -297,9 +297,14 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, MoreFilled } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
+import { useUserStore } from '../../store/user'
 
 const assetStore = useAssetStore()
+const userStore = useUserStore()
+// 调出/调入单位仍要能选其他公司（资产本来就是调给别人的），但列表只放行本公司参与的调拨
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
 const groups = ['城投集团', '产投集团', '水投集团', '领航公司']
+const groupOptions = computed(() => userStore.isEnt ? [currentCompany.value] : groups)
 const deptOptions = ['资产管理部', '运营管理部', '财务部', '综合办公室', '工程管理部']
 const personOptions = ['张伟', '李娜', '王磊', '赵敏', '孙强', '周芳']
 
@@ -330,6 +335,8 @@ const transferRecords = ref([
 
 const filteredData = computed(() => {
   return transferRecords.value.filter(r => {
+    if (userStore.isEnt && r.fromUnit !== currentCompany.value && r.toUnit !== currentCompany.value) return false
+    if (filters.value.group && r.propCompany !== filters.value.group) return false
     if (filters.value.keyword && !r.assetName.includes(filters.value.keyword) && !r.transferNo.includes(filters.value.keyword)) return false
     if (filters.value.transferType && r.transferType !== filters.value.transferType) return false
     if (filters.value.approvalStatus && r.approvalStatus !== filters.value.approvalStatus) return false
@@ -349,7 +356,7 @@ const getApprovalType = (status) => {
 
 function showAddDialog() {
   isEdit.value = false
-  form.value = { ...defaultForm }
+  form.value = { ...defaultForm, fromUnit: userStore.isEnt ? currentCompany.value : '' }
   dialogVisible.value = true
 }
 
@@ -462,7 +469,8 @@ const assetPool = ref([
 
 const pickableAssets = computed(() => {
   const chosen = new Set(saveForm.value.assets.map(a => a.assetNo))
-  return assetPool.value.filter(a => !chosen.has(a.assetNo))
+  // 企业端只能挑本公司名下的资产
+  return assetPool.value.filter(a => !chosen.has(a.assetNo) && (!userStore.isEnt || a.propCompany === currentCompany.value))
 })
 
 const pagedSaveAssets = computed(() => {
@@ -471,7 +479,7 @@ const pagedSaveAssets = computed(() => {
 })
 
 function showSaveDialog() {
-  saveForm.value = { ...defaultSaveForm, assets: [] }
+  saveForm.value = { ...defaultSaveForm, company: userStore.isEnt ? currentCompany.value : '', assets: [] }
   innerPage.value = 1
   saveDialogVisible.value = true
 }

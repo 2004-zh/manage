@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useAssetStore } from './asset'
 import { useAuditStore } from './audit'
+import { useUserStore } from './user'
 
 const placeholderImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC'
 const imgs = (count, prefix) => Array.from({ length: count }, (_, i) => ({ name: `${prefix}${i + 1}.png`, url: placeholderImg }))
@@ -18,37 +19,37 @@ const RELEASE_SEEDS = [
 ]
 
 const NOTICE_SEEDS = [
-  { noticeNo: 'GG-2026-001', assetId: 'CT-003', assetName: '营前标准厂房 2#', area: 3600, startPrice: 65000, publishDate: '2026-08-15', deadline: '2026-09-15', registrantCount: 5, status: '报名中' },
-  { noticeNo: 'GG-2026-002', assetId: 'CT-101', assetName: '江田镇仓储用地', area: 12000, startPrice: 25000, publishDate: '2026-08-20', deadline: '2026-09-20', registrantCount: 3, status: '报名中' },
-  { noticeNo: 'GG-2026-003', assetId: 'CT-005', assetName: '吴航街道商业街 A-03', area: 180, startPrice: 12000, publishDate: '2026-07-01', deadline: '2026-08-01', registrantCount: 8, status: '已截止' },
-  { noticeNo: 'GG-2026-004', assetId: 'CT-006', assetName: '玉田镇旧工业厂房', area: 2400, startPrice: 18000, publishDate: '2026-06-10', deadline: '2026-07-10', registrantCount: 4, status: '已截止' }
+  { noticeNo: 'GG-2026-001', company: '城投集团', assetId: 'CT-003', assetName: '营前标准厂房 2#', area: 3600, startPrice: 65000, publishDate: '2026-08-15', deadline: '2026-09-15', registrantCount: 5, status: '报名中' },
+  { noticeNo: 'GG-2026-002', company: '产投集团', assetId: 'CT-101', assetName: '江田镇仓储用地', area: 12000, startPrice: 25000, publishDate: '2026-08-20', deadline: '2026-09-20', registrantCount: 3, status: '报名中' },
+  { noticeNo: 'GG-2026-003', company: '城投集团', assetId: 'CT-005', assetName: '吴航街道商业街 A-03', area: 180, startPrice: 12000, publishDate: '2026-07-01', deadline: '2026-08-01', registrantCount: 8, status: '已截止' },
+  { noticeNo: 'GG-2026-004', company: '领航公司', assetId: 'CT-006', assetName: '玉田镇旧工业厂房', area: 2400, startPrice: 18000, publishDate: '2026-06-10', deadline: '2026-07-10', registrantCount: 4, status: '已截止' }
 ]
 
 const REGISTRANT_SEEDS = [
-  { regNo: 'BM-2026-001', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '福建恒通纺织有限公司', contactPhone: '138****5678', registerDate: '2026-08-18', qualification: '已通过' },
-  { regNo: 'BM-2026-002', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '长乐鑫达机械加工厂', contactPhone: '139****1234', registerDate: '2026-08-20', qualification: '已通过' },
-  { regNo: 'BM-2026-003', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '福州瑞丰物流有限公司', contactPhone: '137****9876', registerDate: '2026-08-22', qualification: '待审核' },
-  { regNo: 'BM-2026-004', noticeNo: 'GG-2026-002', assetName: '江田镇仓储用地', registrant: '长乐盛达仓储公司', contactPhone: '135****4321', registerDate: '2026-08-25', qualification: '已通过' },
-  { regNo: 'BM-2026-005', noticeNo: 'GG-2026-002', assetName: '江田镇仓储用地', registrant: '福建中远物流', contactPhone: '136****7890', registerDate: '2026-08-28', qualification: '待审核' },
-  { regNo: 'BM-2026-006', noticeNo: 'GG-2026-003', assetName: '吴航街道商业街 A-03', registrant: '陈小明', contactPhone: '158****2468', registerDate: '2026-07-05', qualification: '已通过' }
+  { regNo: 'BM-2026-001', company: '城投集团', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '福建恒通纺织有限公司', contactPhone: '138****5678', registerDate: '2026-08-18', qualification: '已通过' },
+  { regNo: 'BM-2026-002', company: '城投集团', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '长乐鑫达机械加工厂', contactPhone: '139****1234', registerDate: '2026-08-20', qualification: '已通过' },
+  { regNo: 'BM-2026-003', company: '城投集团', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '福州瑞丰物流有限公司', contactPhone: '137****9876', registerDate: '2026-08-22', qualification: '待审核' },
+  { regNo: 'BM-2026-004', company: '产投集团', noticeNo: 'GG-2026-002', assetName: '江田镇仓储用地', registrant: '长乐盛达仓储公司', contactPhone: '135****4321', registerDate: '2026-08-25', qualification: '已通过' },
+  { regNo: 'BM-2026-005', company: '产投集团', noticeNo: 'GG-2026-002', assetName: '江田镇仓储用地', registrant: '福建中远物流', contactPhone: '136****7890', registerDate: '2026-08-28', qualification: '待审核' },
+  { regNo: 'BM-2026-006', company: '城投集团', noticeNo: 'GG-2026-003', assetName: '吴航街道商业街 A-03', registrant: '陈小明', contactPhone: '158****2468', registerDate: '2026-07-05', qualification: '已通过' }
 ]
 
 const BID_SEEDS = [
-  { bidNo: 'JJ-2026-001', noticeNo: 'GG-2026-003', assetName: '吴航街道商业街 A-03', startPrice: 12000, currentPrice: 18500, bidCount: 12, bidderCount: 8, status: '已结束' },
-  { bidNo: 'JJ-2026-002', noticeNo: 'GG-2026-004', assetName: '玉田镇旧工业厂房', startPrice: 18000, currentPrice: 22000, bidCount: 6, bidderCount: 4, status: '已结束' },
-  { bidNo: 'JJ-2026-003', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', startPrice: 65000, currentPrice: 78000, bidCount: 3, bidderCount: 3, status: '进行中' }
+  { bidNo: 'JJ-2026-001', company: '城投集团', noticeNo: 'GG-2026-003', assetName: '吴航街道商业街 A-03', startPrice: 12000, currentPrice: 18500, bidCount: 12, bidderCount: 8, status: '已结束' },
+  { bidNo: 'JJ-2026-002', company: '领航公司', noticeNo: 'GG-2026-004', assetName: '玉田镇旧工业厂房', startPrice: 18000, currentPrice: 22000, bidCount: 6, bidderCount: 4, status: '已结束' },
+  { bidNo: 'JJ-2026-003', company: '城投集团', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', startPrice: 65000, currentPrice: 78000, bidCount: 3, bidderCount: 3, status: '进行中' }
 ]
 
 const RESULT_SEEDS = [
-  { resultNo: 'GS-2026-001', noticeNo: 'GG-2026-003', assetId: 'CT-003', assetName: '吴航街道商业街 A-03', area: 180, winner: '陈小明', dealPrice: 18500, premiumRate: 54.2, publishDate: '2026-08-05', status: '已公示', contractId: '' },
-  { resultNo: 'GS-2026-002', noticeNo: 'GG-2026-004', assetId: 'CT-006', assetName: '玉田镇旧工业厂房', area: 2400, winner: '福建恒通纺织有限公司', dealPrice: 22000, premiumRate: 22.2, publishDate: '2026-07-15', status: '已公示', contractId: '' }
+  { resultNo: 'GS-2026-001', company: '城投集团', noticeNo: 'GG-2026-003', assetId: 'CT-005', assetName: '吴航街道商业街 A-03', area: 180, winner: '陈小明', dealPrice: 18500, premiumRate: 54.2, publishDate: '2026-08-05', status: '已公示', contractId: '' },
+  { resultNo: 'GS-2026-002', company: '领航公司', noticeNo: 'GG-2026-004', assetId: 'CT-006', assetName: '玉田镇旧工业厂房', area: 2400, winner: '福建恒通纺织有限公司', dealPrice: 22000, premiumRate: 22.2, publishDate: '2026-07-15', status: '已公示', contractId: '' }
 ]
 
 const RENT_RECORD_SEEDS = [
-  { id: 1, rentNo: 'ZC-2026-001', assetName: '城关旧厂房1#', area: 1800, startPrice: 15000, method: '公开竞价', startDate: '2026-02-01', endDate: '2026-03-01', status: '已成交', bidders: '3家', dealPrice: 18500 },
-  { id: 2, rentNo: 'ZC-2026-002', assetName: '航城商铺A-08', area: 120, startPrice: 3500, method: '挂牌出租', startDate: '2026-03-01', endDate: '2026-03-31', status: '招租中', bidders: null, dealPrice: null },
-  { id: 3, rentNo: 'ZC-2026-003', assetName: '营前仓库C-01', area: 600, startPrice: 8000, method: '公开竞价', startDate: '2026-01-10', endDate: '2026-02-10', status: '已流拍', bidders: '0家', dealPrice: null },
-  { id: 4, rentNo: 'ZC-2026-004', assetName: '漳港商铺E-02', area: 95, startPrice: 2800, method: '协议出租', startDate: '2026-03-15', endDate: '2026-04-15', status: '待审批', bidders: null, dealPrice: null }
+  { id: 1, company: '城投集团', rentNo: 'ZC-2026-001', assetName: '城关旧厂房1#', area: 1800, startPrice: 15000, method: '公开竞价', startDate: '2026-02-01', endDate: '2026-03-01', status: '已成交', bidders: '3家', dealPrice: 18500 },
+  { id: 2, company: '城投集团', rentNo: 'ZC-2026-002', assetName: '航城商铺A-08', area: 120, startPrice: 3500, method: '挂牌出租', startDate: '2026-03-01', endDate: '2026-03-31', status: '招租中', bidders: null, dealPrice: null },
+  { id: 3, company: '水投集团', rentNo: 'ZC-2026-003', assetName: '营前仓库C-01', area: 600, startPrice: 8000, method: '公开竞价', startDate: '2026-01-10', endDate: '2026-02-10', status: '已流拍', bidders: '0家', dealPrice: null },
+  { id: 4, company: '产投集团', rentNo: 'ZC-2026-004', assetName: '漳港商铺E-02', area: 95, startPrice: 2800, method: '协议出租', startDate: '2026-03-15', endDate: '2026-04-15', status: '待审批', bidders: null, dealPrice: null }
 ]
 
 function nextSeq(list, field, prefix) {
@@ -68,11 +69,57 @@ function leaseTypeOf(startDate, deadline) {
 
 export const useLeaseStore = defineStore('lease', () => {
   const releases = ref(RELEASE_SEEDS.map(r => ({ ...r })))
-  const notices = ref(NOTICE_SEEDS.map(n => ({ ...n })))
+  const notices = ref(NOTICE_SEEDS.map(r => ({ ...r })))
   const registrants = ref(REGISTRANT_SEEDS.map(r => ({ ...r })))
-  const bids = ref(BID_SEEDS.map(b => ({ ...b })))
+  const bids = ref(BID_SEEDS.map(r => ({ ...r })))
   const results = ref(RESULT_SEEDS.map(r => ({ ...r })))
   const rentRecords = ref(RENT_RECORD_SEEDS.map(r => ({ ...r })))
+
+  // 种子（以及老版本 localStorage 里持久化的同一批数据）有若干行的资产信息与台账对不上，
+  // 按 assetId 回写一次；不修的话企业端锁公司后会出现「本公司列表挂着别家资产」「点进去匹配不到资产」。
+  // 幂等，故 setup 与 hydrate 之后各跑一次。
+  function alignToLedger() {
+    const assetStore = useAssetStore()
+    const byAsset = (list) => list.map(row => {
+      const asset = row.assetId ? assetStore.getAssetById(row.assetId) : null
+      if (!asset) return row
+      const patch = { company: asset.group, assetName: asset.name }
+      if ('assetType' in row) patch.assetType = asset.type
+      if ('assetLocation' in row) patch.assetLocation = asset.location
+      return { ...row, ...patch }
+    })
+    // 报名/竞价记录只挂了公告编号，归属跟着公告走，故要等公告口径校正完再取
+    releases.value = byAsset(releases.value)
+    notices.value = byAsset(notices.value)
+    results.value = byAsset(results.value)
+    rentRecords.value = byAsset(rentRecords.value)
+
+    const noticeCompany = new Map(notices.value.map(n => [n.noticeNo, n.company]))
+    const byNotice = (list) => list.map(row => {
+      const company = noticeCompany.get(row.noticeNo)
+      return company && row.company !== company ? { ...row, company } : row
+    })
+    registrants.value = byNotice(registrants.value)
+    bids.value = byNotice(bids.value)
+  }
+  alignToLedger()
+
+  // 六张列表都带 company：企业端登录账号只看本公司的招商数据，监管端与未登录不过滤。
+  // 页面读 visible*，写入仍走原始数组。
+  function entOrg() {
+    const user = useUserStore().user
+    return user && user.endpoint === 'ent' ? user.org : null
+  }
+  const scoped = (list) => computed(() => {
+    const org = entOrg()
+    return org ? list.value.filter(r => r.company === org) : list.value
+  })
+  const visibleReleases = scoped(releases)
+  const visibleNotices = scoped(notices)
+  const visibleRegistrants = scoped(registrants)
+  const visibleBids = scoped(bids)
+  const visibleResults = scoped(results)
+  const visibleRentRecords = scoped(rentRecords)
 
   /**
    * 发起招租：一次产出「招租公告 + 招商发布记录 + 招租流水」三条联动数据，
@@ -89,6 +136,7 @@ export const useLeaseStore = defineStore('lease', () => {
 
     const notice = {
       noticeNo,
+      company: asset.group || '',
       assetId: asset.id,
       assetName: asset.name,
       area: leaseArea,
@@ -133,6 +181,7 @@ export const useLeaseStore = defineStore('lease', () => {
     rentRecords.value.unshift({
       id: rentRecords.value.length + 1,
       rentNo: nextSeq(rentRecords.value, 'rentNo', `ZC-${year}-`),
+      company: asset.group || '',
       assetId: asset.id,
       assetName: asset.name,
       area: leaseArea,
@@ -167,12 +216,20 @@ export const useLeaseStore = defineStore('lease', () => {
   }
 
   return {
+    // 旧浏览器里已持久化的招商数据 company 还是错标的，恢复后必须再对齐一次台账
+    onHydrated: alignToLedger,
     releases,
     notices,
     registrants,
     bids,
     results,
     rentRecords,
+    visibleReleases,
+    visibleNotices,
+    visibleRegistrants,
+    visibleBids,
+    visibleResults,
+    visibleRentRecords,
     publishRent,
     removeRelease
   }

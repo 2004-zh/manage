@@ -724,7 +724,7 @@ const townProjectMap = {
 }
 
 const allProjects = computed(() => {
-  const list = projectStore.projects || []
+  const list = projectStore.visibleProjects || []
   return list.filter(b => b.id !== 'BLD-001')
 })
 

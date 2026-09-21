@@ -470,7 +470,7 @@ const treeProps = { label: 'label', children: 'children' }
 const treeRef = ref(null)
 const treeFilter = ref('')
 
-const treeData = computed(() => projectStore.projects.map(b => ({
+const treeData = computed(() => projectStore.visibleProjects.map(b => ({
   key: b.id, label: b.name, level: '项目', ref: b, type: 'project',
   children: b.partitions.map(p => ({
     key: p.id, label: p.name, level: '分区', ref: p, type: 'partition', project: b,
@@ -519,7 +519,7 @@ const currentFloors = computed(() => {
   const n = selectedNode.value
   if (!n) {
     // 默认展示所有项目的所有楼层
-    return projectStore.projects.flatMap(b => b.partitions.flatMap(p => p.floors))
+    return projectStore.visibleProjects.flatMap(b => b.partitions.flatMap(p => p.floors))
   }
   if (n.type === 'project') return n.ref.partitions.flatMap(p => p.floors)
   if (n.type === 'partition') return n.ref.floors
@@ -545,13 +545,13 @@ const panoExpBucket = ref('')
 const panoUnrentable = ref(false)
 const panoAreaKw = ref('')
 
-const panoSelectedProjectId = ref(projectStore.projects[0]?.id || '')
+const panoSelectedProjectId = ref(projectStore.visibleProjects[0]?.id || '')
 
 const panoTreeRef = ref(null)
 const panoTreeFilter = ref('')
 watch(panoTreeFilter, v => panoTreeRef.value?.filter(v))
 
-const panoTreeData = computed(() => projectStore.projects.map(b => ({
+const panoTreeData = computed(() => projectStore.visibleProjects.map(b => ({
   key: b.id, label: b.name, level: '项目', type: 'project',
   children: b.partitions.map(p => ({
     key: p.id, label: p.name, level: '分区', type: 'partition'
@@ -562,7 +562,7 @@ function onPanoNodeClick(data) {
   if (data.type === 'project') {
     panoSelectedProjectId.value = data.key
   } else if (data.type === 'partition') {
-    const b = projectStore.projects.find(b => b.partitions.some(p => p.id === data.key))
+    const b = projectStore.visibleProjects.find(b => b.partitions.some(p => p.id === data.key))
     if (b) panoSelectedProjectId.value = b.id
   }
 }
@@ -572,7 +572,7 @@ function projectTypeTag(type) {
 }
 
 const currentPanoProject = computed(() => {
-  const b = projectStore.projects.find(x => x.id === panoSelectedProjectId.value) || projectStore.projects[0]
+  const b = projectStore.visibleProjects.find(x => x.id === panoSelectedProjectId.value) || projectStore.visibleProjects[0]
   if (!b) return { name: '—', typeTag: '—', address: '—', image: '', cumIncome: 0, yearIncome: 0, lastMonthFeeRate: 0 }
   return {
     name: b.name, typeTag: projectTypeTag(b.type), address: b.address, image: b.image,
@@ -581,7 +581,7 @@ const currentPanoProject = computed(() => {
 })
 
 const currentPanoFloors = computed(() => {
-  const b = projectStore.projects.find(x => x.id === panoSelectedProjectId.value)
+  const b = projectStore.visibleProjects.find(x => x.id === panoSelectedProjectId.value)
   if (!b) return []
   return [...new Set(b.partitions.flatMap(p => p.floors.map(f => f.name)))]
 })
@@ -617,7 +617,7 @@ function hashIdx(id, mod) { let h = 0; for (let i = 0; i < id.length; i++) h = (
 
 const allPanoAssets = computed(() => {
   const list = []
-  projectStore.projects.forEach((b, bi) => {
+  projectStore.visibleProjects.forEach((b, bi) => {
     b.partitions.forEach(p => {
       p.floors.forEach(f => {
         f.rooms.forEach((r, ri) => {

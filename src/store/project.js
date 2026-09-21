@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { buildingHierarchy as initialHierarchy } from '../data/mock'
+import { useUserStore } from './user'
 
 let _bldSeq = 100
 let _partSeq = 100
@@ -21,6 +22,13 @@ export const useProjectStore = defineStore('project', () => {
   const projects = ref(JSON.parse(JSON.stringify(initialHierarchy)))
 
   const allProjects = computed(() => projects.value)
+
+  // 企业端登录账号只看本集团的项目，监管端不过滤。资产构建仍走全量 projects，避免影响台账统计。
+  const visibleProjects = computed(() => {
+    const user = useUserStore().user
+    if (!user || user.endpoint !== 'ent') return projects.value
+    return projects.value.filter(p => p.group === user.org)
+  })
 
   function getProjectById(id) {
     return projects.value.find(p => p.id === id)
@@ -192,6 +200,7 @@ export const useProjectStore = defineStore('project', () => {
   return {
     projects,
     allProjects,
+    visibleProjects,
     getProjectById,
     addProject,
     addRoomsToFloor,

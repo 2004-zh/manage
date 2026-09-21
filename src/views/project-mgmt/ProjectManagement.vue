@@ -101,10 +101,7 @@
           <el-col :span="12">
             <el-form-item label="所属集团" prop="group">
               <el-select v-model="form.group" style="width:100%">
-                <el-option label="城投集团" value="城投集团" />
-                <el-option label="产投集团" value="产投集团" />
-                <el-option label="水投集团" value="水投集团" />
-                <el-option label="领航公司" value="领航公司" />
+                <el-option v-for="g in formGroupOptions" :key="g" :label="g" :value="g" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -196,15 +193,22 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search, Location, OfficeBuilding } from '@element-plus/icons-vue'
 import { useProjectStore } from '../../store/project'
+import { useUserStore } from '../../store/user'
 
 const router = useRouter()
 const projectStore = useProjectStore()
+const userStore = useUserStore()
+// 新建项目只能落在本集团名下
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
+const formGroupOptions = computed(() =>
+  userStore.isEnt ? [currentCompany.value] : ['城投集团', '产投集团', '水投集团', '领航公司']
+)
 
 const searchKw = ref('')
 const filterGroup = ref('')
 const filterType = ref('')
 
-const projects = computed(() => projectStore.projects)
+const projects = computed(() => projectStore.visibleProjects)
 
 const groupOptions = computed(() => [...new Set(projects.value.map(p => p.group))])
 const typeOptions = computed(() => [...new Set(projects.value.map(p => p.type))])
@@ -265,7 +269,7 @@ const formRef = ref(null)
 const defaultForm = () => ({
   name: '',
   type: '住宅项目',
-  group: '城投集团',
+  group: userStore.isEnt ? currentCompany.value : '城投集团',
   address: '',
   partitions: []
 })

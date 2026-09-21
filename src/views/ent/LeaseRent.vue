@@ -54,9 +54,7 @@
             <el-input v-model="releaseFilters.keyword" placeholder="资产名称/编号/座落" clearable :prefix-icon="Search" style="width: 220px" @input="releasePage = 1" />
           </el-form-item>
           <el-form-item>
-            <el-select v-model="releaseFilters.company" placeholder="经营公司" clearable style="width: 150px" @change="releasePage = 1">
-              <el-option v-for="c in releaseCompanies" :key="c" :label="c" :value="c" />
-            </el-select>
+            <div class="scope-tag">经营公司锁定为「{{ currentCompany }}」，仅显示本公司招商数据</div>
           </el-form-item>
           <el-form-item>
             <el-select v-model="releaseFilters.status" placeholder="发布状态" clearable style="width: 130px" @change="releasePage = 1">
@@ -439,9 +437,8 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="所属公司" required>
-              <el-select v-model="releaseForm.company" placeholder="请选择所属公司" style="width:100%">
-                <el-option v-for="c in releaseCompanies" :key="c" :label="c" :value="c" />
-              </el-select>
+              <el-input :model-value="currentCompany" disabled style="width:100%" />
+              <div class="field-tip">按登录账号自动归属，如需以其他公司经营请用对应账号登录</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -567,11 +564,15 @@ import { Plus, Refresh, Filter, Search } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
 import { useLeaseStore } from '../../store/lease'
+import { useUserStore } from '../../store/user'
 
 const router = useRouter()
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
 const leaseStore = useLeaseStore()
+const userStore = useUserStore()
+// 招商数据按登录账号归属，经营公司不给选
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
 
 const activeTab = ref('release')
 const statusFilter = ref('')
@@ -597,19 +598,21 @@ function handleRentAssetPick() {
 const registerSearch = ref({ assetName: '', registrant: '' })
 
 const idleAssetOptions = computed(() =>
-  assetStore.assets
+  assetStore.visibleAssets
     .map(a => ({ id: a.id, name: a.name, status: a.status, totalArea: a.area, area: contractStore.getLeaseSummary(a).availableArea }))
     .filter(a => a.area > 0 && a.status !== '自用')
 )
 
-// 六张列表全部由 lease store 持有（可持久化、跨页面共享），页面只做筛选与展示
+// 六张列表由 lease store 持有（可持久化、跨页面共享）。
+// 页面展示读按登录公司过滤后的 visible*，新增/修改写回原始数组，不往 computed 里塞数据。
+const { releases, bids, results } = storeToRefs(leaseStore)
 const {
-  notices: publishList,
-  registrants: registrantList,
-  bids: bidList,
-  results: resultList,
-  rentRecords: records,
-  releases: releaseRecords
+  visibleNotices: publishList,
+  visibleRegistrants: registrantList,
+  visibleBids: bidList,
+  visibleResults: resultList,
+  visibleRentRecords: records,
+  visibleReleases: releaseRecords
 } = storeToRefs(leaseStore)
 
 const filteredRegistrants = computed(() => {
@@ -693,7 +696,8 @@ function handleOpenBid(row) {
     type: 'info'
   }).then(() => {
     const newBid = {
-      bidNo: `JJ-2026-${String(bidList.value.length + 1).padStart(3, '0')}`,
+      bidNo: `JJ-2026-${String(bids.value.length + 1).padStart(3, '0')}`,
+      company: row.company || currentCompany.value,
       noticeNo: row.noticeNo,
       assetName: row.assetName,
       startPrice: row.startPrice,
@@ -702,7 +706,7 @@ function handleOpenBid(row) {
       bidderCount: row.registrantCount,
       status: '进行中'
     }
-    bidList.value.unshift(newBid)
+    bids.value.unshift(newBid)
     row.status = '已截止'
     ElMessage.success('竞价已开启，已通知所有报名人')
   }).catch(() => {})
@@ -749,7 +753,8 @@ function handleCloseBid(row) {
     const winner = bidRecords.value[0]
     const publish = publishList.value.find(p => p.noticeNo === row.noticeNo)
     const newResult = {
-      resultNo: `GS-2026-${String(resultList.value.length + 1).padStart(3, '0')}`,
+      resultNo: `GS-2026-${String(results.value.length + 1).padStart(3, '0')}`,
+      company: row.company || currentCompany.value,
       noticeNo: row.noticeNo,
       assetId: publish?.assetId || row.assetId || '',
       assetName: row.assetName,
@@ -761,7 +766,7 @@ function handleCloseBid(row) {
       status: '已公示',
       contractId: ''
     }
-    resultList.value.unshift(newResult)
+    results.value.unshift(newResult)
     ElMessage.success('竞价已结束，结果已公示')
   }).catch(() => {})
 }
@@ -782,7 +787,7 @@ function handleSignContract(row) {
     router.push('/ent/contract-approval')
     return
   }
-  const asset = assetStore.assets.find(a => a.id === row.assetId) || assetStore.assets.find(a => a.name === row.assetName)
+  const asset = assetStore.visibleAssets.find(a => a.id === row.assetId) || assetStore.visibleAssets.find(a => a.name === row.assetName)
   if (!asset) {
     ElMessage.warning('未匹配到招租资产，无法生成合同')
     return
@@ -841,9 +846,7 @@ function viewResultDetail(row) {
   resultDetailVisible.value = true
 }
 
-const releaseCompanies = ['城投集团', '产投集团', '水投集团', '领航公司']
-
-const releaseFilters = ref({ keyword: '', company: '', status: '' })
+const releaseFilters = ref({ keyword: '', status: '' })
 const releaseShowFilter = ref(true)
 const releasePage = ref(1)
 const releasePageSize = ref(10)
@@ -852,7 +855,6 @@ const filteredReleases = computed(() => {
   return releaseRecords.value.filter(r => {
     const kw = releaseFilters.value.keyword
     if (kw && !r.assetName.includes(kw) && !r.assetNo.includes(kw) && !r.assetLocation.includes(kw)) return false
-    if (releaseFilters.value.company && r.company !== releaseFilters.value.company) return false
     if (typeof releaseFilters.value.status === 'boolean' && r.enabled !== releaseFilters.value.status) return false
     return true
   })
@@ -876,24 +878,24 @@ const releaseStats = computed(() => {
   }
 })
 
-const releaseAssetOptions = computed(() => assetStore.assets.filter(a => a.status !== '已出租'))
+const releaseAssetOptions = computed(() => assetStore.visibleAssets.filter(a => a.status !== '已出租'))
 
 const releaseFormVisible = ref(false)
 const releaseEditIndex = ref(-1)
 
 function defaultReleaseForm() {
   return {
-    assetId: '', company: '', leaseType: '中期（1-3年）', method: '公开竞价', periodRange: null,
+    assetId: '', company: currentCompany.value, leaseType: '中期（1-3年）', method: '公开竞价', periodRange: null,
     listImg: [], carouselImg: [], rentType: '价格', rent: 0, recommend: false, remark: '', intro: '', usageReq: ''
   }
 }
 const releaseForm = ref(defaultReleaseForm())
 
-const selectedReleaseAsset = computed(() => assetStore.assets.find(a => a.id === releaseForm.value.assetId) || null)
+const selectedReleaseAsset = computed(() => assetStore.visibleAssets.find(a => a.id === releaseForm.value.assetId) || null)
 
 const dialogAsset = computed(() => {
   if (releaseEditIndex.value >= 0) {
-    const r = releaseRecords.value[releaseEditIndex.value]
+    const r = releases.value[releaseEditIndex.value]
     if (r) {
       return {
         id: r.assetNo,
@@ -930,7 +932,8 @@ function handleReleaseAssetPick() {
 
 function openReleaseForm(row) {
   if (row) {
-    releaseEditIndex.value = releaseRecords.value.findIndex(r => r.id === row.id)
+    // 编辑索引要落在原始数组上：表格里看到的是按公司过滤后的列表，两者下标并不一致
+    releaseEditIndex.value = releases.value.findIndex(r => r.id === row.id)
     releaseForm.value = {
       assetId: row.assetId,
       company: row.company,
@@ -973,7 +976,7 @@ function saveRelease() {
   if (!f.usageReq) { ElMessage.warning('请填写用途要求'); return }
   const period = `${f.periodRange[0]} ~ ${f.periodRange[1]}`
   if (releaseEditIndex.value >= 0) {
-    Object.assign(releaseRecords.value[releaseEditIndex.value], {
+    Object.assign(releases.value[releaseEditIndex.value], {
       company: f.company,
       leaseType: f.leaseType,
       method: f.method,
@@ -989,7 +992,7 @@ function saveRelease() {
     })
     ElMessage.success('招租表单已更新')
   } else {
-    releaseRecords.value.unshift({
+    releases.value.unshift({
       id: Date.now(),
       assetId: asset.id,
       assetNo: asset.id,
@@ -1083,6 +1086,9 @@ function handleReleaseRefresh() {
   padding: 12px 12px 0;
   margin-bottom: 12px;
 }
+
+.scope-tag { line-height: 32px; font-size: 13px; color: var(--el-text-color-regular); }
+.field-tip { width: 100%; font-size: 12px; line-height: 1.6; color: var(--el-text-color-secondary); }
 
 .rent-price {
   color: #f5222d;

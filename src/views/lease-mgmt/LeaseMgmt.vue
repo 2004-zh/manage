@@ -226,7 +226,7 @@
             </el-col>
             <el-col :span="4">
               <el-select v-model="occFilters.company" placeholder="公司" clearable>
-                <el-option v-for="c in companies" :key="c" :label="c" :value="c" />
+                <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
               </el-select>
             </el-col>
             <el-col :span="4">
@@ -537,13 +537,19 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Filter, Search, ArrowDown } from '@element-plus/icons-vue'
+import { useUserStore } from '../../store/user'
 
 const router = useRouter()
+const userStore = useUserStore()
+// 本页是演示数据，行内 company 随机分到四家；企业端只放行本公司行
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
+const mineOnly = (rows) => userStore.isEnt ? rows.filter(r => r.company === currentCompany.value) : rows
 
 const mainTab = ref('lease')
 
 const categories = ['房产类', '土地类', '经营类房屋店铺', '农贸市场', '运输设备', '矿产资源类', '公共设备类', '长期股权投资类', '经营性生产设备类', '特殊特种行业类', '经营权类资产', '特殊动植物类']
 const companies = ['城投集团', '产投集团', '水投集团', '领航公司']
+const companyOptions = computed(() => userStore.isEnt ? [currentCompany.value] : companies)
 const sourceTypes = ['自建', '购置', '划转', '接收', '注入']
 const ownerships = ['有证', '无证', '两证齐全', '待办证']
 const responsibles = ['张伟', '李娜', '王强', '刘敏', '陈杰']
@@ -607,7 +613,7 @@ function buildAssets() {
   return list
 }
 
-const assetData = ref(buildAssets())
+const assetData = ref(mineOnly(buildAssets()))
 const categoryTab = ref(categories[0])
 const sourceFilter = ref('不限')
 const ownershipFilter = ref('不限')
@@ -831,7 +837,7 @@ const occData = ref([
 ])
 
 const filteredOcc = computed(() => {
-  return occData.value.filter(o => {
+  return mineOnly(occData.value).filter(o => {
     if (occFilters.value.person && !o.person.includes(occFilters.value.person)) return false
     if (occFilters.value.company && o.company !== occFilters.value.company) return false
     if (occFilters.value.status && o.status !== occFilters.value.status) return false

@@ -826,7 +826,7 @@ const toLedgerRow = (a, i) => {
   }
 }
 
-const assetList = computed(() => assetStore.assets.map(toLedgerRow))
+const assetList = computed(() => assetStore.visibleAssets.map(toLedgerRow))
 
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -1273,7 +1273,7 @@ const codeRoomStatus = (s) => {
   return s || '未租赁'
 }
 
-const codeProjects = computed(() => projectStore.projects.map(b => {
+const codeProjects = computed(() => projectStore.visibleProjects.map(b => {
   const floors = [...new Set(b.partitions.flatMap(p => p.floors.map(f => f.name)))]
   const rooms = b.partitions.flatMap(p => p.floors.flatMap(f => f.rooms.map(r => ({
     code: r.assetNo || r.id,

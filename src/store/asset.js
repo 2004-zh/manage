@@ -5,6 +5,7 @@ import { resolveAssetCategory } from '../data/assetCategory'
 import { useProjectStore } from './project'
 import { useAuditStore } from './audit'
 import { useChangeLogStore } from './changeLog'
+import { useUserStore } from './user'
 
 function roomToAsset(r, b, p, f) {
   return {
@@ -70,6 +71,14 @@ export const useAssetStore = defineStore('asset', () => {
   )
 
   const allAssets = computed(() => assets.value)
+
+  // 企业端登录账号只看本公司资产，监管端不过滤。ent 页面一律读这个 getter，
+  // 避免每个页面各写一份公司过滤、也避免漏写导致跨公司可见。
+  const visibleAssets = computed(() => {
+    const user = useUserStore().user
+    if (!user || user.endpoint !== 'ent') return assets.value
+    return assets.value.filter(a => a.group === user.org)
+  })
 
   // 缓存恢复后：① 按 id 补齐后续版本新增的种子资产（$patch 会用旧数组整体覆盖 baseAssets）；
   // ② 一次性还原旧版本被压错的资产分类。用户自行登记的资产与主动删除的记录都不动。
@@ -237,6 +246,7 @@ export const useAssetStore = defineStore('asset', () => {
     onHydrated: syncSeedsAfterHydrate,
     assets,
     allAssets,
+    visibleAssets,
     certRecords,
     getAssetsByCompany,
     addAsset,

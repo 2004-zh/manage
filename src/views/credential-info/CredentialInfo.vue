@@ -151,7 +151,7 @@
         </el-form-item>
         <el-form-item label="关联资产" required>
           <el-select v-model="form.relatedAsset" placeholder="请选择关联资产" style="width:100%" filterable>
-            <el-option v-for="a in assetStore.assets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
+            <el-option v-for="a in assetStore.visibleAssets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
           </el-select>
         </el-form-item>
         <el-form-item label="发证日期" required>

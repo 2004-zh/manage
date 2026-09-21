@@ -209,7 +209,7 @@ function collectRate(row) {
   return Math.round(row.cumActual / row.cumReceivable * 1000) / 10
 }
 
-const reportRecords = computed(() => reportStore.reports)
+const reportRecords = computed(() => reportStore.reports.filter(r => r.company === currentCompany.value))
 
 const handleGenerate = () => {
   const companyName = userStore.user?.org || '城投集团'

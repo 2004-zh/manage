@@ -464,6 +464,12 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Filter, Plus, MoreFilled } from '@element-plus/icons-vue'
+import { useAssetStore } from '../../store/asset'
+import { useUserStore } from '../../store/user'
+
+const assetStore = useAssetStore()
+const userStore = useUserStore()
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
 
 const activeTab = ref('list')
 const methodFilter = ref('')
@@ -484,20 +490,19 @@ const pendingPageSize = ref(10)
 const historyPage = ref(1)
 const historyPageSize = ref(10)
 
-const companyOptions = ['城投集团', '产投集团', '水投集团', '领航公司']
+const companyOptions = computed(() => [userStore.user?.org || '城投集团'])
 const personOptions = ['张三', '李四', '王五', '赵六', '当前用户']
 
 const createForm = ref({
   assetId: '', method: '出售', disposeValue: 0, reason: '', remark: '', assessor: ''
 })
 
-const assetOptions = ref([
-  { id: 'CT-003', name: '城关旧厂房3#', bookValue: 180 },
-  { id: 'CT-015', name: '航城商铺B-12', bookValue: 85 },
-  { id: 'CT-028', name: '营前仓库D-02', bookValue: 120 },
-  { id: 'CT-042', name: '漳港办公楼3层', bookValue: 320 },
-  { id: 'CT-055', name: '江田农贸市场2#', bookValue: 560 },
-])
+// 处置候选直接取台账资产，企业端天然只有本公司名下资产
+const assetOptions = computed(() =>
+  assetStore.visibleAssets
+    .filter(a => a.status !== '已处置')
+    .map(a => ({ id: a.id, name: a.name, bookValue: Math.round(a.bookValue || 0) }))
+)
 
 function getApprovalLevels(value) {
   if (value >= 500) return { total: 4, levels: ['部门经理', '分管领导', '总经理', '国资中心备案'] }
@@ -614,21 +619,24 @@ const records = ref([
   },
 ])
 
-const totalValue = computed(() => records.value.reduce((sum, r) => sum + (r.disposeValue || 0), 0))
-const totalAssetCount = computed(() => records.value.reduce((sum, r) => sum + (r.assets ? r.assets.length : 0), 0))
-const finishedRecords = computed(() => records.value.filter(r => r.disposeStatus === '完成'))
+// 处置记录按登录公司隔离；新增/审批仍写回原始 records
+const myRecords = computed(() => userStore.isEnt ? records.value.filter(r => r.company === currentCompany.value) : records.value)
+
+const totalValue = computed(() => myRecords.value.reduce((sum, r) => sum + (r.disposeValue || 0), 0))
+const totalAssetCount = computed(() => myRecords.value.reduce((sum, r) => sum + (r.assets ? r.assets.length : 0), 0))
+const finishedRecords = computed(() => myRecords.value.filter(r => r.disposeStatus === '完成'))
 const finishedCount = computed(() => finishedRecords.value.length)
 const finishedZong = computed(() => finishedRecords.value.reduce((sum, r) => sum + (r.assets ? r.assets.length : 0), 0))
-const pendingDisposeRecords = computed(() => records.value.filter(r => r.disposeStatus === '进行中'))
+const pendingDisposeRecords = computed(() => myRecords.value.filter(r => r.disposeStatus === '进行中'))
 const pendingDisposeCount = computed(() => pendingDisposeRecords.value.length)
 const pendingDisposeZong = computed(() => pendingDisposeRecords.value.reduce((sum, r) => sum + (r.assets ? r.assets.length : 0), 0))
 const currentYear = String(new Date().getFullYear())
-const yearValue = computed(() => records.value
+const yearValue = computed(() => myRecords.value
   .filter(r => (r.disposeDate || '').startsWith(currentYear))
   .reduce((sum, r) => sum + (r.disposeValue || 0), 0))
 
 const filteredRecords = computed(() => {
-  let result = records.value
+  let result = myRecords.value
   if (methodFilter.value) result = result.filter(r => r.method === methodFilter.value)
   if (statusFilter.value) result = result.filter(r => r.status === statusFilter.value)
   if (disposeStatusFilter.value) result = result.filter(r => r.disposeStatus === disposeStatusFilter.value)
@@ -678,7 +686,7 @@ function handleRefresh() {
 
 // 待审批
 const pendingApprovals = computed(() => {
-  return records.value.filter(r => r.status === '待审批' && r.approvalSteps.some(s => s.isActive))
+  return myRecords.value.filter(r => r.status === '待审批' && r.approvalSteps.some(s => s.isActive))
 })
 
 const pendingApprovalCount = computed(() => pendingApprovals.value.length)
@@ -805,7 +813,7 @@ function handleCreate() {
     reason: createForm.value.reason,
     remark: createForm.value.remark,
     projectType: '资产产权',
-    company: '城投集团',
+    company: currentCompany.value,
     disposeDate: new Date().toISOString().slice(0, 10),
     disposePerson: '当前用户',
     createdAt: now,
