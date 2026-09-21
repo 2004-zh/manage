@@ -18,7 +18,7 @@ function roomToAsset(r, b, p, f) {
     bookValue: 0,
     location: `${b.address} ${p.name} ${f.name}`,
     status: r.status,
-    certStatus: r.hasPropertyRight ? '已办证' : '未办证',
+    certStatus: r.certStatus || (r.hasPropertyRight ? '已办证' : '未办证（未启动）'),
     certDetail: r.hasPropertyRight ? `闽(2023)长乐区不动产权第${r.id.replace(/\D/g, '').padStart(7, '0')}号` : '',
     group: b.group,
     projectId: b.id,

@@ -187,7 +187,10 @@ export const useProjectStore = defineStore('project', () => {
     if ('vacancyDays' in updates) r.vacancyDays = updates.vacancyDays
     if ('area' in updates) r.area = Number(updates.area) || 0
     if ('name' in updates) r.name = updates.name
-    if ('certStatus' in updates) r.hasPropertyRight = updates.certStatus === '已办证'
+    if ('certStatus' in updates) {
+      r.certStatus = updates.certStatus
+      r.hasPropertyRight = updates.certStatus === '已办证'
+    }
     if ('certDetail' in updates) r.certDetail = updates.certDetail || ''
     if ('annualRent' in updates && updates.annualRent != null) {
       r.monthlyRent = Math.round(Number(updates.annualRent) * 10000 / 12)

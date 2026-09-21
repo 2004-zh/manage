@@ -289,28 +289,28 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useFinanceStore } from '../../store/finance'
 
+const financeStore = useFinanceStore()
 const activeTab = ref('revenue')
 
-const stats = computed(() => ({
-  revenue: 2580,
-  received: 2350,
-  expense: 386,
-  reconciled: 96.5
-}))
+const stats = computed(() => {
+  const s = financeStore.stats
+  const total = financeStore.revenueRecords.length
+  const posted = financeStore.revenueRecords.filter(r => r.voucherNo).length
+  return {
+    revenue: s.revenue,
+    received: s.received,
+    expense: s.expense,
+    reconciled: total ? Math.round(posted / total * 1000) / 10 : 0
+  }
+})
 
-// 收入确认
-const revenueRecords = ref([
-  { contractId: 'HT-2026-001', tenant: '福州长乐融辉贸易有限公司', revenueType: '租金收入', period: '2026-01 至 2026-06', amount: 21, voucherNo: 'PZ-2026-06-001' },
-  { contractId: 'HT-2026-002', tenant: '福建省长乐市鸿运纺织有限公司', revenueType: '租金收入', period: '2026-01 至 2026-06', amount: 35, voucherNo: 'PZ-2026-06-002' },
-  { contractId: 'HT-2026-003', tenant: '长乐区鑫源投资有限公司', revenueType: '租金收入', period: '2026-07 至 2026-12', amount: 12, voucherNo: '' },
-  { contractId: 'HT-2026-004', tenant: '福州航城物流有限公司', revenueType: '租金收入', period: '2026-07 至 2026-12', amount: 8, voucherNo: '' },
-  { contractId: 'HT-2026-001', tenant: '福州长乐融辉贸易有限公司', revenueType: '保证金', period: '2026-01', amount: 5, voucherNo: 'PZ-2026-01-015' },
-])
+const revenueRecords = computed(() => financeStore.revenueRecords)
 
 function generateVoucher(row) {
   ElMessageBox.confirm(`确认为 ${row.tenant} 的 ${row.revenueType} ${row.amount} 万元生成财务凭证？`, '生成凭证', { type: 'info' }).then(() => {
-    row.voucherNo = `PZ-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 900) + 100)}`
+    financeStore.generateVoucher(row.revenueType, row.contractId)
     ElMessage.success('财务凭证已生成')
   }).catch(() => {})
 }
@@ -323,14 +323,7 @@ function viewRevenueDetail(row) {
   revenueDetailVisible.value = true
 }
 
-// 费用归集
-const expenseRecords = ref([
-  { expenseNo: 'FY-2026-001', assetName: '城关商铺A-01', expenseType: '维修费', amount: 2.5, occurDate: '2026-08-10', supplier: '长乐区建安装修工程队', expenseVoucher: 'PZ-2026-08-050' },
-  { expenseNo: 'FY-2026-002', assetName: '航城厂房1#', expenseType: '水电费', amount: 1.8, occurDate: '2026-08-15', supplier: '国网福建省长乐区供电公司', expenseVoucher: '' },
-  { expenseNo: 'FY-2026-003', assetName: '漳港办公楼2层', expenseType: '物业费', amount: 0.6, occurDate: '2026-08-20', supplier: '长乐航城物业管理有限公司', expenseVoucher: '' },
-  { expenseNo: 'FY-2026-004', assetName: '营前仓库B-03', expenseType: '保险费', amount: 0.35, occurDate: '2026-07-01', supplier: '中国人民财产保险长乐支公司', expenseVoucher: 'PZ-2026-07-012' },
-  { expenseNo: 'FY-2026-005', assetName: '城关旧厂房3#', expenseType: '折旧费', amount: 12, occurDate: '2026-08-31', supplier: '-', expenseVoucher: '' },
-])
+const expenseRecords = computed(() => financeStore.expenses)
 
 const showExpenseDialog = ref(false)
 const expenseForm = ref({
@@ -347,8 +340,8 @@ function handleCreateExpense() {
     ElMessage.warning('请填写完整费用信息')
     return
   }
-  expenseRecords.value.unshift({
-    expenseNo: `FY-${new Date().getFullYear()}-${String(expenseRecords.value.length + 1).padStart(3, '0')}`,
+  financeStore.expenses.unshift({
+    expenseNo: `FY-${new Date().getFullYear()}-${String(financeStore.expenses.length + 1).padStart(3, '0')}`,
     assetName: expenseForm.value.assetName || '未关联',
     expenseType: expenseForm.value.expenseType,
     amount: expenseForm.value.amount,
@@ -434,14 +427,7 @@ function viewReconcile(row) {
   showReconcileDrawer.value = true
 }
 
-// 数据映射
-const mappings = ref([
-  { bizType: '租金收入', bizField: 'annualRent', accountCode: '6001', accountName: '主营业务收入-租金', direction: '贷' },
-  { bizType: '保证金收取', bizField: 'deposit', accountCode: '2241', accountName: '其他应付款-保证金', direction: '贷' },
-  { bizType: '维修费用', bizField: 'repairCost', accountCode: '6602', accountName: '管理费用-维修费', direction: '借' },
-  { bizType: '水电费用', bizField: 'utilityCost', accountCode: '6602', accountName: '管理费用-水电费', direction: '借' },
-  { bizType: '折旧费用', bizField: 'depreciation', accountCode: '6602', accountName: '管理费用-折旧费', direction: '借' },
-])
+const mappings = computed(() => financeStore.accountMappings)
 
 const showMappingDialog = ref(false)
 const mappingForm = ref({
@@ -457,7 +443,7 @@ function handleCreateMapping() {
     ElMessage.warning('请填写完整映射信息')
     return
   }
-  mappings.value.push({ ...mappingForm.value })
+  financeStore.accountMappings.push({ ...mappingForm.value })
   showMappingDialog.value = false
   mappingForm.value = { bizType: '租金收入', bizField: '', accountCode: '', accountName: '', direction: '贷' }
   ElMessage.success('映射关系已保存')
@@ -470,8 +456,8 @@ function editMapping(row) {
 
 function deleteMapping(row) {
   ElMessageBox.confirm(`确认删除映射"${row.bizType} → ${row.accountName}"？`, '删除确认', { type: 'warning' }).then(() => {
-    const idx = mappings.value.findIndex(m => m.accountCode === row.accountCode && m.bizField === row.bizField)
-    if (idx > -1) mappings.value.splice(idx, 1)
+    const idx = financeStore.accountMappings.findIndex(m => m.accountCode === row.accountCode && m.bizField === row.bizField)
+    if (idx > -1) financeStore.accountMappings.splice(idx, 1)
     ElMessage.success('映射已删除')
   }).catch(() => {})
 }
@@ -479,13 +465,13 @@ function deleteMapping(row) {
 function handleSync() {
   ElMessageBox.confirm('确认从财务系统同步最新数据？', '数据同步', { type: 'info' }).then(() => {
     let synced = 0
-    revenueRecords.value.forEach(r => {
+    financeStore.revenueRecords.forEach(r => {
       if (!r.voucherNo) {
-        r.voucherNo = `PZ-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 900) + 100)}`
+        financeStore.generateVoucher(r.revenueType, r.contractId)
         synced++
       }
     })
-    expenseRecords.value.forEach(r => {
+    financeStore.expenses.forEach(r => {
       if (!r.expenseVoucher) {
         r.expenseVoucher = `PZ-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 900) + 100)}`
         synced++

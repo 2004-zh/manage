@@ -64,13 +64,24 @@ const SEED_INVOICE_RATES = [
   { bizType: '临时占道费', invoiceType: '电子发票', rate: 3, remark: '小规模纳税人征收率', enabled: false }
 ]
 
+const SEED_TAX_RECORDS = [
+  { id: 1, taxNo: 'TAX20240901', taxType: '房产税', relatedAsset: '滨江科技园A座8层', taxBase: 8000000, taxRate: '1.2%', taxAmount: 96000, deadline: '2024-10-31', payStatus: '待缴纳' },
+  { id: 2, taxNo: 'TAX20240902', taxType: '增值税', relatedAsset: '滨江科技园A座8层', taxBase: 58000, taxRate: '9%', taxAmount: 5220, deadline: '2024-10-15', payStatus: '已缴纳' },
+  { id: 3, taxNo: 'TAX20240903', taxType: '印花税', relatedAsset: 'HT20240201', taxBase: 2160000, taxRate: '0.1%', taxAmount: 2160, deadline: '2024-09-30', payStatus: '已逾期' },
+  { id: 4, taxNo: 'TAX20240904', taxType: '土地使用税', relatedAsset: '余杭区仓储中心3号库', taxBase: 12000, taxRate: '6元/㎡', taxAmount: 72000, deadline: '2024-12-31', payStatus: '待缴纳' },
+  { id: 5, taxNo: 'TAX20240905', taxType: '房产税', relatedAsset: '西湖区文三路商铺', taxBase: 3200000, taxRate: '1.2%', taxAmount: 38400, deadline: '2024-10-31', payStatus: '待缴纳' },
+  { id: 6, taxNo: 'TAX20240906', taxType: '增值税', relatedAsset: '西湖区文三路商铺', taxBase: 22000, taxRate: '9%', taxAmount: 1980, deadline: '2024-10-15', payStatus: '已缴纳' },
+  { id: 7, taxNo: 'TAX20240907', taxType: '印花税', relatedAsset: 'HT20230801', taxBase: 1740000, taxRate: '0.1%', taxAmount: 1740, deadline: '2024-08-31', payStatus: '已逾期' },
+  { id: 8, taxNo: 'TAX20240908', taxType: '房产税', relatedAsset: '余杭区仓储中心3号库', taxBase: 5400000, taxRate: '1.2%', taxAmount: 64800, deadline: '2024-10-31', payStatus: '待缴纳' }
+]
+
 export const useFinanceStore = defineStore('finance', () => {
   const invoices = ref(JSON.parse(JSON.stringify(SEED_INVOICES)))
   const expenses = ref(JSON.parse(JSON.stringify(SEED_EXPENSES)))
   const accountMappings = ref(JSON.parse(JSON.stringify(SEED_ACCOUNTS)))
   const taxRules = ref(JSON.parse(JSON.stringify(SEED_TAX_RULES)))
   const invoiceRates = ref(JSON.parse(JSON.stringify(SEED_INVOICE_RATES)))
-  const taxRecords = ref([])
+  const taxRecords = ref(JSON.parse(JSON.stringify(SEED_TAX_RECORDS)))
   const vouchers = ref([])
   const priceOverrides = ref([])
   const reconciles = ref([])
@@ -78,6 +89,16 @@ export const useFinanceStore = defineStore('finance', () => {
   function voucherOf(bizType, bizId) {
     const v = vouchers.value.find(x => x.bizType === bizType && x.bizId === bizId)
     return v ? v.voucherNo : ''
+  }
+
+  function generateVoucher(bizType, bizId) {
+    const existing = vouchers.value.find(x => x.bizType === bizType && x.bizId === bizId)
+    if (existing) return existing.voucherNo
+    const pad = n => String(n).padStart(2, '0')
+    const now = new Date()
+    const voucherNo = `PZ-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${String(Math.floor(Math.random() * 900) + 100)}`
+    vouchers.value.push({ bizType, bizId, voucherNo, date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` })
+    return voucherNo
   }
 
   // 收入确认不再手工维护：直接由应收实收台账 + 合同保证金派生
@@ -241,6 +262,7 @@ export const useFinanceStore = defineStore('finance', () => {
     debtTotal,
     rentMarginRows,
     taxSummary,
-    voucherOf
+    voucherOf,
+    generateVoucher
   }
 })

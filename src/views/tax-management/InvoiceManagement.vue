@@ -502,6 +502,9 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Refresh, Filter, Plus } from '@element-plus/icons-vue'
+import { useFinanceStore } from '../../store/finance'
+
+const financeStore = useFinanceStore()
 
 const activeTab = ref('invoiceOrders')
 const recKeyword = ref('')
@@ -667,15 +670,7 @@ function refreshOrders() {
   ElMessage.success('开票订单数据已刷新')
 }
 
-const records = ref([
-  { invoiceNo: 'FP-2026-001', invoiceType: '增值税普通发票', tenant: '福州长乐融辉贸易有限公司', amount: 21, taxRate: 5, tax: 1.05, issueDate: '2026-06-30', invoiceStatus: '已开具', auto: false },
-  { invoiceNo: 'FP-2026-002', invoiceType: '增值税专用发票', tenant: '福建省长乐市鸿运纺织有限公司', amount: 35, taxRate: 5, tax: 1.75, issueDate: '2026-05-15', invoiceStatus: '已开具', auto: true },
-  { invoiceNo: 'FP-2026-003', invoiceType: '电子发票', tenant: '长乐区鑫源投资有限公司', amount: 12, taxRate: 5, tax: 0.6, issueDate: '2026-07-10', invoiceStatus: '已开具', auto: true },
-  { invoiceNo: 'FP-2026-004', invoiceType: '增值税普通发票', tenant: '福州航城物流有限公司', amount: 8, taxRate: 5, tax: 0.4, issueDate: '2026-08-02', invoiceStatus: '待开具', auto: false },
-  { invoiceNo: 'FP-2025-012', invoiceType: '增值税普通发票', tenant: '福州航城物流有限公司', amount: 8, taxRate: 5, tax: 0.4, issueDate: '2025-12-20', invoiceStatus: '已红冲', auto: false },
-])
-
-const filteredRecords = computed(() => records.value.filter(r => {
+const filteredRecords = computed(() => financeStore.invoices.filter(r => {
   if (recKeyword.value && !(r.invoiceNo.includes(recKeyword.value) || r.tenant.includes(recKeyword.value))) return false
   if (recStatus.value && r.invoiceStatus !== recStatus.value) return false
   return true
@@ -689,10 +684,10 @@ const pagedRecords = computed(() => {
 })
 
 const stats = computed(() => ({
-  issued: records.value.filter(r => r.invoiceStatus === '已开具').length,
+  issued: financeStore.invoices.filter(r => r.invoiceStatus === '已开具').length,
   pendingTitle: titles.value.filter(t => t.status === '待审核').length,
   autoCount: autoRules.value.filter(r => r.enabled).length,
-  totalAmount: records.value.filter(r => r.invoiceStatus === '已开具').reduce((s, r) => s + r.amount, 0).toFixed(1)
+  totalAmount: financeStore.invoices.filter(r => r.invoiceStatus === '已开具').reduce((s, r) => s + r.amount, 0).toFixed(1)
 }))
 
 // ===== 抬头审核 =====
@@ -719,13 +714,8 @@ function auditTitle(row, pass) {
 }
 
 // ===== 税率配置 =====
-const taxRates = ref([
-  { bizType: '租金', invoiceType: '增值税普通发票', rate: 5, remark: '不动产经营租赁服务', enabled: true },
-  { bizType: '物业费', invoiceType: '增值税普通发票', rate: 6, remark: '现代服务-物业管理', enabled: true },
-  { bizType: '租金', invoiceType: '增值税专用发票', rate: 9, remark: '一般纳税人不动产租赁', enabled: true },
-  { bizType: '临时占道费', invoiceType: '电子发票', rate: 3, remark: '小规模纳税人征收率', enabled: false },
-])
-const enabledRates = computed(() => taxRates.value.filter(r => r.enabled))
+const taxRates = computed(() => financeStore.invoiceRates)
+const enabledRates = computed(() => financeStore.invoiceRates.filter(r => r.enabled))
 
 const showRate = ref(false)
 const editingRate = ref(false)
@@ -738,18 +728,19 @@ function openRateDialog(row) {
 function saveRate() {
   if (!rateForm.value.bizType) { ElMessage.warning('请填写业务类型'); return }
   if (editingRate.value) {
-    const r = taxRates.value.find(x => x.bizType === rateForm.value.bizType && x.invoiceType === rateForm.value.invoiceType)
-    Object.assign(r || {}, rateForm.value)
+    const r = financeStore.invoiceRates.find(x => x.bizType === rateForm.value.bizType && x.invoiceType === rateForm.value.invoiceType)
+    if (r) Object.assign(r, rateForm.value)
     ElMessage.success('税率已更新')
   } else {
-    taxRates.value.push({ ...rateForm.value })
+    financeStore.invoiceRates.push({ ...rateForm.value })
     ElMessage.success('税率已新增')
   }
   showRate.value = false
 }
 function deleteRate(row) {
   ElMessageBox.confirm(`确认删除「${row.bizType} / ${row.invoiceType}」税率配置？`, '提示', { type: 'warning' }).then(() => {
-    taxRates.value = taxRates.value.filter(r => r !== row)
+    const idx = financeStore.invoiceRates.findIndex(r => r === row)
+    if (idx >= 0) financeStore.invoiceRates.splice(idx, 1)
     ElMessage.success('已删除')
   }).catch(() => {})
 }
@@ -825,8 +816,8 @@ function redInvoice(row) {
 function submitIssue() {
   if (!issueForm.value.tenant) { ElMessage.warning('请选择承租方抬头（需先通过抬头审核）'); return }
   if (!issueForm.value.amount) { ElMessage.warning('请填写开票金额'); return }
-  const no = `FP-${new Date().getFullYear()}-${String(records.value.length + 1).padStart(3, '0')}`
-  records.value.unshift({
+  const no = `FP-${new Date().getFullYear()}-${String(financeStore.invoices.length + 1).padStart(3, '0')}`
+  financeStore.invoices.unshift({
     invoiceNo: no,
     invoiceType: issueForm.value.invoiceType,
     tenant: issueForm.value.tenant,
