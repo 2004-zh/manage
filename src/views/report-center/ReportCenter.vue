@@ -106,11 +106,12 @@ import { ElMessage } from 'element-plus'
 import { Search, Refresh, Download, Printer } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
+import { ASSET_CATEGORIES } from '../../data/assetCategory'
 
 const route = useRoute()
 const pageTitle = computed(() => route.meta?.title || '报表中心')
 
-const categories = ['房产类', '土地类', '经营类房屋店铺', '农贸市场', '运输设备', '矿产资源类', '公共设备类', '长期股权投资类', '经营性生产设备类', '特殊特种行业类', '经营权类资产', '特殊动植物类']
+const categories = ASSET_CATEGORIES
 const activeCategory = ref('房产类')
 const page = ref(1)
 const pageSize = 10
@@ -309,10 +310,8 @@ const CONFIG = {
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
 
-const typeCategory = { '保障房': '房产类', '商铺': '经营类房屋店铺', '写字楼': '房产类', '厂房': '经营性生产设备类', '农贸市场': '农贸市场' }
-
 const assetStatsRows = computed(() => assetStore.assets.map(a => ({
-  category: a.assetCategory && a.assetCategory !== '房产类' ? a.assetCategory : (typeCategory[a.type] || '房产类'),
+  category: a.assetCategory || '房产类',
   region: '福建省/福州市/长乐区',
   project: a.projectName || a.name,
   district: a.zoneName || '—',
@@ -329,7 +328,7 @@ const operationRows = computed(() => contractStore.contracts.map(c => {
   const terminated = c.status === '已终止' || c.status === '退租'
   const rate = asset && asset.area ? Math.min(100, Math.round((c.leaseArea || asset.area) / asset.area * 100)) : 100
   return {
-    category: asset ? (asset.assetCategory && asset.assetCategory !== '房产类' ? asset.assetCategory : (typeCategory[asset.type] || '房产类')) : '房产类',
+    category: asset ? (asset.assetCategory || '房产类') : '房产类',
     code: c.id,
     name: c.assetName || (asset ? asset.name : '—'),
     tenant: c.tenant,

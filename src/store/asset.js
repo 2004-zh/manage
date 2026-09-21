@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { chengtouAssets as initialAssets } from '../data/mock'
+import { resolveAssetCategory } from '../data/assetCategory'
 import { useProjectStore } from './project'
 import { useAuditStore } from './audit'
 import { useChangeLogStore } from './changeLog'
@@ -10,7 +11,7 @@ function roomToAsset(r, b, p, f) {
     id: r.id,
     name: r.name,
     assetNo: r.assetNo,
-    assetCategory: '房产类',
+    assetCategory: resolveAssetCategory({ type: b.type }),
     type: b.type,
     area: r.area,
     bookValue: 0,
@@ -57,13 +58,39 @@ export const useAssetStore = defineStore('asset', () => {
     return list
   })
 
+  // 分类在此统一落定：人工选过的算数，没选过的按资产类型推断，页面只读不再各自猜。
   const assets = computed(() =>
     [...baseAssets.value, ...roomAssets.value]
       .filter(a => !removedIds.value.includes(a.id))
-      .map(a => (overrides.value[a.id] ? { ...a, ...overrides.value[a.id] } : a))
+      .map(a => {
+        const merged = overrides.value[a.id] ? { ...a, ...overrides.value[a.id] } : a
+        const category = resolveAssetCategory(merged)
+        return category === merged.assetCategory ? merged : { ...merged, assetCategory: category }
+      })
   )
 
   const allAssets = computed(() => assets.value)
+
+  // 旧版本 localStorage 给种子资产统一压过 '房产类'，会把它们钉在错误的页签上。
+  // 升级到「分类在 store 里一次定死」后，用一次性纠正把种子行的分类还原成当前种子值；
+  // 用户自己登记的资产（不在种子里）原样保留。
+  const SEED_CATEGORY_FIX = 'ams:seed-category-fixed-v2'
+  function onSeedCategoryMigrated() {
+    if (localStorage.getItem(SEED_CATEGORY_FIX)) return
+    const seedCategory = new Map(initialAssets.map(a => [a.id, a.assetCategory]))
+    baseAssets.value = baseAssets.value.map(a =>
+      seedCategory.has(a.id) && a.assetCategory !== seedCategory.get(a.id)
+        ? { ...a, assetCategory: seedCategory.get(a.id) }
+        : a)
+    const cleaned = {}
+    Object.entries(overrides.value).forEach(([id, patch]) => {
+      if (!seedCategory.has(id) || patch.assetCategory === undefined) { cleaned[id] = patch; return }
+      const { assetCategory, ...rest } = patch
+      if (Object.keys(rest).length) cleaned[id] = rest
+    })
+    overrides.value = cleaned
+    localStorage.setItem(SEED_CATEGORY_FIX, '1')
+  }
 
   const certRecords = computed(() =>
     assets.value
@@ -195,6 +222,7 @@ export const useAssetStore = defineStore('asset', () => {
     baseAssets,
     overrides,
     removedIds,
+    onHydrated: onSeedCategoryMigrated,
     assets,
     allAssets,
     certRecords,

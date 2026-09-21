@@ -24,6 +24,7 @@ export function piniaPersistPlugin({ store }) {
   if (saved) {
     try {
       store.$patch(saved)
+      store.onHydrated?.()
     } catch (e) {
       console.warn('[persist] hydrate failed', store.$id, e)
     }

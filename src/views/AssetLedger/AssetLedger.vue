@@ -748,6 +748,7 @@ import * as echarts from 'echarts'
 import AssetDetailDrawer from '../../components/AssetDetailDrawer.vue'
 import { useAssetStore } from '../../store/asset'
 import { useProjectStore } from '../../store/project'
+import { ASSET_CATEGORIES, deriveAssetCategory } from '../../data/assetCategory'
 
 const route = useRoute()
 const router = useRouter()
@@ -766,7 +767,7 @@ watch(searchForm, () => {
   currentPage.value = 1
 }, { deep: true })
 
-const assetCategories = ['房产类', '土地类', '经营类房屋店铺', '农贸市场', '运输设备', '矿产资源类', '公共设备类', '长期股权投资类', '经营性生产设备类', '特殊特种行业类', '经营权类资产', '特殊动植物类']
+const assetCategories = ASSET_CATEGORIES
 const sourceTypeOptions = ['不限', '房屋拆迁', '收储', '征收', '法院判决', '股权合作', '置换代管', '投资建设', '还建', '回迁', '划入', '租入', '购入', '自筹建设', '托管', '移交资产']
 const ownershipOptions = ['不限', '其他', '联营', '委托经营', '自有', '代管', '移交']
 
@@ -776,7 +777,6 @@ const activeOwnership = ref('不限')
 const viewMode = ref('list')
 const filterVisible = ref(true)
 
-const categoryByType = { '保障房': '房产类', '商铺': '经营类房屋店铺', '写字楼': '房产类', '厂房': '经营性生产设备类', '农贸市场': '农贸市场' }
 const districtNames = ['A分区', 'B分区', 'C分区']
 const CHANGLE_REGION = '福建省/福州市/长乐区'
 const operateCompanies = ['城投经营有限公司', '文旅经营有限公司', '农投经营有限公司']
@@ -801,7 +801,7 @@ const toLedgerRow = (a, i) => {
     rentPrice: a.rentPrice ?? (a.monthlyRent || 0),
     owner: a.owner || a.group || '',
     remark: a.remark || '',
-    category: a.assetCategory && a.assetCategory !== '房产类' ? a.assetCategory : (categoryByType[a.type] || '房产类'),
+    category: a.assetCategory || '房产类',
     project: a.projectName || a.name,
     projectAddress: a.projectAddress || a.location,
     assetAddress: a.assetAddress || a.location,
@@ -882,11 +882,18 @@ const certRules = {
   expiryDate: [{ required: true, message: '请选择到期日期', trigger: 'change' }]
 }
 
-const filteredList = computed(() => {
+// 页签口径：只跟页签、来源、权属三个维度联动
+const categoryList = computed(() => {
   return assetList.value.filter(item => {
     if (item.category !== activeCategory.value) return false
     if (activeSourceType.value !== '不限' && item.sourceType !== activeSourceType.value) return false
     if (activeOwnership.value !== '不限' && item.ownership !== activeOwnership.value) return false
+    return true
+  })
+})
+
+const filteredList = computed(() => {
+  return categoryList.value.filter(item => {
     if (searchForm.code && !item.code.includes(searchForm.code)) return false
     if (searchForm.name && !item.name.includes(searchForm.name)) return false
     if (searchForm.type && item.type !== searchForm.type) return false
@@ -895,8 +902,9 @@ const filteredList = computed(() => {
   })
 })
 
+// 顶部指标按整个页签统计，避免关键字搜不到时误判成「台账没数据」
 const statSummary = computed(() => {
-  const list = filteredList.value
+  const list = categoryList.value
   const idle = list.filter(item => item.status === '闲置').length
   return {
     projects: new Set(list.map(item => item.project)).size,
@@ -976,7 +984,7 @@ const toAssetPayload = () => ({
   owner: assetForm.owner,
   remark: assetForm.remark || '',
   code: (assetForm.code || '').trim(),
-  assetCategory: categoryByType[assetForm.type] || '房产类',
+  assetCategory: deriveAssetCategory(assetForm.type),
   group: assetForm.owner || '城投集团',
   sourceType: '划入',
   bookValue: 0
@@ -1046,7 +1054,7 @@ const handleImportSubmit = () => {
           rentPrice: parseFloat(cols[6]) || 0,
           owner: cols[7] ? cols[7].trim() : '',
           remark: '',
-          assetCategory: categoryByType[type] || '房产类',
+          assetCategory: deriveAssetCategory(type),
           group: (cols[7] || '').trim() || '城投集团',
           sourceType: '划入',
           bookValue: 0

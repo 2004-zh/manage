@@ -1,6 +1,8 @@
 // 长乐区国有资产经营管理系统 — 演示数据
 // 所有数据均为原型演示用途
 
+import { deriveAssetCategory } from './assetCategory'
+
 // ===== 汇总报表数据 =====
 export const summaryData = {
   2026: [
@@ -66,7 +68,6 @@ function generateAssets() {
   const rentedLocations = ['吴航街道', '航城街道', '营前街道', '首占新区', '鹤上镇', '古槐镇', '文武砂街道', '漳港街道', '湖南镇', '文武砂街道']
   const rentedTypes = ['商铺', '写字楼', '厂房', '保障房', '仓储', '综合用房', '农贸市场', '写字楼', '商铺', '厂房']
   const rentedNames = ['街铺', '办公楼', '标准厂房', '综合楼', '仓储中心', '商务楼', '市场', '创业园', '商铺', '加工车间']
-  const assetCategories = ['房产类', '房产类', '房产类', '土地类', '房产类']
   const propertyRights = ['有不动产证', '两证齐全', '有证', '有不动产证', '两证齐全']
   const assetUsages = ['商铺', '写字楼', '厂房', '住宅', '公寓', '园区', '写字楼', '商铺', '厂房', '仓储']
   const sourceTypes = ['自购', '自建', '划拨']
@@ -87,7 +88,7 @@ function generateAssets() {
       certStatus: i <= 87 ? '已办证' : '未办证（办理中）',
       certDetail: i <= 87 ? `闽(2020)长乐区不动产权第${String(100000 + i).padStart(7, '0')}号` : '',
       group: groupList[(i - 9) % 4],
-      assetCategory: assetCategories[i % assetCategories.length],
+      assetCategory: deriveAssetCategory(tp),
       propertyRight: i <= 87 ? propertyRights[i % propertyRights.length] : '无证',
       assetUsage: assetUsages[i % assetUsages.length],
       sourceType: sourceTypes[i % sourceTypes.length],

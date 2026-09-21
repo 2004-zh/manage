@@ -16,10 +16,7 @@
         </el-col>
         <el-col :span="4">
           <el-select v-model="filters.assetType" placeholder="资产类型" clearable>
-            <el-option label="房产类" value="房产类" />
-            <el-option label="土地类" value="土地类" />
-            <el-option label="设备类" value="设备类" />
-            <el-option label="车辆类" value="车辆类" />
+            <el-option v-for="c in assetCategories" :key="c" :label="c" :value="c" />
           </el-select>
         </el-col>
         <el-col :span="4">
@@ -97,10 +94,7 @@
           <el-col :span="12">
             <el-form-item label="资产分类" required>
               <el-select v-model="form.assetCategory" placeholder="请选择" style="width:100%">
-                <el-option label="房产类" value="房产类" />
-                <el-option label="土地类" value="土地类" />
-                <el-option label="设备类" value="设备类" />
-                <el-option label="车辆类" value="车辆类" />
+                <el-option v-for="c in assetCategories" :key="c" :label="c" :value="c" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -284,9 +278,12 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
+import { ASSET_CATEGORIES } from '../../data/assetCategory'
 
 const assetStore = useAssetStore()
 
+// 与资产台账页签共用同一套分类词表，登记选什么就能在台账哪个页签找到
+const assetCategories = ASSET_CATEGORIES
 const groups = ['城投集团', '产投集团', '水投集团', '领航公司']
 const page = ref(1)
 const dialogVisible = ref(false)
