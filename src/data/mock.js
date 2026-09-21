@@ -53,7 +53,7 @@ export function getSummary(year) {
 const groupList = ['城投集团', '产投集团', '水投集团', '领航公司']
 
 const detailedAssets = [
-  { id: 'CT-001', name: '吴航街道商业街 A-01 商铺', location: '吴航街道', type: '商铺', status: '已出租', area: 320, bookValue: 1860, annualRent: 42, certStatus: '已办证', certDetail: '闽(2020)长乐区不动产权第0012345号', group: '城投集团', assetCategory: '房产类', propertyRight: '有不动产证', assetUsage: '商铺', sourceType: '自购', acquisitionMethod: '自购' },
+  { id: 'CT-001', name: '吴航街道商业街 A-01 商铺', location: '吴航街道', type: '商铺', status: '已出租', area: 320, bookValue: 1860, annualRent: 42, certStatus: '已办证', certDetail: '闽(2020)长乐区不动产权第0012345号', group: '城投集团', assetCategory: '房产类', propertyRight: '有不动产证', assetUsage: '商铺', sourceType: '自购', acquisitionMethod: '自购', createdAt: '2020-06-15 08:30:00', purchaseDate: '2018-03-15' },
   { id: 'CT-002', name: '航城商务楼 3F', location: '航城街道', type: '写字楼', status: '已出租', area: 1200, bookValue: 5400, annualRent: 156, certStatus: '已办证', certDetail: '闽(2019)长乐区不动产权第0023456号', group: '产投集团', assetCategory: '房产类', propertyRight: '两证齐全', assetUsage: '写字楼', sourceType: '自购', acquisitionMethod: '自购' },
   { id: 'CT-003', name: '营前标准厂房 2#', location: '营前街道', type: '厂房', status: '已出租', area: 3600, bookValue: 2180, annualRent: 78, certStatus: '已办证', certDetail: '闽(2018)长乐区不动产权第0034567号', group: '水投集团', assetCategory: '房产类', propertyRight: '有不动产证', assetUsage: '厂房', sourceType: '自建', acquisitionMethod: '自建' },
   { id: 'CT-004', name: '首占新区保障房 1# 楼', location: '首占新区', type: '保障房', status: '部分出租', area: 4800, bookValue: 6200, annualRent: 96, certStatus: '已办证', certDetail: '闽(2021)长乐区不动产权第0045678号', group: '领航公司', assetCategory: '房产类', propertyRight: '有证', assetUsage: '住宅', sourceType: '自建', acquisitionMethod: '自建' },
@@ -85,6 +85,10 @@ const specialtyAssets = [
   { id: 'CT-217', name: '潭头镇珍稀苗木繁育基地（12 亩）', location: '古槐镇', type: '特殊动植物', status: '已出租', area: 8000, bookValue: 75, annualRent: 6, certStatus: '未办证（办理中）', certDetail: '', group: '产投集团', assetCategory: '特殊动植物类', propertyRight: '无证', assetUsage: '林地', sourceType: '托管', acquisitionMethod: '划拨' },
   { id: 'CT-218', name: '文武砂对虾育苗棚及种质资源', location: '文武砂街道', type: '特殊动植物', status: '闲置', area: 2600, bookValue: 48, annualRent: null, certStatus: '未办证（未启动）', certDetail: '', group: '水投集团', assetCategory: '特殊动植物类', propertyRight: '无证', assetUsage: '养殖设施', sourceType: '自建', acquisitionMethod: '自建' }
 ]
+
+// 存量种子数据的统一入库时间：本演示库的历史资产是在 2026-09-17 数据迁移时批量导入的，
+// 逐条编"历史登记时间"就是造数了；新登记的资产走 addAsset 实时打戳。
+export const SEED_IMPORT_TS = '2026-09-17 09:00:00'
 
 function generateAssets() {
   const assets = [...detailedAssets, ...specialtyAssets]
@@ -160,6 +164,10 @@ function generateAssets() {
     })
   }
 
+  assets.forEach(a => {
+    if (!a.createdAt) a.createdAt = SEED_IMPORT_TS
+    if (!a.updatedAt) a.updatedAt = a.createdAt
+  })
   return assets
 }
 

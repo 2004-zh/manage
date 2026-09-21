@@ -3,7 +3,7 @@
     <div class="page-header">
       <h2>预警配置</h2>
     </div>
-    <el-card shadow="never" class="filter-bar">
+    <el-card shadow="never" class="filter-card">
       <el-form inline>
         <el-form-item label="公司">
           <el-input v-model="query.company" placeholder="公司" clearable style="width: 180px" />
@@ -20,7 +20,7 @@
       </el-form>
     </el-card>
 
-    <el-card shadow="never">
+    <el-card shadow="never" class="fill">
       <el-table :data="pagedRows" border stripe>
         <el-table-column prop="company" label="公司" min-width="200" />
         <el-table-column prop="type" label="预警类型" width="110">
@@ -35,7 +35,7 @@
           </template>
         </el-table-column>
         <el-table-column label="触发区间" width="130">
-          <template #default="{ row }">{{ row.min }} -{{ row.max }} {{ row.unit }}</template>
+          <template #default="{ row }"><span class="num">{{ row.min }} -{{ row.max }} {{ row.unit }}</span></template>
         </el-table-column>
         <el-table-column label="启用" width="80">
           <template #default="{ row }">
@@ -54,7 +54,7 @@
           v-model:current-page="page"
           v-model:page-size="pageSize"
           :total="filtered.length"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[10, 15, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
         />
       </div>
@@ -181,7 +181,7 @@ const rows = ref([
 
 const query = ref({ company: '', level: '' })
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(15)
 
 const filtered = computed(() =>
   rows.value.filter(
@@ -250,3 +250,8 @@ function viewDetail(row) {
   detailVisible.value = true
 }
 </script>
+
+<style scoped>
+/* 筛选卡只留卡片自身一层内边距，表单项不再叠加底部空隙 */
+.filter-card :deep(.el-form-item) { margin-bottom: 0; }
+</style>

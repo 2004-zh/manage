@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { buildingHierarchy as initialHierarchy } from '../data/mock'
 import { useUserStore } from './user'
+import { useAuditStore } from './audit'
 
 let _bldSeq = 100
 let _partSeq = 100
@@ -123,7 +124,7 @@ export const useProjectStore = defineStore('project', () => {
 
   function addPartition(projectId, partition) {
     const project = projects.value.find(p => p.id === projectId)
-    if (!project) return
+    if (!project) return null
 
     _partSeq++
     const partId = `PART-${String(_partSeq).padStart(3, '0')}`
@@ -153,15 +154,93 @@ export const useProjectStore = defineStore('project', () => {
       }
     })
 
-    project.partitions.push({
+    const created = {
       id: partId,
       name: partition.name || `分区${project.partitions.length + 1}`,
       area: partition.area || floors.reduce((s, f) => s + f.area, 0),
       floors
-    })
+    }
+    project.partitions.push(created)
 
     const stats = calcProjectStats(project)
     Object.assign(project, stats)
+    recordStruct(project, '新增分区', `新增分区「${created.name}」（${floors.length} 个楼层、面积 ${created.area} ㎡）`)
+    return created
+  }
+
+  function findPartition(projectId, partitionId) {
+    const project = getProjectById(projectId)
+    if (!project) return null
+    const partition = (project.partitions || []).find(p => p.id === partitionId)
+    return partition ? { project, partition } : null
+  }
+
+  function partitionStats(partition) {
+    const floors = partition.floors || []
+    const rooms = floors.flatMap(f => f.rooms || [])
+    return {
+      floorCount: floors.length,
+      roomCount: rooms.length,
+      leasedCount: rooms.filter(r => r.status === '已出租' || r.status === '部分出租').length
+    }
+  }
+
+  /** 改名/改面积。改名要留字段级痕迹，否则台账「分区」列说变就变没人知道为什么。 */
+  function updatePartition(projectId, partitionId, updates) {
+    const hit = findPartition(projectId, partitionId)
+    if (!hit) return false
+    const { project, partition } = hit
+
+    if (updates.name != null && updates.name !== partition.name) {
+      useAuditStore().recordChange({
+        assetId: project.id, assetName: project.name, group: project.group,
+        module: '项目管理', action: '修改分区',
+        field: 'zoneName', before: partition.name, after: updates.name
+      })
+      partition.name = updates.name
+    }
+    if (updates.area != null && Number(updates.area) !== Number(partition.area)) {
+      useAuditStore().recordChange({
+        assetId: project.id, assetName: project.name, group: project.group,
+        module: '项目管理', action: '修改分区',
+        field: 'area', before: partition.area, after: Number(updates.area) || 0
+      })
+      partition.area = Number(updates.area) || 0
+    }
+    Object.assign(project, calcProjectStats(project))
+    return true
+  }
+
+  /**
+   * 删除分区。分区下还压着在租房间时硬拦——那等于把正在计租的空间从结构里抹掉，
+   * 租金/合同口径会立刻对不上。挂进来的平铺资产由调用方先行移出项目（跨 store，避免循环依赖）。
+   */
+  function removePartition(projectId, partitionId) {
+    const hit = findPartition(projectId, partitionId)
+    if (!hit) return { ok: false, reason: '分区不存在' }
+    const { project, partition } = hit
+    const idx = project.partitions.indexOf(partition)
+    const stat = partitionStats(partition)
+    if (stat.leasedCount) {
+      return { ok: false, reason: `分区「${partition.name}」下还有 ${stat.leasedCount} 间在租房间，请先退租或调整状态` }
+    }
+
+    project.partitions.splice(idx, 1)
+    Object.assign(project, calcProjectStats(project))
+    recordStruct(project, '删除分区', `删除分区「${partition.name}」（原含 ${stat.floorCount} 个楼层、${stat.roomCount} 间房间）`)
+    return { ok: true }
+  }
+
+  // 项目结构的变动记到变更记录里：assetId 用项目 id，和「资产挂入项目」同一口径
+  function recordStruct(project, action, detail) {
+    useAuditStore().recordEvent({
+      assetId: project.id,
+      assetName: project.name,
+      group: project.group,
+      module: '项目管理',
+      action,
+      detail
+    })
   }
 
   function findRoom(roomId) {
@@ -187,7 +266,10 @@ export const useProjectStore = defineStore('project', () => {
     if ('vacancyDays' in updates) r.vacancyDays = updates.vacancyDays
     if ('area' in updates) r.area = Number(updates.area) || 0
     if ('name' in updates) r.name = updates.name
-    if ('certStatus' in updates) r.hasPropertyRight = updates.certStatus === '已办证'
+    if ('certStatus' in updates) {
+      r.certStatus = updates.certStatus
+      r.hasPropertyRight = updates.certStatus === '已办证'
+    }
     if ('certDetail' in updates) r.certDetail = updates.certDetail || ''
     if ('annualRent' in updates && updates.annualRent != null) {
       r.monthlyRent = Math.round(Number(updates.annualRent) * 10000 / 12)
@@ -205,6 +287,10 @@ export const useProjectStore = defineStore('project', () => {
     addProject,
     addRoomsToFloor,
     addPartition,
+    findPartition,
+    partitionStats,
+    updatePartition,
+    removePartition,
     findRoom,
     updateRoom
   }

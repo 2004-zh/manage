@@ -8,7 +8,7 @@
       </el-button>
     </div>
 
-    <el-tabs v-model="activeTab" type="border-card">
+    <el-tabs v-model="activeTab" type="border-card" class="fill">
       <el-tab-pane label="招商发布" name="release">
         <div class="stat-strip">
           <div class="stat-item">
@@ -74,7 +74,7 @@
           <el-table-column label="租金(¥)" width="120" align="right">
             <template #default="{ row }">
               <span v-if="row.rentType === '面议'" class="negotiable">面议</span>
-              <span v-else class="rent-price">¥{{ row.rent.toLocaleString() }}</span>
+              <span v-else class="rent-price num">¥{{ row.rent.toLocaleString() }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="company" label="经营公司" width="120" />
@@ -103,7 +103,7 @@
           <el-pagination
             v-model:current-page="releasePage"
             v-model:page-size="releasePageSize"
-            :page-sizes="[10, 20, 50]"
+            :page-sizes="[15, 30, 50]"
             :total="filteredReleases.length"
             layout="total, sizes, prev, pager, next, jumper"
           />
@@ -195,7 +195,7 @@
           </el-table-column>
           <el-table-column prop="currentPrice" label="当前最高价" width="130" align="right">
             <template #default="{ row }">
-              <span style="color: #f5222d; font-weight: bold">{{ row.currentPrice ? row.currentPrice.toLocaleString() : '-' }}</span>
+              <span class="num price-now">{{ row.currentPrice ? row.currentPrice.toLocaleString() : '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="bidCount" label="出价次数" width="100" align="center" />
@@ -223,12 +223,12 @@
           <el-table-column prop="winner" label="竞得人" min-width="150" />
           <el-table-column prop="dealPrice" label="成交价(元/月)" width="130" align="right">
             <template #default="{ row }">
-              <span style="color: #52c41a; font-weight: bold">{{ row.dealPrice.toLocaleString() }}</span>
+              <span class="num price-deal">{{ row.dealPrice.toLocaleString() }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="premiumRate" label="溢价率" width="100" align="right">
             <template #default="{ row }">
-              <span style="color: #fa8c16">+{{ row.premiumRate }}%</span>
+              <span class="num price-premium">+{{ row.premiumRate }}%</span>
             </template>
           </el-table-column>
           <el-table-column prop="publishDate" label="公示日期" width="120" />
@@ -556,8 +556,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Filter, Search } from '@element-plus/icons-vue'
@@ -567,6 +567,7 @@ import { useLeaseStore } from '../../store/lease'
 import { useUserStore } from '../../store/user'
 
 const router = useRouter()
+const route = useRoute()
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
 const leaseStore = useLeaseStore()
@@ -594,6 +595,23 @@ const pickedRentArea = computed(() => pickedRentOption.value ? pickedRentOption.
 function handleRentAssetPick() {
   createForm.value.leaseArea = pickedRentArea.value
 }
+
+// 从租赁管理"跳招商发布"过来时：自动打开发起招租对话框，尝试按资产名预选
+onMounted(() => {
+  if (route.query?.from !== 'lease-mgmt') return
+  const name = String(route.query.assetName || '')
+  showCreate.value = true
+  if (name) {
+    const match = idleAssetOptions.value.find(a => a.name === name || a.name.includes(name) || name.includes(a.name))
+    if (match) {
+      createForm.value.assetId = match.id
+      createForm.value.leaseArea = match.area
+      ElMessage.success(`已按"${name}"预选资产，请核对招租面积与起拍价`)
+    } else {
+      ElMessage.warning(`未在可招租资产列表中找到"${name}"，请手动选择`)
+    }
+  }
+})
 
 const registerSearch = ref({ assetName: '', registrant: '' })
 
@@ -833,6 +851,7 @@ function handleSignContract(row) {
       { module: '招商租赁', action: '招租成交联动', billNo: newId, remark: `招租结果 ${row.resultNo} 签约后回写出租状态` })
     row.status = '已签约'
     row.contractId = newId
+    leaseStore.markResultDealt(row)
     ElMessage.success(`合同 ${newId} 已生成，请前往合同管理完成电子签章`)
     router.push('/ent/contract-approval')
   }).catch(() => {})
@@ -849,7 +868,7 @@ function viewResultDetail(row) {
 const releaseFilters = ref({ keyword: '', status: '' })
 const releaseShowFilter = ref(true)
 const releasePage = ref(1)
-const releasePageSize = ref(10)
+const releasePageSize = ref(15)
 
 const filteredReleases = computed(() => {
   return releaseRecords.value.filter(r => {
@@ -1043,24 +1062,12 @@ function handleReleaseRefresh() {
 </script>
 
 <style scoped>
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
 .area-hint {
   width: 100%;
   margin-top: 4px;
   font-size: 12px;
   line-height: 20px;
-  color: #909399;
-}
-
-.page-header h2 {
-  font-size: 16px;
-  font-weight: 600;
+  color: var(--t-weak);
 }
 
 .search-form {
@@ -1070,49 +1077,64 @@ function handleReleaseRefresh() {
 .release-toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
 .toolbar-hint {
   font-size: 13px;
-  color: #999;
+  color: var(--t-weak);
 }
 
 .release-filter {
-  background: #fafcff;
-  border: 1px solid #f0f0f0;
-  border-radius: 4px;
+  background: var(--bg-th);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   padding: 12px 12px 0;
   margin-bottom: 12px;
 }
 
-.scope-tag { line-height: 32px; font-size: 13px; color: var(--el-text-color-regular); }
-.field-tip { width: 100%; font-size: 12px; line-height: 1.6; color: var(--el-text-color-secondary); }
+.scope-tag { line-height: 32px; font-size: 13px; color: var(--t-sub); }
+.field-tip { width: 100%; font-size: 12px; line-height: 1.6; color: var(--t-weak); }
 
+/* 金额/价格语义色（红=租金标价、橙=面议与溢价、绿=成交价） */
 .rent-price {
-  color: #f5222d;
+  color: var(--c-danger);
   font-weight: 600;
 }
 
 .negotiable {
-  color: #fa8c16;
+  color: var(--c-warning);
+}
+
+.price-now {
+  color: var(--c-danger);
+  font-weight: 600;
+}
+
+.price-deal {
+  color: var(--c-success);
+  font-weight: 600;
+}
+
+.price-premium {
+  color: var(--c-warning);
 }
 
 .upload-tip {
   width: 100%;
   font-size: 12px;
   line-height: 20px;
-  color: #909399;
+  color: var(--t-weak);
 }
 
 .asset-empty {
-  padding: 14px;
+  padding: 12px;
   margin-bottom: 12px;
-  background: #fafafa;
-  border: 1px dashed #d9d9d9;
-  border-radius: 4px;
-  color: #999;
+  background: var(--bg-th);
+  border: 1px dashed var(--bd);
+  border-radius: var(--r-sm);
+  color: var(--t-weak);
   font-size: 13px;
   text-align: center;
 }

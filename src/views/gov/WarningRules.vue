@@ -5,34 +5,26 @@
       <el-button type="primary" @click="openDialog()">新增规则</el-button>
     </div>
 
-    <el-row :gutter="16" style="margin-bottom:16px">
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#1890ff">{{ rules.length }}</div>
-          <div class="kpi-label">规则总数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#52c41a">{{ enabledCount }}</div>
-          <div class="kpi-label">已启用</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#f5222d">{{ triggeredCount }}</div>
-          <div class="kpi-label">本年触发次数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#fa8c16">{{ redCount }}</div>
-          <div class="kpi-label">红色预警规则</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="grid-4">
+      <el-card shadow="hover">
+        <div class="kpi-value num" style="color:var(--c-primary)">{{ rules.length }}</div>
+        <div class="kpi-label">规则总数</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value num" style="color:var(--c-success)">{{ enabledCount }}</div>
+        <div class="kpi-label">已启用</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value num" style="color:var(--c-danger)">{{ triggeredCount }}</div>
+        <div class="kpi-label">本年触发次数</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value num" style="color:var(--c-warning)">{{ redCount }}</div>
+        <div class="kpi-label">红色预警规则</div>
+      </el-card>
+    </div>
 
-    <el-card shadow="never">
+    <el-card shadow="never" class="fill">
       <div class="filter-bar">
         <el-form :inline="true">
           <el-form-item label="预警类型">
@@ -147,7 +139,7 @@
           <el-table-column label="操作" width="80" align="center">
             <template #default="{ row }">
               <el-button v-if="!row.handled" type="primary" link size="small" @click="markHandled(row)">处置</el-button>
-              <span v-else style="color:#999;font-size:12px">—</span>
+              <span v-else style="color:var(--t-weak);font-size:12px">—</span>
             </template>
           </el-table-column>
         </el-table>
@@ -225,7 +217,7 @@ const triggeredCount = computed(() => rules.value.reduce((s, r) => s + r.trigger
 const redCount = computed(() => rules.value.filter(r => r.level === '红色').length)
 
 function levelColor(level) {
-  return { '红色': '#f5222d', '橙色': '#fa8c16', '黄色': '#d4b106', '蓝色': '#1890ff' }[level] || '#909399'
+  return { '红色': '#D93026', '橙色': '#E8912A', '黄色': '#C8963E', '蓝色': '#1668DC' }[level] || '#909399'
 }
 
 const form = ref({})

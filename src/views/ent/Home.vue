@@ -24,17 +24,14 @@
               <el-button link type="primary" :icon="Setting" @click="settingsVisible = true">设置</el-button>
             </div>
           </template>
-          <el-row :gutter="12">
-            <el-col :span="3" v-for="action in quickActions" :key="action.label">
-              <div class="quick-action-item" @click="navigate(action.path)">
-                <div class="action-icon" :style="{ background: action.bg }">
-                  <el-icon :size="22" color="#fff"><component :is="action.icon" /></el-icon>
-                </div>
-                <span class="action-label">{{ action.label }}</span>
+          <div class="grid-4">
+            <div class="quick-action-item" v-for="action in quickActions" :key="action.label" @click="navigate(action.path)">
+              <div class="action-icon" :style="{ background: action.bg }">
+                <el-icon :size="22" color="#fff"><component :is="action.icon" /></el-icon>
               </div>
-            </el-col>
-          </el-row>
-          <div class="entry-divider"></div>
+              <span class="action-label">{{ action.label }}</span>
+            </div>
+          </div>
           <div class="quick-entries">
             <div v-for="e in visibleQuickEntries" :key="e.label" class="entry-item" @click="navigate(e.path)">
               <div class="entry-icon" :style="{ background: e.bg }">
@@ -45,9 +42,8 @@
           </div>
         </el-card>
 
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-card class="pq-card" shadow="never">
+        <div class="chart-row chart-row-1-1">
+          <el-card class="pq-card" shadow="never">
               <template #header>
                 <div class="section-banner pq-banner">
                   <div class="banner-left">
@@ -80,14 +76,12 @@
                 </el-table-column>
                 <el-table-column prop="unCert" label="未办证" width="65" align="right">
                   <template #default="{ row }">
-                    <span :style="{ color: row.unCert > 0 ? '#f5222d' : '#999' }">{{ row.unCert }}</span>
+                    <span :class="row.unCert > 0 ? 'c-danger' : 'c-weak'">{{ row.unCert }}</span>
                   </template>
                 </el-table-column>
               </el-table>
             </el-card>
-          </el-col>
-          <el-col :span="12">
-            <el-card class="ph-card" shadow="never">
+          <el-card class="ph-card" shadow="never">
               <template #header>
                 <div class="section-banner ph-banner">
                   <div class="banner-left">
@@ -122,13 +116,12 @@
                 </el-table-column>
                 <el-table-column label="收缴率" width="65" align="right">
                   <template #default="{ row }">
-                    <span :style="{ color: collectRate(row) >= 95 ? '#52c41a' : collectRate(row) >= 80 ? '#faad14' : '#f5222d' }">{{ collectRate(row) }}%</span>
+                    <span :class="collectRate(row) >= 95 ? 'c-success' : collectRate(row) >= 80 ? 'c-warning' : 'c-danger'">{{ collectRate(row) }}%</span>
                   </template>
                 </el-table-column>
               </el-table>
             </el-card>
-          </el-col>
-        </el-row>
+        </div>
       </el-col>
 
       <el-col :span="8">
@@ -188,7 +181,7 @@
           </div>
         </el-card>
 
-        <el-card class="todo-list-card" shadow="never" style="margin-top: 12px">
+        <el-card class="todo-list-card" shadow="never">
           <template #header>
             <span class="section-title">待办事项</span>
             <el-badge :value="todoItems.length" type="primary" style="margin-left: 8px" />
@@ -283,11 +276,11 @@ const topStats = computed(() => {
 const panqingKpis = computed(() => {
   const row = companyRow.value
   return [
-    { label: '资产总数', value: row.assets + ' 处', color: '#1890ff' },
-    { label: '账面总值', value: row.bookValue.toFixed(2) + ' 亿', color: '#1890ff' },
-    { label: '出租率', value: row.rentalRate + '%', color: '#52c41a' },
-    { label: '闲置率', value: row.idleRate + '%', color: '#faad14' },
-    { label: '未办证', value: row.unCert + ' 处', color: row.unCert > 0 ? '#f5222d' : '#999' }
+    { label: '资产总数', value: row.assets + ' 处', color: '#1668DC' },
+    { label: '账面总值', value: row.bookValue.toFixed(2) + ' 亿', color: '#1668DC' },
+    { label: '出租率', value: row.rentalRate + '%', color: '#18A058' },
+    { label: '闲置率', value: row.idleRate + '%', color: '#E8912A' },
+    { label: '未办证', value: row.unCert + ' 处', color: row.unCert > 0 ? '#D93026' : '#94A3B8' }
   ]
 })
 
@@ -298,11 +291,11 @@ const panhuoKpis = computed(() => {
   const cumRate = row.cumReceivable > 0 ? Math.round(row.cumActual / row.cumReceivable * 1000) / 10 : 0
   const yearRate = row.yearReceivable > 0 ? Math.round(row.yearActual / row.yearReceivable * 1000) / 10 : 0
   return [
-    { label: '累计应收', value: row.cumReceivable.toFixed(2) + ' 亿', color: '#1890ff' },
-    { label: '累计实收', value: row.cumActual.toFixed(2) + ' 亿', color: '#52c41a' },
-    { label: '累计收缴率', value: cumRate + '%', color: cumRate >= 95 ? '#52c41a' : '#faad14' },
-    { label: '当年实收', value: Math.round(row.yearActual * 10000) + ' 万', color: '#1890ff' },
-    { label: '当年收缴率', value: yearRate + '%', color: yearRate >= 95 ? '#52c41a' : '#faad14' }
+    { label: '累计应收', value: row.cumReceivable.toFixed(2) + ' 亿', color: '#1668DC' },
+    { label: '累计实收', value: row.cumActual.toFixed(2) + ' 亿', color: '#18A058' },
+    { label: '累计收缴率', value: cumRate + '%', color: cumRate >= 95 ? '#18A058' : '#E8912A' },
+    { label: '当年实收', value: Math.round(row.yearActual * 10000) + ' 万', color: '#1668DC' },
+    { label: '当年收缴率', value: yearRate + '%', color: yearRate >= 95 ? '#18A058' : '#E8912A' }
   ]
 })
 
@@ -314,28 +307,28 @@ function collectRate(row) {
 }
 
 const quickActions = [
-  { label: '经营看板', icon: DataBoard, bg: '#1890ff', path: '/ent/data-cockpit' },
-  { label: '资产管理', icon: Files, bg: '#52c41a', path: '/ent/asset-register' },
+  { label: '经营看板', icon: DataBoard, bg: '#1668DC', path: '/ent/data-cockpit' },
+  { label: '资产管理', icon: Files, bg: '#18A058', path: '/ent/asset-register' },
   { label: '房屋权证', icon: House, bg: '#722ed1', path: '/ent/property-rights' },
-  { label: '招商管理', icon: Promotion, bg: '#fa8c16', path: '/ent/investment-publish' },
+  { label: '招商管理', icon: Promotion, bg: '#E8912A', path: '/ent/investment-publish' },
   { label: '合同管理', icon: Document, bg: '#13c2c2', path: '/ent/contract-approval' },
-  { label: '收费管理', icon: Wallet, bg: '#eb2f96', path: '/ent/collection-hall' },
-  { label: '催缴提醒', icon: Bell, bg: '#f5222d', path: '/ent/urge-rent' },
+  { label: '收费管理', icon: Wallet, bg: '#2F54EB', path: '/ent/collection-hall' },
+  { label: '催缴提醒', icon: Bell, bg: '#D93026', path: '/ent/urge-rent' },
   { label: '巡检维修', icon: SetUp, bg: '#2f54eb', path: '/ent/inspection-plan' }
 ]
 
 const quickEntries = [
-  { label: '资产登记', icon: EditPen, bg: '#1890ff', path: '/ent/asset-register' },
+  { label: '资产登记', icon: EditPen, bg: '#1668DC', path: '/ent/asset-register' },
   { label: '资产管控', icon: Key, bg: '#2f54eb', path: '/ent/asset-register' },
   { label: '台账列表', icon: List, bg: '#13c2c2', path: '/ent/ledger-list' },
   { label: '产权信息', icon: House, bg: '#722ed1', path: '/ent/property-rights' },
-  { label: '证件信息', icon: Postcard, bg: '#fa8c16', path: '/ent/property-rights' },
-  { label: '评估信息', icon: DataAnalysis, bg: '#52c41a', path: '/ent/report-asset-stats' },
-  { label: '资债权证', icon: Stamp, bg: '#eb2f96', path: '/ent/property-rights' },
-  { label: '资产报表', icon: TrendCharts, bg: '#1890ff', path: '/ent/report-asset-stats' },
-  { label: '固资看板', icon: DataBoard, bg: '#f5222d', path: '/ent/fixed-assets' },
-  { label: '资产清单', icon: Document, bg: '#faad14', path: '/ent/ledger-list' },
-  { label: '合同审批', icon: DocumentChecked, bg: '#52c41a', path: '/ent/contract-approval' },
+  { label: '证件信息', icon: Postcard, bg: '#E8912A', path: '/ent/property-rights' },
+  { label: '评估信息', icon: DataAnalysis, bg: '#18A058', path: '/ent/report-asset-stats' },
+  { label: '资债权证', icon: Stamp, bg: '#2F54EB', path: '/ent/property-rights' },
+  { label: '资产报表', icon: TrendCharts, bg: '#1668DC', path: '/ent/report-asset-stats' },
+  { label: '固资看板', icon: DataBoard, bg: '#D93026', path: '/ent/fixed-assets' },
+  { label: '资产清单', icon: Document, bg: '#E8912A', path: '/ent/ledger-list' },
+  { label: '合同审批', icon: DocumentChecked, bg: '#18A058', path: '/ent/contract-approval' },
   { label: '收费大厅', icon: Wallet, bg: '#722ed1', path: '/ent/collection-hall' },
   { label: '发票管理', icon: Tickets, bg: '#13c2c2', path: '/ent/business-finance' },
   { label: '预警配置', icon: AlarmClock, bg: '#2f54eb', path: '/ent/warning-tasks' }
@@ -347,22 +340,22 @@ const visibleQuickEntries = computed(() => quickEntries.filter(e => checkedEntri
 const appSections = [
   {
     title: '经营性资产',
-    bannerBg: 'linear-gradient(160deg, #1890ff 0%, #36cfc9 100%)',
+    bannerBg: 'linear-gradient(160deg, #1668DC 0%, #36cfc9 100%)',
     blockA: 'rgba(255,255,255,0.35)',
     blockB: 'rgba(255,255,255,0.18)',
     modules: [
-      { label: '经营看板', desc: '数据总览', icon: DataBoard, bg: '#1890ff', path: '/ent/data-cockpit' },
-      { label: '资产管理', desc: '登记建档', icon: Files, bg: '#52c41a', path: '/ent/asset-register' },
+      { label: '经营看板', desc: '数据总览', icon: DataBoard, bg: '#1668DC', path: '/ent/data-cockpit' },
+      { label: '资产管理', desc: '登记建档', icon: Files, bg: '#18A058', path: '/ent/asset-register' },
       { label: '资产权证', desc: '权证管理', icon: House, bg: '#722ed1', path: '/ent/property-rights' },
-      { label: '招商管理', desc: '项目发布', icon: Promotion, bg: '#fa8c16', path: '/ent/investment-publish' },
+      { label: '招商管理', desc: '项目发布', icon: Promotion, bg: '#E8912A', path: '/ent/investment-publish' },
       { label: '资产运营', desc: '租赁运营', icon: OfficeBuilding, bg: '#13c2c2', path: '/ent/lease-mgmt' },
       { label: '合同管理', desc: '合同审批', icon: Document, bg: '#2f54eb', path: '/ent/contract-approval' },
-      { label: '收费管理', desc: '费用收缴', icon: Wallet, bg: '#eb2f96', path: '/ent/collection-hall' },
-      { label: '发票管理', desc: '开票记录', icon: Ticket, bg: '#faad14', path: '/ent/business-finance' },
-      { label: '履约催缴', desc: '欠费催缴', icon: Bell, bg: '#f5222d', path: '/ent/urge-rent' },
-      { label: '资产地图', desc: '分布一张图', icon: MapLocation, bg: '#52c41a', path: '/ent/map' },
+      { label: '收费管理', desc: '费用收缴', icon: Wallet, bg: '#2F54EB', path: '/ent/collection-hall' },
+      { label: '发票管理', desc: '开票记录', icon: Ticket, bg: '#E8912A', path: '/ent/business-finance' },
+      { label: '履约催缴', desc: '欠费催缴', icon: Bell, bg: '#D93026', path: '/ent/urge-rent' },
+      { label: '资产地图', desc: '分布一张图', icon: MapLocation, bg: '#18A058', path: '/ent/map' },
       { label: '资产报表', desc: '统计分析', icon: TrendCharts, bg: '#722ed1', path: '/ent/report-asset-stats' },
-      { label: '资产档案', desc: '档案查询', icon: Folder, bg: '#1890ff', path: '/ent/asset-archive' }
+      { label: '资产档案', desc: '档案查询', icon: Folder, bg: '#1668DC', path: '/ent/asset-archive' }
     ]
   },
   {
@@ -371,22 +364,22 @@ const appSections = [
     blockA: 'rgba(255,255,255,0.35)',
     blockB: 'rgba(255,255,255,0.18)',
     modules: [
-      { label: '预警管理', desc: '风险监控', icon: Warning, bg: '#f5222d', path: '/ent/warning-tasks' },
+      { label: '预警管理', desc: '风险监控', icon: Warning, bg: '#D93026', path: '/ent/warning-tasks' },
       { label: '组织架构', desc: '部门人员', icon: OfficeBuilding, bg: '#2f54eb', path: '/ent/system/dept' },
-      { label: '任务中心', desc: '任务调度', icon: Monitor, bg: '#fa8c16', path: '/ent/warning-tasks' },
-      { label: '巡查管理', desc: '巡检计划', icon: SetUp, bg: '#52c41a', path: '/ent/inspection-plan' },
+      { label: '任务中心', desc: '任务调度', icon: Monitor, bg: '#E8912A', path: '/ent/warning-tasks' },
+      { label: '巡查管理', desc: '巡检计划', icon: SetUp, bg: '#18A058', path: '/ent/inspection-plan' },
       { label: '系统配置', desc: '参数配置', icon: Cpu, bg: '#722ed1', path: '/ent/system/dict' },
-      { label: '系统管理', desc: '权限管理', icon: Setting, bg: '#1890ff', path: '/ent/system/dept' }
+      { label: '系统管理', desc: '权限管理', icon: Setting, bg: '#1668DC', path: '/ent/system/dept' }
     ]
   },
   {
     title: '固定资产',
-    bannerBg: 'linear-gradient(160deg, #fa8c16 0%, #faad14 100%)',
+    bannerBg: 'linear-gradient(160deg, #E8912A 0%, #E8912A 100%)',
     blockA: 'rgba(255,255,255,0.35)',
     blockB: 'rgba(255,255,255,0.18)',
     modules: [
-      { label: '资产看板', desc: '固资总览', icon: DataBoard, bg: '#1890ff', path: '/ent/fixed-assets' },
-      { label: '资产清单', desc: '台账明细', icon: List, bg: '#52c41a', path: '/ent/ledger-list' },
+      { label: '资产看板', desc: '固资总览', icon: DataBoard, bg: '#1668DC', path: '/ent/fixed-assets' },
+      { label: '资产清单', desc: '台账明细', icon: List, bg: '#18A058', path: '/ent/ledger-list' },
       { label: '资产报表', desc: '统计报表', icon: TrendCharts, bg: '#13c2c2', path: '/ent/fixed-asset-reports' }
     ]
   },
@@ -397,7 +390,7 @@ const appSections = [
     blockB: 'rgba(255,255,255,0.18)',
     modules: [
       { label: '无形资产', desc: '资产登记', icon: Collection, bg: '#722ed1', path: '/ent/intangible-assets' },
-      { label: '版权登记', desc: '版权管理', icon: Document, bg: '#1890ff', path: '/ent/property-rights' }
+      { label: '版权登记', desc: '版权管理', icon: Document, bg: '#1668DC', path: '/ent/property-rights' }
     ]
   }
 ]
@@ -476,36 +469,30 @@ function navigate(path) {
 </script>
 
 <style scoped>
-.workbench {
-  padding: 0;
-}
-
-/* 左右两列等高，左列概览卡撑满，消除下方空白 */
+/* 左右两列各自成纵向 flex 列，卡片间距统一交给 gap:16（原 margin 累加已清除） */
 .top-section > .el-col {
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
-.overview-card {
-  flex: 1;
-  margin-top: 12px;
-}
-
-.pq-card, .ph-card {
-  margin-top: 12px;
-}
+/* 状态色工具类：模板内联硬编码色改用全局变量 */
+.c-success { color: var(--c-success); }
+.c-warning { color: var(--c-warning); }
+.c-danger { color: var(--c-danger); }
+.c-weak { color: var(--t-weak); }
 
 .section-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
   margin: -8px -12px;
 }
 
 .pq-banner {
-  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  background: linear-gradient(135deg, var(--c-primary-light) 0%, #B9D4FF 100%);
 }
 
 .ph-banner {
@@ -521,19 +508,19 @@ function navigate(path) {
 .banner-icon {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .pq-banner .banner-icon {
-  background: #1890ff;
+  background: var(--c-primary);
   color: #fff;
 }
 
 .ph-banner .banner-icon {
-  background: #52c41a;
+  background: var(--c-success);
   color: #fff;
 }
 
@@ -552,57 +539,59 @@ function navigate(path) {
 
 .kpi-row {
   display: flex;
-  gap: 8px;
+  gap: 16px;
   margin-bottom: 12px;
 }
 
 .kpi-item {
   flex: 1;
+  min-width: 0;
   text-align: center;
-  padding: 10px 4px;
-  border-radius: 6px;
-  background: #fafafa;
+  padding: 12px 4px;
+  border-radius: var(--r-md);
+  background: var(--bg-th);
 }
 
 .kpi-value {
   font-size: 18px;
   font-weight: 700;
   line-height: 1.3;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
 }
 
 .kpi-label {
-  font-size: 11px;
-  color: #888;
-  margin-top: 2px;
+  font-size: 12px;
+  color: var(--t-weak);
+  margin-top: 4px;
 }
 
 .pq-table :deep(.el-table__header th),
 .ph-table :deep(.el-table__header th) {
-  background: #fafafa;
+  background: var(--bg-th);
   font-size: 12px;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 .pq-table :deep(.el-table__body td),
 .ph-table :deep(.el-table__body td) {
   font-size: 12px;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 .pq-table :deep(tr:last-child td),
 .ph-table :deep(tr:last-child td) {
   font-weight: 600;
-  background: #fafafa;
+  background: var(--bg-th);
 }
 
 .welcome-banner {
   background: #17427c;
-  border-radius: 2px;
+  border-radius: var(--r-sm);
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
   color: #fff;
 }
 
@@ -627,7 +616,7 @@ function navigate(path) {
 
 .welcome-stats {
   display: flex;
-  gap: 32px;
+  gap: 24px;
 }
 
 .stat-item {
@@ -674,8 +663,10 @@ function navigate(path) {
   justify-content: space-between;
 }
 
-.quick-actions-card {
-  margin-bottom: 16px;
+.quick-actions-card :deep(.el-card__body) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .quick-action-item {
@@ -683,21 +674,21 @@ function navigate(path) {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 14px 0;
+  padding: 12px 0;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   transition: all 0.2s;
 }
 
 .quick-action-item:hover {
-  background: #f0f7ff;
+  background: var(--c-primary-light);
   transform: translateY(-2px);
 }
 
 .action-icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -705,19 +696,14 @@ function navigate(path) {
 
 .action-label {
   font-size: 12px;
-  color: #555;
-}
-
-.entry-divider {
-  border-top: 1px dashed #e8e8e8;
-  margin: 4px 0 10px;
+  color: var(--t-sub);
 }
 
 .quick-entries {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
 
 .entry-item {
@@ -726,22 +712,22 @@ function navigate(path) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 10px 0;
+  gap: 8px;
+  padding: 12px 0;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   transition: all 0.2s;
 }
 
 .entry-item:hover {
-  background: #f0f7ff;
+  background: var(--c-primary-light);
   transform: translateY(-2px);
 }
 
 .entry-icon {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -749,7 +735,7 @@ function navigate(path) {
 
 .entry-label {
   font-size: 12px;
-  color: #555;
+  color: var(--t-sub);
   white-space: nowrap;
 }
 
@@ -774,7 +760,7 @@ function navigate(path) {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .todo-body {
@@ -798,15 +784,15 @@ function navigate(path) {
 .task-row {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  padding: 7px 4px;
-  border-bottom: 1px dashed #f0f0f0;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px dashed var(--bd);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .task-row:hover {
-  background: #f5f9ff;
+  background: var(--c-primary-light);
 }
 
 .task-row:last-child {
@@ -819,16 +805,16 @@ function navigate(path) {
 
 .task-title {
   font-size: 12px;
-  color: #333;
+  color: var(--t-main);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .task-no {
-  font-size: 11px;
-  color: #999;
-  margin-top: 2px;
+  font-size: 12px;
+  color: var(--t-weak);
+  margin-top: 4px;
 }
 
 .calendar-card :deep(.el-card__body) {
@@ -850,22 +836,22 @@ function navigate(path) {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 4px;
   text-align: center;
 }
 
 .cal-head {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   padding: 4px 0;
   font-weight: 500;
 }
 
 .cal-cell {
   position: relative;
-  padding: 6px 0;
+  padding: 4px 0;
   font-size: 13px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   cursor: default;
 }
 
@@ -893,16 +879,16 @@ function navigate(path) {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #f5222d;
+  background: var(--c-danger);
 }
 
 .todo-summary {
   display: flex;
   justify-content: center;
-  gap: 40px;
+  gap: 24px;
   margin-top: 16px;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--bd);
 }
 
 .todo-stat {
@@ -920,13 +906,13 @@ function navigate(path) {
 }
 
 .todo-num.completed {
-  color: #52c41a;
+  color: var(--c-success);
 }
 
 .todo-desc {
   font-size: 12px;
-  color: #999;
-  margin-top: 2px;
+  color: var(--t-weak);
+  margin-top: 4px;
 }
 
 .todo-list-card :deep(.el-card__header) {
@@ -936,21 +922,21 @@ function navigate(path) {
 
 .empty-todo {
   text-align: center;
-  padding: 30px;
-  color: #999;
+  padding: 12px 0;
+  color: var(--t-weak);
 }
 
 .todo-item {
   display: flex;
   align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bd);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .todo-item:hover {
-  background: #f5f5f5;
+  background: var(--bg-th);
 }
 
 .todo-item:last-child {
@@ -960,7 +946,7 @@ function navigate(path) {
 .todo-title {
   flex: 1;
   font-size: 13px;
-  color: #333;
+  color: var(--t-main);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -968,28 +954,29 @@ function navigate(path) {
 
 .todo-time {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   margin-left: 12px;
   white-space: nowrap;
 }
 
 .app-center {
-  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .app-section {
   display: flex;
   gap: 16px;
-  margin-bottom: 20px;
   align-items: stretch;
 }
 
 .app-banner {
   flex: none;
   width: 132px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   color: #fff;
-  padding: 16px 14px;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1004,7 +991,7 @@ function navigate(path) {
 
 .illus-block {
   position: absolute;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   transform: skewY(-8deg);
 }
 
@@ -1041,7 +1028,7 @@ function navigate(path) {
 .banner-title {
   font-size: 16px;
   font-weight: 700;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .banner-count {
@@ -1063,22 +1050,22 @@ function navigate(path) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 12px 4px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   transition: all 0.2s;
 }
 
 .app-module-item:hover {
-  background: #f0f7ff;
+  background: var(--c-primary-light);
   transform: translateY(-2px);
 }
 
 .module-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1086,12 +1073,11 @@ function navigate(path) {
 
 .module-label {
   font-size: 12px;
-  color: #555;
+  color: var(--t-sub);
 }
 
 .module-desc {
-  font-size: 11px;
-  color: #aaa;
-  margin-top: -4px;
+  font-size: 12px;
+  color: var(--t-weak);
 }
 </style>

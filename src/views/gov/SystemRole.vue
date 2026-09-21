@@ -1,10 +1,10 @@
 <template>
-  <div>
+  <div class="page-container">
     <div class="page-header"><h2>{{ pageTitle }}</h2></div>
 
     <!-- 用户管理模式（企业端 用户管理） -->
     <template v-if="isUserMode">
-      <div class="panel">
+      <div class="panel fill">
         <div class="filter-row">
           <el-input
             v-model="userQuery.keyword"
@@ -22,7 +22,7 @@
         </div>
 
         <div class="section-title">用户列表</div>
-        <el-table :data="pagedUsers" border size="small" class="dense-table">
+        <el-table :data="pagedUsers" border size="small" class="dense-table" style="width: 100%">
           <el-table-column prop="username" label="用户名" width="120" />
           <el-table-column prop="name" label="姓名" width="100" />
           <el-table-column prop="dept" label="所属部门" width="130" />
@@ -156,7 +156,7 @@ const users = ref([
 
 const userQuery = reactive({ keyword: '', status: '' })
 const appliedQuery = reactive({ keyword: '', status: '' })
-const userPage = reactive({ current: 1, size: 10 })
+const userPage = reactive({ current: 1, size: 15 })
 
 const filteredUsers = computed(() =>
   users.value.filter((u) => {
@@ -320,19 +320,18 @@ function savePerm() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
 }
 
 .page-header h2 {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--t-main);
 }
 
 .panel {
-  background: #fff;
-  border-radius: 4px;
-  padding: 16px;
+  background: var(--bg-card);
+  border-radius: var(--r-sm);
+  padding: 20px;
 }
 
 .filter-row {
@@ -351,8 +350,8 @@ function savePerm() {
 }
 
 .dense-table :deep(th.el-table__cell) {
-  background: #fafafa;
-  color: #333;
+  background: var(--bg-th);
+  color: var(--t-main);
   font-weight: 600;
 }
 </style>

@@ -4,7 +4,7 @@
       <h2>上报数据管理</h2>
     </div>
 
-    <el-table :data="reportList" border stripe class="table-card">
+    <el-table :data="reportList" border stripe class="table-card fill">
       <el-table-column prop="id" label="报送编号" width="140" />
       <el-table-column prop="group" label="报送单位" width="120" />
       <el-table-column prop="period" label="报送期间" width="120" />

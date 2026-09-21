@@ -16,51 +16,39 @@
         </el-button>
       </div>
     </div>
-    <el-card>
+    <el-card class="fill">
 
       <el-alert type="info" :closable="false" show-icon style="margin-bottom: 16px">
         当前资产台账识别出闲置/空置资产 <b>{{ idleTotal.count }}</b> 宗、<b>{{ idleTotal.area.toLocaleString() }}</b> ㎡，是本年度盘活目标的底数来源；
         目标下达后，各公司每一次租金收缴、资产处置、招租签约、闲置盘活产生的金额都会自动计入盘活进度，并汇总到全区盘活数据中。
       </el-alert>
 
-      <el-row :gutter="12" class="kpi-row">
-        <el-col :span="4">
-          <div class="kpi-card">
-            <div class="kpi-label">年度盘活目标</div>
-            <div class="kpi-value">{{ currentYearAmount.toLocaleString() }}<span class="unit">万元</span></div>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="kpi-card">
-            <div class="kpi-label">已完成金额</div>
-            <div class="kpi-value" style="color:#67c23a">{{ completedAmount.toLocaleString() }}<span class="unit">万元</span></div>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="kpi-card">
-            <div class="kpi-label">完成率</div>
-            <div class="kpi-value" :style="{ color: completionRate >= 100 ? '#67c23a' : completionRate >= 60 ? '#e6a23c' : '#f56c6c' }">{{ completionRate }}%</div>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="kpi-card">
-            <div class="kpi-label">盘活宗数</div>
-            <div class="kpi-value">{{ completedCount }}<span class="unit">/ {{ currentYearCount }} 宗</span></div>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="kpi-card">
-            <div class="kpi-label">参与公司</div>
-            <div class="kpi-value">{{ allocatedCompanies }}<span class="unit">家</span></div>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="kpi-card">
-            <div class="kpi-label">{{ monthKpi.label }}</div>
-            <div class="kpi-value" style="color:#409eff">{{ monthKpi.value.toLocaleString() }}<span class="unit">万元</span></div>
-          </div>
-        </el-col>
-      </el-row>
+      <div class="grid-4 kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">年度盘活目标</div>
+          <div class="kpi-value num">{{ currentYearAmount.toLocaleString() }}<span class="unit">万元</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">已完成金额</div>
+          <div class="kpi-value num" style="color:var(--c-success)">{{ completedAmount.toLocaleString() }}<span class="unit">万元</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">完成率</div>
+          <div class="kpi-value num" :style="{ color: completionRate >= 100 ? 'var(--c-success)' : completionRate >= 60 ? 'var(--c-warning)' : 'var(--c-danger)' }">{{ completionRate }}%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">盘活宗数</div>
+          <div class="kpi-value num">{{ completedCount }}<span class="unit">/ {{ currentYearCount }} 宗</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">参与公司</div>
+          <div class="kpi-value num">{{ allocatedCompanies }}<span class="unit">家</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">{{ monthKpi.label }}</div>
+          <div class="kpi-value num" style="color:var(--c-primary)">{{ monthKpi.value.toLocaleString() }}<span class="unit">万元</span></div>
+        </div>
+      </div>
 
       <el-table :data="filteredTargets" row-key="id" style="width: 100%">
         <el-table-column type="expand">
@@ -133,32 +121,28 @@
       </el-table>
     </el-card>
 
-    <el-card style="margin-top: 16px" v-if="yearTarget">
+    <el-card v-if="yearTarget">
       <template #header>
         <div class="card-header">
           <span>{{ yearFilter }} 年度各公司盘活完成排行</span>
           <el-button type="primary" plain size="small" @click="exportRank">导出排行榜</el-button>
         </div>
       </template>
-      <el-row :gutter="16">
-        <el-col :span="12" v-for="(c, i) in rankRows" :key="c.company">
-          <div class="rank-item">
-            <div class="rank-head">
-              <span class="rank-no" :class="'rank-' + (i + 1)">{{ i + 1 }}</span>
-              <span class="rank-name">{{ c.company }}</span>
-              <el-tag :type="c.rate >= 100 ? 'success' : c.rate >= 60 ? 'warning' : 'danger'" size="small">{{ c.rate }}%</el-tag>
-            </div>
-            <el-progress :percentage="c.rate" :show-text="false" :stroke-width="10" />
-            <div class="rank-foot">
-              <span>已完成 {{ c.doneAmount.toLocaleString() }} / 分摊 {{ c.amount.toLocaleString() }} 万元</span>
-              <span>盘活 {{ c.doneCount }} / {{ c.count }} 宗</span>
-            </div>
+      <div class="grid-2" v-if="rankRows.length">
+        <div class="rank-item" v-for="(c, i) in rankRows" :key="c.company">
+          <div class="rank-head">
+            <span class="rank-no" :class="'rank-' + (i + 1)">{{ i + 1 }}</span>
+            <span class="rank-name">{{ c.company }}</span>
+            <el-tag :type="c.rate >= 100 ? 'success' : c.rate >= 60 ? 'warning' : 'danger'" size="small">{{ c.rate }}%</el-tag>
           </div>
-        </el-col>
-        <el-col :span="24" v-if="!rankRows.length">
-          <el-empty description="该年度尚未设置分摊方案" :image-size="70" />
-        </el-col>
-      </el-row>
+          <el-progress :percentage="c.rate" :show-text="false" :stroke-width="10" />
+          <div class="rank-foot">
+            <span>已完成 {{ c.doneAmount.toLocaleString() }} / 分摊 {{ c.amount.toLocaleString() }} 万元</span>
+            <span>盘活 {{ c.doneCount }} / {{ c.count }} 宗</span>
+          </div>
+        </div>
+      </div>
+      <el-empty v-else description="该年度尚未设置分摊方案" :image-size="70" />
     </el-card>
 
     <!-- 保存目标 -->
@@ -859,10 +843,6 @@ function exportRank() {
 </script>
 
 <style scoped>
-.page-container {
-  height: 100%;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -882,38 +862,38 @@ function exportRank() {
 }
 
 .kpi-card {
-  background: #f7f9fc;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
+  background: var(--bg-th);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-md);
   padding: 12px 16px;
 }
 
 .kpi-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--t-weak);
   margin-bottom: 6px;
 }
 
 .kpi-value {
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--t-main);
 }
 
 .unit {
   font-size: 12px;
   font-weight: normal;
-  color: #909399;
+  color: var(--t-weak);
   margin-left: 4px;
 }
 
 .progress-text {
   font-size: 12px;
-  color: #909399;
+  color: var(--t-weak);
 }
 
 .text-danger {
-  color: #f56c6c;
+  color: var(--c-danger);
   font-weight: 600;
 }
 
@@ -924,7 +904,7 @@ function exportRank() {
 .expand-title {
   font-size: 13px;
   font-weight: 600;
-  color: #606266;
+  color: var(--t-sub);
   margin-bottom: 8px;
 }
 
@@ -934,7 +914,7 @@ function exportRank() {
   gap: 16px;
   margin-top: 12px;
   font-size: 13px;
-  color: #606266;
+  color: var(--t-sub);
 }
 
 .flow-toolbar {
@@ -945,10 +925,9 @@ function exportRank() {
 }
 
 .rank-item {
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
+  border: 1px solid var(--bd);
+  border-radius: var(--r-md);
   padding: 12px 16px;
-  margin-bottom: 12px;
 }
 
 .rank-head {
@@ -964,7 +943,7 @@ function exportRank() {
   line-height: 22px;
   text-align: center;
   border-radius: 50%;
-  background: #909399;
+  background: var(--t-weak);
   color: #fff;
   font-size: 12px;
 }
@@ -983,7 +962,7 @@ function exportRank() {
 
 .rank-name {
   font-weight: 600;
-  color: #303133;
+  color: var(--t-main);
   flex: 1;
 }
 
@@ -992,7 +971,7 @@ function exportRank() {
   justify-content: space-between;
   margin-top: 8px;
   font-size: 12px;
-  color: #909399;
+  color: var(--t-weak);
 }
 
 .decompose-summary {
@@ -1008,7 +987,7 @@ function exportRank() {
   justify-content: flex-end;
   padding: 12px 4px 4px;
   margin-top: 8px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 40%);
+  background: linear-gradient(180deg, transparent, var(--bg-card) 40%);
   z-index: 5;
 }
 

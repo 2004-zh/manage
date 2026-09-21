@@ -5,8 +5,8 @@
       <el-button @click="$router.push('/gov/supervise')">返回列表</el-button>
     </div>
 
-    <el-row :gutter="16">
-      <el-col :span="14">
+    <div class="chart-row chart-row-7-5">
+      <div class="col-stack">
         <el-card>
           <template #header>督办信息</template>
           <el-descriptions :column="2" border>
@@ -18,7 +18,7 @@
             <el-descriptions-item label="督办类型">{{ order.type }}</el-descriptions-item>
             <el-descriptions-item label="限期">{{ order.deadline }}</el-descriptions-item>
             <el-descriptions-item label="逾期天数">
-              <span :style="{ color: order.status === '已逾期' ? '#f56c6c' : '#67c23a' }">
+              <span :style="{ color: order.status === '已逾期' ? 'var(--c-danger)' : 'var(--c-success)' }">
                 {{ order.status === '已逾期' ? `${order.overdueDays || 0} 天` : '未逾期' }}
               </span>
             </el-descriptions-item>
@@ -35,7 +35,7 @@
           </el-descriptions>
         </el-card>
 
-        <el-card style="margin-top: 16px">
+        <el-card>
           <template #header>跟踪时间轴</template>
           <el-timeline>
             <el-timeline-item
@@ -52,13 +52,13 @@
             </el-timeline-item>
           </el-timeline>
         </el-card>
-      </el-col>
+      </div>
 
-      <el-col :span="10">
+      <div class="col-stack">
         <el-card>
           <template #header>操作</template>
           <div v-if="order.status === '待确认'" style="text-align: center; padding: 20px 0">
-            <p style="margin-bottom: 16px; color: #666">企业已提交整改反馈，请复核是否办结</p>
+            <p style="margin-bottom: 16px; color: var(--t-sub)">企业已提交整改反馈，请复核是否办结</p>
             <el-button type="primary" @click="handleConfirm">确认办结</el-button>
             <el-button type="danger" plain @click="handleReturn">驳回重改</el-button>
           </div>
@@ -66,13 +66,13 @@
             <el-result icon="success" title="已办结" sub-title="该督办单已完成闭环并归档" />
           </div>
           <div v-else style="text-align: center; padding: 20px 0">
-            <p style="margin-bottom: 16px; color: #666">{{ pendingTip }}</p>
+            <p style="margin-bottom: 16px; color: var(--t-sub)">{{ pendingTip }}</p>
             <el-button type="warning" @click="handleUrge">催办</el-button>
             <el-button @click="$router.push({ path: '/gov/warning-tasks', query: { keyword: order.id } })">查看预警任务</el-button>
           </div>
         </el-card>
 
-        <el-card style="margin-top: 16px">
+        <el-card>
           <template #header>企业联络</template>
           <el-descriptions :column="1" size="small">
             <el-descriptions-item label="对接人">{{ order.contact }}</el-descriptions-item>
@@ -80,8 +80,8 @@
           </el-descriptions>
           <el-button type="primary" link style="margin-top: 8px" @click="$router.push('/gov/contact')">查看全部联系方式</el-button>
         </el-card>
-      </el-col>
-    </el-row>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -156,17 +156,25 @@ function handleUrge() {
 </script>
 
 <style scoped>
+/* 双列卡片各自纵向堆叠，间距交给 gap，替代卡片的 margin-top:16px */
+.col-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 .timeline-content {
   line-height: 1.6;
 }
 
 .timeline-action {
   font-weight: 500;
-  color: #333;
+  color: var(--t-main);
 }
 
 .timeline-operator {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
 }
 </style>

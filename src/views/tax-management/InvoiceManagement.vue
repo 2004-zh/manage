@@ -5,14 +5,14 @@
       <span class="page-subtitle">抬头审核 · 税率配置 · 自动开票 · 推送记录</span>
     </div>
 
-    <el-row :gutter="12" class="kpi-row">
-      <el-col :span="6"><div class="kpi"><div class="kpi-v" style="color:#409eff">{{ stats.issued }}</div><div class="kpi-l">已开票(张)</div></div></el-col>
-      <el-col :span="6"><div class="kpi"><div class="kpi-v" style="color:#e6a23c">{{ stats.pendingTitle }}</div><div class="kpi-l">待审核抬头</div></div></el-col>
-      <el-col :span="6"><div class="kpi"><div class="kpi-v" style="color:#67c23a">{{ stats.autoCount }}</div><div class="kpi-l">自动开票规则</div></div></el-col>
-      <el-col :span="6"><div class="kpi"><div class="kpi-v" style="color:#722ed1">￥{{ stats.totalAmount }}万</div><div class="kpi-l">累计开票金额</div></div></el-col>
-    </el-row>
+    <div class="grid-4">
+      <div class="kpi"><div class="kpi-v" style="color:var(--c-primary)">{{ stats.issued }}</div><div class="kpi-l">已开票(张)</div></div>
+      <div class="kpi"><div class="kpi-v" style="color:var(--c-warning)">{{ stats.pendingTitle }}</div><div class="kpi-l">待审核抬头</div></div>
+      <div class="kpi"><div class="kpi-v" style="color:var(--c-success)">{{ stats.autoCount }}</div><div class="kpi-l">自动开票规则</div></div>
+      <div class="kpi"><div class="kpi-v">￥{{ stats.totalAmount }}万</div><div class="kpi-l">累计开票金额</div></div>
+    </div>
 
-    <el-tabs v-model="activeTab" type="border-card">
+    <el-tabs v-model="activeTab" type="border-card" class="fill">
       <!-- ===== 开票订单 ===== -->
       <el-tab-pane label="开票订单" name="invoiceOrders">
         <div class="stat-strip">
@@ -118,7 +118,7 @@
           <el-pagination
             v-model:current-page="orderPage"
             v-model:page-size="orderSize"
-            :page-sizes="[10, 20, 50, 100]"
+            :page-sizes="[10, 15, 20, 50, 100]"
             :total="filteredOrders.length"
             layout="total, sizes, prev, pager, next, jumper"
           />
@@ -154,7 +154,7 @@
             <template #default="{ row }"><el-tag size="small">{{ row.invoiceType }}</el-tag></template>
           </el-table-column>
           <el-table-column prop="tenant" label="承租方(抬头)" width="180" show-overflow-tooltip />
-          <el-table-column prop="amount" label="金额(万)" width="100" align="right" />
+          <el-table-column prop="amount" label="金额(万)" width="100" align="right" class-name="num" />
           <el-table-column prop="issueDate" label="开票日期" width="120" />
           <el-table-column label="状态" width="100" align="center">
             <template #default="{ row }">
@@ -172,7 +172,7 @@
           <el-pagination
             v-model:current-page="recPage"
             v-model:page-size="recSize"
-            :page-sizes="[10, 20, 50, 100]"
+            :page-sizes="[10, 15, 20, 50, 100]"
             :total="filteredRecords.length"
             layout="total, sizes, prev, pager, next, jumper"
           />
@@ -502,6 +502,9 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Refresh, Filter, Plus } from '@element-plus/icons-vue'
+import { useFinanceStore } from '../../store/finance'
+
+const financeStore = useFinanceStore()
 
 const activeTab = ref('invoiceOrders')
 const recKeyword = ref('')
@@ -512,7 +515,7 @@ const orderFilterOn = ref(false)
 const orderInvoiceState = ref('')
 const orderPayWay = ref('')
 const orderPage = ref(1)
-const orderSize = ref(10)
+const orderSize = ref(15)
 
 const invoiceOrders = ref([
   {
@@ -667,32 +670,24 @@ function refreshOrders() {
   ElMessage.success('开票订单数据已刷新')
 }
 
-const records = ref([
-  { invoiceNo: 'FP-2026-001', invoiceType: '增值税普通发票', tenant: '福州长乐融辉贸易有限公司', amount: 21, taxRate: 5, tax: 1.05, issueDate: '2026-06-30', invoiceStatus: '已开具', auto: false },
-  { invoiceNo: 'FP-2026-002', invoiceType: '增值税专用发票', tenant: '福建省长乐市鸿运纺织有限公司', amount: 35, taxRate: 5, tax: 1.75, issueDate: '2026-05-15', invoiceStatus: '已开具', auto: true },
-  { invoiceNo: 'FP-2026-003', invoiceType: '电子发票', tenant: '长乐区鑫源投资有限公司', amount: 12, taxRate: 5, tax: 0.6, issueDate: '2026-07-10', invoiceStatus: '已开具', auto: true },
-  { invoiceNo: 'FP-2026-004', invoiceType: '增值税普通发票', tenant: '福州航城物流有限公司', amount: 8, taxRate: 5, tax: 0.4, issueDate: '2026-08-02', invoiceStatus: '待开具', auto: false },
-  { invoiceNo: 'FP-2025-012', invoiceType: '增值税普通发票', tenant: '福州航城物流有限公司', amount: 8, taxRate: 5, tax: 0.4, issueDate: '2025-12-20', invoiceStatus: '已红冲', auto: false },
-])
-
-const filteredRecords = computed(() => records.value.filter(r => {
+const filteredRecords = computed(() => financeStore.invoices.filter(r => {
   if (recKeyword.value && !(r.invoiceNo.includes(recKeyword.value) || r.tenant.includes(recKeyword.value))) return false
   if (recStatus.value && r.invoiceStatus !== recStatus.value) return false
   return true
 }))
 
 const recPage = ref(1)
-const recSize = ref(10)
+const recSize = ref(15)
 const pagedRecords = computed(() => {
   const start = (recPage.value - 1) * recSize.value
   return filteredRecords.value.slice(start, start + recSize.value)
 })
 
 const stats = computed(() => ({
-  issued: records.value.filter(r => r.invoiceStatus === '已开具').length,
+  issued: financeStore.invoices.filter(r => r.invoiceStatus === '已开具').length,
   pendingTitle: titles.value.filter(t => t.status === '待审核').length,
   autoCount: autoRules.value.filter(r => r.enabled).length,
-  totalAmount: records.value.filter(r => r.invoiceStatus === '已开具').reduce((s, r) => s + r.amount, 0).toFixed(1)
+  totalAmount: financeStore.invoices.filter(r => r.invoiceStatus === '已开具').reduce((s, r) => s + r.amount, 0).toFixed(1)
 }))
 
 // ===== 抬头审核 =====
@@ -719,13 +714,8 @@ function auditTitle(row, pass) {
 }
 
 // ===== 税率配置 =====
-const taxRates = ref([
-  { bizType: '租金', invoiceType: '增值税普通发票', rate: 5, remark: '不动产经营租赁服务', enabled: true },
-  { bizType: '物业费', invoiceType: '增值税普通发票', rate: 6, remark: '现代服务-物业管理', enabled: true },
-  { bizType: '租金', invoiceType: '增值税专用发票', rate: 9, remark: '一般纳税人不动产租赁', enabled: true },
-  { bizType: '临时占道费', invoiceType: '电子发票', rate: 3, remark: '小规模纳税人征收率', enabled: false },
-])
-const enabledRates = computed(() => taxRates.value.filter(r => r.enabled))
+const taxRates = computed(() => financeStore.invoiceRates)
+const enabledRates = computed(() => financeStore.invoiceRates.filter(r => r.enabled))
 
 const showRate = ref(false)
 const editingRate = ref(false)
@@ -738,18 +728,19 @@ function openRateDialog(row) {
 function saveRate() {
   if (!rateForm.value.bizType) { ElMessage.warning('请填写业务类型'); return }
   if (editingRate.value) {
-    const r = taxRates.value.find(x => x.bizType === rateForm.value.bizType && x.invoiceType === rateForm.value.invoiceType)
-    Object.assign(r || {}, rateForm.value)
+    const r = financeStore.invoiceRates.find(x => x.bizType === rateForm.value.bizType && x.invoiceType === rateForm.value.invoiceType)
+    if (r) Object.assign(r, rateForm.value)
     ElMessage.success('税率已更新')
   } else {
-    taxRates.value.push({ ...rateForm.value })
+    financeStore.invoiceRates.push({ ...rateForm.value })
     ElMessage.success('税率已新增')
   }
   showRate.value = false
 }
 function deleteRate(row) {
   ElMessageBox.confirm(`确认删除「${row.bizType} / ${row.invoiceType}」税率配置？`, '提示', { type: 'warning' }).then(() => {
-    taxRates.value = taxRates.value.filter(r => r !== row)
+    const idx = financeStore.invoiceRates.findIndex(r => r === row)
+    if (idx >= 0) financeStore.invoiceRates.splice(idx, 1)
     ElMessage.success('已删除')
   }).catch(() => {})
 }
@@ -825,8 +816,8 @@ function redInvoice(row) {
 function submitIssue() {
   if (!issueForm.value.tenant) { ElMessage.warning('请选择承租方抬头（需先通过抬头审核）'); return }
   if (!issueForm.value.amount) { ElMessage.warning('请填写开票金额'); return }
-  const no = `FP-${new Date().getFullYear()}-${String(records.value.length + 1).padStart(3, '0')}`
-  records.value.unshift({
+  const no = `FP-${new Date().getFullYear()}-${String(financeStore.invoices.length + 1).padStart(3, '0')}`
+  financeStore.invoices.unshift({
     invoiceNo: no,
     invoiceType: issueForm.value.invoiceType,
     tenant: issueForm.value.tenant,
@@ -850,24 +841,20 @@ function submitIssue() {
 </script>
 
 <style scoped>
-.page-container { padding: 16px; }
-.page-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
-.page-header h2 { margin: 0; font-size: 20px; }
-.page-header .sub { color: #999; font-size: 13px; }
-.kpi-row { margin-bottom: 16px; }
-.kpi { background: #fff; border: 1px solid #ebeef5; border-radius: 8px; padding: 14px; text-align: center; }
-.kpi-v { font-size: 24px; font-weight: 600; }
-.kpi-l { font-size: 12px; color: #909399; margin-top: 4px; }
-.toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
-.toolbar .tip { color: #909399; font-size: 13px; }
-.order-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
-.order-filter { display: flex; gap: 10px; padding: 12px; background: #fafafa; border-radius: 4px; margin-bottom: 12px; }
+.page-header { display: flex; align-items: center; justify-content: flex-start; gap: 12px; }
+.kpi { background: var(--bg-card); border: 1px solid var(--bd); border-radius: var(--r-md); padding: 16px; text-align: center; }
+.kpi-v { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 600; line-height: 1.2; }
+.kpi-l { font-size: 12px; color: var(--t-weak); margin-top: 8px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+.toolbar .tip { color: var(--t-weak); font-size: 13px; }
+.order-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+.order-filter { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 16px; background: var(--bg-th); border-radius: var(--r-sm); margin-bottom: 12px; }
 .expand-wrap { padding: 12px 24px; }
-.upload-tip { font-size: 12px; color: #909399; line-height: 1.6; }
-.paper-order { background: #f4f8ff; border: 1px solid #d9ecff; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #606266; line-height: 2; }
+.upload-tip { font-size: 12px; color: var(--t-weak); line-height: 1.6; }
+.paper-order { background: var(--c-primary-light); border: 1px solid var(--bd); border-radius: var(--r-sm); padding: 12px 16px; font-size: 13px; color: var(--t-sub); line-height: 2; }
 .paper-order .amount { color: var(--c-primary); font-weight: 700; font-size: 16px; }
-.muted { color: #c0c4cc; }
-.invoice-preview { padding: 8px; }
+.muted { color: var(--t-weak); }
+.invoice-preview { width: 100%; padding: 8px; }
 .inv-title { text-align: center; font-size: 18px; font-weight: 700; color: #c0392b; }
-.inv-no { text-align: center; font-size: 13px; color: #666; margin: 6px 0 16px; }
+.inv-no { text-align: center; font-size: 13px; color: var(--t-sub); margin: 8px 0 16px; }
 </style>

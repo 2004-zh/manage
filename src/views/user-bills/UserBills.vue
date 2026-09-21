@@ -10,75 +10,61 @@
       </div>
     </div>
 
-    <el-row :gutter="12" class="kpi-row">
-      <el-col :span="6">
-        <div class="kpi">
-          <el-progress type="dashboard" :percentage="collectionRate" :width="110" :color="rateColor">
-            <template #default="{ percentage }">
-              <div class="rate-v">{{ percentage }}%</div>
-              <div class="rate-l">收缴率</div>
-            </template>
-          </el-progress>
+    <div class="kpi-row">
+      <div class="kpi-ring">
+        <el-progress type="dashboard" :percentage="collectionRate" :width="110" :color="rateColor">
+          <template #default="{ percentage }">
+            <div class="rate-v">{{ percentage }}%</div>
+            <div class="rate-l">收缴率</div>
+          </template>
+        </el-progress>
+      </div>
+      <div class="kpi-metrics">
+        <div class="grid-4">
+          <div class="kpi-box"><div class="kpi-v" style="color:#409eff">{{ bills.length }}</div><div class="kpi-l">账单总数</div></div>
+          <div class="kpi-box"><div class="kpi-v" style="color:#67c23a">￥{{ totalReceived }}</div><div class="kpi-l">已收(元)</div></div>
+          <div class="kpi-box"><div class="kpi-v" style="color:#e6a23c">￥{{ totalReceivable }}</div><div class="kpi-l">应收(元)</div></div>
+          <div class="kpi-box"><div class="kpi-v" style="color:#f56c6c">{{ overdueCount }}</div><div class="kpi-l">逾期账单</div></div>
         </div>
-      </el-col>
-      <el-col :span="18">
-        <el-row :gutter="12" class="kpi-inner">
-          <el-col :span="6"><div class="kpi-box"><div class="kpi-v" style="color:#409eff">{{ bills.length }}</div><div class="kpi-l">账单总数</div></div></el-col>
-          <el-col :span="6"><div class="kpi-box"><div class="kpi-v" style="color:#67c23a">￥{{ totalReceived }}</div><div class="kpi-l">已收(元)</div></div></el-col>
-          <el-col :span="6"><div class="kpi-box"><div class="kpi-v" style="color:#e6a23c">￥{{ totalReceivable }}</div><div class="kpi-l">应收(元)</div></div></el-col>
-          <el-col :span="6"><div class="kpi-box"><div class="kpi-v" style="color:#f56c6c">{{ overdueCount }}</div><div class="kpi-l">逾期账单</div></div></el-col>
-          <el-col :span="24">
-            <div class="cycle-tip">
-              当前缴费周期：<b>{{ cycle.cycleLabel }}</b> · 出账日 <b>每月{{ cycle.billDay }}日</b> · 缴费截止 <b>{{ cycle.dueDay }}日</b> ·
-              计费项 <b>{{ cycle.feeTypes.join('、') }}</b>
-            </div>
-          </el-col>
-        </el-row>
-      </el-col>
-    </el-row>
+        <div class="cycle-tip">
+          当前缴费周期：<b>{{ cycle.cycleLabel }}</b> · 出账日 <b>每月{{ cycle.billDay }}日</b> · 缴费截止 <b>{{ cycle.dueDay }}日</b> ·
+          计费项 <b>{{ cycle.feeTypes.join('、') }}</b>
+        </div>
+      </div>
+    </div>
 
     <el-card class="filter-bar" shadow="never">
-      <el-row :gutter="16">
-        <el-col :span="5">
-          <el-input v-model="filters.keyword" placeholder="账单编号/承租方" clearable prefix-icon="Search" />
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.company" placeholder="公司" clearable>
-            <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
-          </el-select>
-        </el-col>
-        <el-col :span="3">
-          <el-select v-model="filters.feeType" placeholder="类型" clearable>
-            <el-option label="租金" value="租金" />
-            <el-option label="物业费" value="物业费" />
-            <el-option label="水电费" value="水电费" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.status" placeholder="账单状态" clearable>
-            <el-option label="待缴费" value="待缴费" />
-            <el-option label="已缴费" value="已缴费" />
-            <el-option label="已逾期" value="已逾期" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-date-picker
-            v-model="filters.month"
-            type="month"
-            placeholder="选择月份"
-            format="YYYY-MM"
-            value-format="YYYY-MM"
-            style="width: 100%"
-          />
-        </el-col>
-        <el-col :span="4">
+      <div class="grid-3 filter-row">
+        <el-input v-model="filters.keyword" placeholder="账单编号/承租方" clearable prefix-icon="Search" class="full-width" />
+        <el-select v-model="filters.company" placeholder="公司" clearable class="full-width">
+          <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
+        </el-select>
+        <el-select v-model="filters.feeType" placeholder="类型" clearable class="full-width">
+          <el-option label="租金" value="租金" />
+          <el-option label="物业费" value="物业费" />
+          <el-option label="水电费" value="水电费" />
+        </el-select>
+        <el-select v-model="filters.status" placeholder="账单状态" clearable class="full-width">
+          <el-option label="待缴费" value="待缴费" />
+          <el-option label="已缴费" value="已缴费" />
+          <el-option label="已逾期" value="已逾期" />
+        </el-select>
+        <el-date-picker
+          v-model="filters.month"
+          type="month"
+          placeholder="选择月份"
+          format="YYYY-MM"
+          value-format="YYYY-MM"
+          class="full-width"
+        />
+        <div class="filter-actions">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
-        </el-col>
-      </el-row>
+        </div>
+      </div>
     </el-card>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="pagedData" border stripe show-summary :summary="getSummary" row-key="id">
         <el-table-column type="expand" width="40">
           <template #default="{ row }">
@@ -271,39 +257,68 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { useContractStore } from '../../store/contract'
+import { useFinanceStore } from '../../store/finance'
+import { useAssetStore } from '../../store/asset'
+import { useAuditStore } from '../../store/audit'
+
+const contractStore = useContractStore()
+const financeStore = useFinanceStore()
+const assetStore = useAssetStore()
+const auditStore = useAuditStore()
 
 const filters = ref({ keyword: '', company: '', feeType: '', status: '', month: '' })
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(15)
 
-const bills = ref([
-  { id: 1, billNo: 'BILL202409001', tenant: '杭州星辰科技有限公司', assetName: '滨江科技园A座8层', feeType: '租金', receivable: 58000, received: 58000, billMonth: '2024-09', status: '已缴费' },
-  { id: 2, billNo: 'BILL202409002', tenant: '杭州星辰科技有限公司', assetName: '滨江科技园A座8层', feeType: '物业费', receivable: 6800, received: 6800, billMonth: '2024-09', status: '已缴费' },
-  { id: 3, billNo: 'BILL202409003', tenant: '杭州星辰科技有限公司', assetName: '滨江科技园A座8层', feeType: '水电费', receivable: 3250, received: 0, billMonth: '2024-09', status: '待缴费' },
-  { id: 4, billNo: 'BILL202409004', tenant: '浙江蓝海贸易公司', assetName: '西湖区文三路商铺', feeType: '租金', receivable: 22000, received: 22000, billMonth: '2024-09', status: '已缴费' },
-  { id: 5, billNo: 'BILL202409005', tenant: '浙江蓝海贸易公司', assetName: '西湖区文三路商铺', feeType: '物业费', receivable: 1800, received: 0, billMonth: '2024-09', status: '已逾期' },
-  { id: 6, billNo: 'BILL202410001', tenant: '杭州星辰科技有限公司', assetName: '滨江科技园A座8层', feeType: '租金', receivable: 58000, received: 0, billMonth: '2024-10', status: '待缴费' },
-  { id: 7, billNo: 'BILL202410002', tenant: '杭州星辰科技有限公司', assetName: '滨江科技园A座8层', feeType: '物业费', receivable: 6800, received: 0, billMonth: '2024-10', status: '待缴费' },
-  { id: 8, billNo: 'BILL202410003', tenant: '杭州星辰科技有限公司', assetName: '滨江科技园A座8层', feeType: '水电费', receivable: 2980, received: 0, billMonth: '2024-10', status: '待缴费' },
-  { id: 9, billNo: 'BILL202410004', tenant: '浙江蓝海贸易公司', assetName: '西湖区文三路商铺', feeType: '租金', receivable: 22000, received: 22000, billMonth: '2024-10', status: '已缴费' },
-  { id: 10, billNo: 'BILL202410005', tenant: '嘉兴绿谷农产品有限公司', assetName: '余杭区仓储中心3号库', feeType: '租金', receivable: 35000, received: 0, billMonth: '2024-10', status: '已逾期' },
-  { id: 11, billNo: 'BILL202410006', tenant: '嘉兴绿谷农产品有限公司', assetName: '余杭区仓储中心3号库', feeType: '物业费', receivable: 2400, received: 0, billMonth: '2024-10', status: '待缴费' },
-  { id: 12, billNo: 'BILL202410007', tenant: '嘉兴绿谷农产品有限公司', assetName: '余杭区仓储中心3号库', feeType: '水电费', receivable: 4120, received: 4120, billMonth: '2024-10', status: '已缴费' },
-])
-
-const companyByAsset = {
-  '滨江科技园A座8层': '杭州滨江资产经营有限公司',
-  '西湖区文三路商铺': '杭州西湖文旅资产管理有限公司',
-  '余杭区仓储中心3号库': '嘉兴绿谷仓储物流有限公司',
-  '浦东新区厂房2号': '上海浦东金桥工业开发有限公司'
+// 与 Fee.vue / DepositReturn.vue 共享同一份账单：financeStore.billList（企业端已按所属公司过滤）
+function companyOf(contractId) {
+  if (!contractId) return '—'
+  const c = contractStore.getContractById(contractId)
+  if (!c) return '—'
+  return assetStore.getAssetById(c.assetId)?.group || '—'
 }
 
-function stampTimes(b, i) {
-  b.company = companyByAsset[b.assetName] || '杭州滨江资产经营有限公司'
-  b.createTime = `${b.billMonth}-01 09:${String(10 + (i % 50)).padStart(2, '0')}:36`
-  b.updateTime = b.status === '已缴费' ? `${b.billMonth}-06 15:${String(20 + (i % 40)).padStart(2, '0')}:08` : `${b.billMonth}-02 10:${String(30 + (i % 30)).padStart(2, '0')}:12`
-}
-bills.value.forEach(stampTimes)
+const bills = computed(() => financeStore.billList.map(b => ({
+  id: b.id ?? b.billNo,
+  billNo: b.billNo,
+  contractId: b.contractId,
+  tenant: b.tenant,
+  assetName: b.assetName,
+  feeType: b.feeType,
+  receivable: Number(b.receivable) || 0,
+  received: Number(b.received) || 0,
+  billMonth: b.billMonth,
+  status: b.status,
+  company: companyOf(b.contractId),
+  createTime: b.createTime,
+  updateTime: b.updateTime,
+  raw: b
+})))
+
+// 出账源：从共享收费台账派生，年租金万元 → 月租金元，并按比例给出 物业费 / 水电费
+const leaseSources = computed(() => {
+  return contractStore.visibleFees.map(f => {
+    const c = contractStore.getContractById(f.contractId)
+    const annualRent = c?.annualRent || 0
+    const monthlyRentYuan = Math.round(annualRent * 10000 / 12)
+    return {
+      contractId: f.contractId,
+      tenant: f.tenant,
+      assetId: f.assetId || c?.assetId || '',
+      assetName: f.assetName,
+      fee: {
+        租金: monthlyRentYuan,
+        物业费: Math.round(monthlyRentYuan * 0.06),
+        水电费: Math.round(monthlyRentYuan * 0.04)
+      }
+    }
+  })
+})
+let billSeq = 100 + bills.value.length
+
+function stampTimes() {} // 保留占位：company / createTime 已在 bills computed 中派生
+
 
 const billProfiles = {
   '滨江科技园A座8层': {
@@ -373,14 +388,7 @@ function saveCycle() {
   ElMessage.success('缴费周期设置已保存')
 }
 
-// ===== 出账数据源（在租合同）=====
-const leaseSources = ref([
-  { tenant: '杭州星辰科技有限公司', assetName: '滨江科技园A座8层', fee: { '租金': 58000, '物业费': 6800, '水电费': 3000 } },
-  { tenant: '浙江蓝海贸易公司', assetName: '西湖区文三路商铺', fee: { '租金': 22000, '物业费': 1800, '水电费': 1200 } },
-  { tenant: '嘉兴绿谷农产品有限公司', assetName: '余杭区仓储中心3号库', fee: { '租金': 35000, '物业费': 2400, '水电费': 4000 } },
-  { tenant: '上海锦绣服饰有限公司', assetName: '浦东新区厂房2号', fee: { '租金': 41000, '物业费': 3200, '水电费': 5600 } },
-])
-let billSeq = 1000
+// ===== 出账数据源已并入 leaseSources computed（在上方与 contractStore.visibleFees 同源）=====
 
 // ===== KPI =====
 const totalReceivable = computed(() => bills.value.reduce((s, b) => s + Number(b.receivable || 0), 0).toFixed(2))
@@ -447,7 +455,6 @@ function resetFilters() { filters.value = { keyword: '', company: '', feeType: '
 function handleGenerate() {
   const month = nextBillMonth()
   const months = cycleMonths[cycle.value.cycleType]
-  const ym = month.replace('-', '')
   let created = 0, skipped = 0
   leaseSources.value.forEach(src => {
     cycle.value.feeTypes.forEach(ft => {
@@ -455,19 +462,21 @@ function handleGenerate() {
       if (base == null) return
       const exists = bills.value.some(b => b.tenant === src.tenant && b.assetName === src.assetName && b.feeType === ft && b.billMonth === month)
       if (exists) { skipped++; return }
-      bills.value.unshift({
-        id: Date.now() + Math.random(),
+      const amt = Number((base * months).toFixed(2))
+      const ym = month.replace('-', '')
+      financeStore.addBill({
         billNo: `BILL${ym}${String(++billSeq).slice(-3)}`,
+        contractId: src.contractId,
         tenant: src.tenant,
+        assetId: src.assetId,
         assetName: src.assetName,
         feeType: ft,
-        receivable: Number((base * months).toFixed(2)),
-        received: 0,
         billMonth: month,
-        status: '待缴费',
-        company: companyByAsset[src.assetName] || '杭州滨江资产经营有限公司',
-        createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
-        updateTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+        billPeriod: month,
+        receivable: amt,
+        received: 0,
+        dueDate: `${month}-${String(cycle.value.dueDay).padStart(2, '0')}`,
+        status: '待缴费'
       })
       created++
     })
@@ -535,8 +544,15 @@ function handleView(row) {
 function handleStop(row) {
   ElMessageBox.confirm(`确认停用账单 ${row.billNo}？停用后该账单不再参与催缴与统计。`, '停用确认', { type: 'warning' })
     .then(() => {
-      row.status = '已停用'
-      row.updateTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+      financeStore.updateBill(row.billNo, { status: '已停用' })
+      auditStore.recordEvent({
+        assetId: row.contractId ? (contractStore.getContractById(row.contractId)?.assetId || '') : '',
+        assetName: row.assetName,
+        module: '账单',
+        action: '账单停用',
+        billNo: row.billNo,
+        remark: `停用 ${row.tenant} 的 ${row.feeType} 账单（应收 ${row.receivable} 元）`
+      })
       ElMessage.success('账单已停用')
     })
     .catch(() => {})
@@ -545,8 +561,14 @@ function handleStop(row) {
 function handleUrge(row) {
   ElMessageBox.confirm(`确认向 ${row.tenant} 发送催缴通知？`, '催缴确认', { type: 'warning' })
     .then(() => {
-      row.urgeStatus = '已催缴'
-      row.urgeTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+      auditStore.recordEvent({
+        assetId: row.contractId ? (contractStore.getContractById(row.contractId)?.assetId || '') : '',
+        assetName: row.assetName,
+        module: '账单',
+        action: '催缴',
+        billNo: row.billNo,
+        remark: `向 ${row.tenant} 催缴 ${row.feeType} 账单，欠费 ${Math.max(0, row.receivable - row.received)} 元`
+      })
       ElMessage.success('催缴通知已发送')
     })
     .catch(() => {})
@@ -578,20 +600,20 @@ function submitAdd() {
   if (!addForm.value.billMonth) { ElMessage.warning('请选择账单月份'); return }
   if (!addForm.value.receivable) { ElMessage.warning('请填写应收金额'); return }
   const ym = addForm.value.billMonth.replace('-', '')
-  const now = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
-  bills.value.unshift({
-    id: Date.now(),
+  const src = leaseSources.value.find(s => s.tenant === addForm.value.tenant)
+  financeStore.addBill({
     billNo: `BILL${ym}${String(++billSeq).slice(-3)}`,
+    contractId: src?.contractId || '',
     tenant: addForm.value.tenant,
+    assetId: src?.assetId || '',
     assetName: addForm.value.assetName,
     feeType: addForm.value.feeType,
+    billMonth: addForm.value.billMonth,
+    billPeriod: addForm.value.billMonth,
     receivable: addForm.value.receivable,
     received: 0,
-    billMonth: addForm.value.billMonth,
-    status: '待缴费',
-    company: companyByAsset[addForm.value.assetName] || '杭州滨江资产经营有限公司',
-    createTime: now,
-    updateTime: now
+    dueDate: `${addForm.value.billMonth}-${String(cycle.value.dueDay).padStart(2, '0')}`,
+    status: '待缴费'
   })
   page.value = 1
   showAdd.value = false
@@ -600,22 +622,21 @@ function submitAdd() {
 </script>
 
 <style scoped>
-.page-container { padding: 16px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; }
 .page-header h2 { margin: 0; font-size: 20px; }
-.kpi-row { margin-bottom: 16px; }
-.kpi { background: #fff; border: 1px solid #ebeef5; border-radius: 8px; padding: 8px; display: flex; justify-content: center; align-items: center; height: 100%; }
+.kpi-row { display: flex; gap: 16px; align-items: stretch; }
+.kpi-ring { background: var(--bg-card); border: 1px solid var(--bd); border-radius: var(--r-md); padding: 8px; display: flex; justify-content: center; align-items: center; }
+.kpi-metrics { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .rate-v { font-size: 20px; font-weight: 700; }
-.rate-l { font-size: 12px; color: #909399; margin-top: 2px; }
-.kpi-inner { height: 100%; }
-.kpi-box { background: #fff; border: 1px solid #ebeef5; border-radius: 8px; padding: 12px; text-align: center; }
+.rate-l { font-size: 12px; color: var(--t-weak); margin-top: 2px; }
+.kpi-box { background: var(--bg-card); border: 1px solid var(--bd); border-radius: var(--r-md); padding: 12px; text-align: center; }
 .kpi-v { font-size: 20px; font-weight: 600; }
-.kpi-l { font-size: 12px; color: #909399; margin-top: 4px; }
-.cycle-tip { grid-column: span 24; margin-top: 12px; background: #f4f8ff; border: 1px solid #d9ecff; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #606266; }
-.unit { margin-left: 8px; color: #909399; font-size: 13px; }
-.filter-bar { margin-bottom: 16px; }
-.filter-bar :deep(.el-select) { width: 100%; }
-.table-card { margin-bottom: 16px; }
-.pagination-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
+.kpi-l { font-size: 12px; color: var(--t-weak); margin-top: 4px; }
+.cycle-tip { background: #f4f8ff; border: 1px solid #d9ecff; border-radius: var(--r-sm); padding: 8px 12px; font-size: 13px; color: var(--t-sub); }
+.unit { margin-left: 8px; color: var(--t-weak); font-size: 13px; }
+.filter-bar :deep(.el-select),
+.filter-bar :deep(.el-input) { width: 100%; }
+.filter-actions { display: flex; gap: 8px; }
+.pager { margin-top: 12px; display: flex; justify-content: flex-end; }
 .expand-wrap { padding: 12px 24px; }
 </style>

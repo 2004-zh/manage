@@ -47,7 +47,7 @@
       </el-row>
     </el-card>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="pagedData" border stripe>
         <el-table-column type="expand">
           <template #default="{ row }">
@@ -162,7 +162,7 @@
         </el-form-item>
         <el-form-item label="证件附件">
           <el-upload action="#" :auto-upload="false" :limit="5" drag>
-            <el-icon style="font-size: 40px; color: #909399;"><Plus /></el-icon>
+            <el-icon style="font-size: 40px; color: var(--t-weak);"><Plus /></el-icon>
             <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
             <template #tip>
               <div class="el-upload__tip">支持 PDF / JPG / PNG 格式，单个文件不超过 10MB</div>
@@ -219,8 +219,16 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Picture } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
+import { useCredentialStore } from '../../store/credential'
 
 const assetStore = useAssetStore()
+const credentialStore = useCredentialStore()
+
+// 权证类证件直接落到资产的权证号并置为已办证；程序证件进证件层，联动推导办证状态
+const RIGHT_CERT_TYPES = ['不动产权证', '房产证', '土地证']
+function findAssetByName(name) {
+  return assetStore.assets.find(a => a.name === name) || null
+}
 const page = ref(1)
 const pageSize = ref(15)
 const dialogVisible = ref(false)
@@ -321,6 +329,32 @@ function deleteRecord(row) {
   }).catch(() => {})
 }
 
+function applyCertToAsset(f) {
+  const asset = findAssetByName(f.relatedAsset)
+  if (!asset) {
+    ElMessage.warning(`未找到与“${f.relatedAsset}”匹配的台账资产，证件已登记但未联动办证状态`)
+    return
+  }
+  if (RIGHT_CERT_TYPES.includes(f.certType)) {
+    assetStore.updateAsset(asset.id, {
+      certStatus: '已办证',
+      certDetail: f.certCode,
+      propertyRight: '有不动产证'
+    }, { module: '证件管理', action: '登记权证', remark: `${f.certType} ${f.certCode}` })
+    ElMessage.success(`已联动：${asset.name} 权证状态更新为「已办证」`)
+  } else {
+    credentialStore.addCredential({
+      assetId: asset.id,
+      group: asset.group,
+      type: f.certType,
+      certNo: f.certCode,
+      issueDate: f.issueDate,
+      status: '有效'
+    })
+    ElMessage.success(`已登记程序证件，${asset.name} 办证状态已按齐备度联动`)
+  }
+}
+
 function saveRecord() {
   if (!form.value.certName || !form.value.certType || !form.value.certCode || !form.value.relatedAsset || !form.value.issueDate || !form.value.expiryDate) {
     ElMessage.warning('请填写必填项')
@@ -329,6 +363,7 @@ function saveRecord() {
   if (isEdit.value) {
     const target = certRecords.value.find(r => r.certNo === form.value.certNo)
     if (target) Object.assign(target, form.value)
+    applyCertToAsset(form.value)
   } else {
     certRecords.value.unshift({
       ...form.value,
@@ -341,9 +376,9 @@ function saveRecord() {
       files: [],
       asset: { region: '', projectName: '', projectAddr: '', zone: '', assetName: form.value.relatedAsset, assetNo: '', assetAddr: '', leaseStatus: '', status: '正常' }
     })
+    applyCertToAsset(form.value)
   }
   dialogVisible.value = false
-  ElMessage.success(isEdit.value ? '编辑成功' : '新增成功')
 }
 
 function handleSearch() { page.value = 1 }
@@ -364,13 +399,12 @@ function handleExport() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
-.expand-panel { padding: 12px 24px; background: #fcfcfc; }
+.expand-panel { padding: 12px 24px; background: var(--bg-page); }
 .file-thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
 .file-thumbs .thumb {
-  width: 92px; height: 92px; border: 1px solid #d9d9d9; border-radius: 4px; background: #fafafa;
+  width: 92px; height: 92px; border: 1px solid var(--bd); border-radius: var(--r-sm); background: var(--bg-card);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  font-size: 12px; color: #999; padding: 6px; text-align: center; word-break: break-all; overflow: hidden;
+  font-size: 12px; color: var(--t-weak); padding: 6px; text-align: center; word-break: break-all; overflow: hidden;
 }
-.file-thumbs .no-file { font-size: 13px; color: #999; line-height: 92px; }
+.file-thumbs .no-file { font-size: 13px; color: var(--t-weak); line-height: 92px; }
 </style>

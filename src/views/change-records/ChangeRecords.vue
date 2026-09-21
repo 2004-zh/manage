@@ -10,7 +10,7 @@
 
     <el-card class="filter-bar" shadow="never">
       <el-row :gutter="12">
-        <el-col :span="5">
+        <el-col :span="6">
           <el-input v-model="filters.keyword" placeholder="资产名称/变更编号" clearable prefix-icon="Search" />
         </el-col>
         <el-col :span="3">
@@ -45,7 +45,7 @@
             <el-option label="权属变更" value="权属变更" />
           </el-select>
         </el-col>
-        <el-col :span="6" style="margin-top:12px">
+        <el-col :span="8">
           <el-date-picker
             v-model="filters.dateRange"
             type="daterange"
@@ -56,14 +56,14 @@
             style="width: 100%"
           />
         </el-col>
-        <el-col :span="4" style="margin-top:12px">
+        <el-col :span="16">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
         </el-col>
       </el-row>
     </el-card>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="pagedData" border stripe>
         <el-table-column type="expand" width="46">
           <template #default="{ row }">
@@ -164,7 +164,7 @@
           <div class="cell"><div class="label">变更后</div><div class="value">{{ currentRow.afterChange }}</div></div>
           <div class="cell"><div class="label">变更人</div><div class="value">{{ currentRow.changePerson }}</div></div>
           <div class="cell"><div class="label">变更时间</div><div class="value">{{ currentRow.changeTime }}</div></div>
-          <div class="cell" style="grid-column: span 2"><div class="label">备注</div><div class="value">{{ currentRow.remark || '无' }}</div></div>
+          <div class="cell" style="grid-column: span 3"><div class="label">备注</div><div class="value">{{ currentRow.remark || '无' }}</div></div>
         </div>
       </template>
       <template #footer>
@@ -335,10 +335,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { MoreFilled, UploadFilled } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useChangeLogStore } from '../../store/changeLog'
+import { useAuditStore } from '../../store/audit'
 import { useUserStore } from '../../store/user'
 
 const assetStore = useAssetStore()
 const changeLogStore = useChangeLogStore()
+const auditStore = useAuditStore()
 const userStore = useUserStore()
 
 // 企业端只看本公司相关的变更：种子记录看 oldOwner，运行期记录按资产编号回查归属
@@ -350,7 +352,7 @@ function belongsToCompany(row) {
 }
 
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(15)
 
 const directionOptions = ['内部流转', '外部流转']
 const ownershipOptions = ['产权和经营权', '产权', '经营权']
@@ -394,35 +396,43 @@ const getApprovalTag = (status) => {
   return map[status] || 'info'
 }
 
+// 运行期留痕统一来自 audit 业务变更记录（任何写操作都会进这里）
 const runtimeChangeRows = computed(() =>
-  changeLogStore.entries
-    .filter(e => e.module !== '流转')
-    .map(e => ({
-      id: e.id,
-      changeNo: `RT-${e.time.slice(5, 16).replace(/[-: ]/g, '')}`,
-      assetName: e.assetName || e.assetId || '—',
-      assetNo: e.assetId || '—',
-      assetType: '—',
-      location: '—',
-      assetStatus: '—',
-      changeType: e.type === '状态变更' || e.type === '用途变更' ? '状态变更' : e.type === '权属变更' ? '权属变更' : '信息变更',
-      changeContent: `${e.module}·${e.type}`,
-      beforeChange: e.before,
-      afterChange: e.after,
-      changePerson: e.operator,
-      changeTime: e.date,
-      direction: '内部流转',
-      ownershipType: '—',
-      beforeCompany: '—',
-      afterCompany: '—',
-      flowType: '—',
-      applicant: { name: e.operator, phone: '—' },
-      approvalStatus: '已通过',
-      approvalDeadline: '—',
-      approvalFinish: e.time,
-      remark: '',
-      oldOwner: '—'
-    }))
+  auditStore.changeRecords
+    .filter(r => r.module !== '流转')
+    .map(r => {
+      const changeType = r.field === 'status' || r.field === 'leaseStatus' || r.field === 'inventoryState'
+        ? '状态变更'
+        : (r.field === 'group' || r.action?.includes('权属') || r.action?.includes('流转') || r.action?.includes('划转'))
+          ? '权属变更'
+          : '信息变更'
+      return {
+        id: r.id,
+        changeNo: r.id,
+        assetName: r.assetName || r.assetId || '—',
+        assetNo: r.assetId || '—',
+        assetType: '—',
+        location: '—',
+        assetStatus: '—',
+        changeType,
+        changeContent: r.fieldLabel ? `${r.module}·${r.action}（${r.fieldLabel}）` : `${r.module}·${r.action}`,
+        beforeChange: r.before,
+        afterChange: r.after,
+        changePerson: r.operator,
+        changeTime: r.time.slice(0, 10),
+        direction: '内部流转',
+        ownershipType: '—',
+        beforeCompany: '—',
+        afterCompany: '—',
+        flowType: '—',
+        applicant: { name: r.operator, phone: '—' },
+        approvalStatus: '已通过',
+        approvalDeadline: '—',
+        approvalFinish: r.time,
+        remark: r.remark || '',
+        oldOwner: r.group || r.operatorOrg || '—'
+      }
+    })
 )
 
 const filteredData = computed(() => {
@@ -624,8 +634,8 @@ function handleCommand(cmd, row) {
       if (idx !== -1) {
         changeRecords.value.splice(idx, 1)
       } else {
-        const ei = changeLogStore.entries.findIndex(e => e.id === row.id)
-        if (ei !== -1) changeLogStore.entries.splice(ei, 1)
+        const ai = auditStore.changeRecords.findIndex(e => e.id === row.id)
+        if (ai !== -1) auditStore.changeRecords.splice(ai, 1)
       }
       ElMessage.success('删除成功')
     }).catch(() => {})
@@ -634,5 +644,7 @@ function handleCommand(cmd, row) {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
+.filter-bar :deep(.el-row) {
+  row-gap: 12px;
+}
 </style>

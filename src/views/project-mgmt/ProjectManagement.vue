@@ -16,17 +16,15 @@
     </div>
 
     <!-- 顶部 KPI -->
-    <el-row :gutter="16" class="kpi-row">
-      <el-col :span="6" v-for="k in kpiList" :key="k.label">
-        <el-card shadow="hover" class="kpi-card">
-          <div class="kpi-value" :style="{ color: k.color }">{{ k.value }}<span class="kpi-unit">{{ k.unit }}</span></div>
-          <div class="kpi-label">{{ k.label }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="grid-4 kpi-row">
+      <el-card v-for="k in kpiList" :key="k.label" shadow="hover" class="kpi-card">
+        <div class="kpi-value" :style="{ color: k.color }">{{ k.value }}<span class="kpi-unit">{{ k.unit }}</span></div>
+        <div class="kpi-label">{{ k.label }}</div>
+      </el-card>
+    </div>
 
     <!-- 项目卡片网格 -->
-    <div class="project-grid">
+    <div class="project-grid grid-auto">
       <el-card
         v-for="p in filteredProjects"
         :key="p.id"
@@ -71,6 +69,7 @@
           </div>
           <div class="card-actions">
             <el-button type="primary" link size="small" @click.stop="openAttach(p)">挂入已有资产</el-button>
+            <el-button type="primary" link size="small" @click.stop="openPartitions(p)">分区管理</el-button>
             <span class="attach-count">已挂入 {{ attachedCount(p.id) }} 项</span>
           </div>
         </div>
@@ -115,6 +114,21 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-form-item label="项目图片">
+          <div class="img-field">
+            <el-upload :auto-upload="false" :show-file-list="false" accept="image/*" :on-change="handleImageChange">
+              <img v-if="form.image" :src="form.image" class="img-preview" alt="项目图片" />
+              <div v-else class="img-placeholder">
+                <el-icon><Plus /></el-icon>
+                <span>选择图片</span>
+              </div>
+            </el-upload>
+            <div class="img-side">
+              <el-button v-if="form.image" link type="danger" size="small" @click="form.image = ''">移除图片</el-button>
+              <span class="img-tip">选填，不上传则卡片用默认占位图。支持 jpg/png，保存前会自动压缩</span>
+            </div>
+          </div>
+        </el-form-item>
       </el-form>
 
       <!-- 快捷录入 -->
@@ -237,6 +251,8 @@
         <el-button v-else type="danger" @click="doDetach">移出所选{{ detachSel.length ? `(${detachSel.length})` : '' }}</el-button>
       </template>
     </el-dialog>
+
+    <PartitionManager v-model="partitionVisible" :project-id="partitionProjectId" />
   </div>
 </template>
 
@@ -244,10 +260,11 @@
 import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search, Location, OfficeBuilding } from '@element-plus/icons-vue'
+import { Search, Location, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 import { useProjectStore } from '../../store/project'
 import { useAssetStore } from '../../store/asset'
 import { useUserStore } from '../../store/user'
+import PartitionManager from '../../components/PartitionManager.vue'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -294,10 +311,10 @@ const statTotals = computed(() => {
 })
 
 const kpiList = computed(() => [
-  { label: '项目数', value: projects.value.length, unit: '个', color: '#1890ff' },
+  { label: '项目数', value: projects.value.length, unit: '个', color: '#1668DC' },
   { label: '资产总宗数', value: statTotals.value.totalAssets, unit: '宗', color: '#722ed1' },
-  { label: '资产利用率', value: statTotals.value.overallRate, unit: '%', color: '#52c41a' },
-  { label: '闲置宗数', value: statTotals.value.totalIdle, unit: '宗', color: '#f5222d' }
+  { label: '资产利用率', value: statTotals.value.overallRate, unit: '%', color: '#18A058' },
+  { label: '闲置宗数', value: statTotals.value.totalIdle, unit: '宗', color: '#D93026' }
 ])
 
 function formatArea(v) {
@@ -310,9 +327,9 @@ function typeTagColor(type) {
 }
 
 function rateColor(rate) {
-  if (rate >= 80) return '#52c41a'
-  if (rate >= 60) return '#faad14'
-  return '#f5222d'
+  if (rate >= 80) return '#18A058'
+  if (rate >= 60) return '#E8912A'
+  return '#D93026'
 }
 
 function resetFilters() {
@@ -334,6 +351,7 @@ const defaultForm = () => ({
   type: '住宅项目',
   group: userStore.isEnt ? currentCompany.value : '城投集团',
   address: '',
+  image: '',
   partitions: []
 })
 
@@ -357,6 +375,46 @@ function openCreateDialog() {
   Object.assign(form, defaultForm())
   form.partitions = []
   createDialogVisible.value = true
+}
+
+// 项目图片选填：本地文件读成 data URL 存进 store，离线演示也能显示
+function handleImageChange(file) {
+  const raw = file?.raw
+  if (!raw) return
+  if (!raw.type.startsWith('image/')) {
+    ElMessage.warning('请选择图片文件')
+    return
+  }
+  if (raw.size > 5 * 1024 * 1024) {
+    ElMessage.warning('图片超过 5MB，请压缩后再上传')
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = () => {
+    const img = new Image()
+    img.onload = () => {
+      form.image = shrinkToDataUrl(img, 720)
+    }
+    img.onerror = () => ElMessage.error('图片无法读取，请换一张')
+    img.src = reader.result
+  }
+  reader.onerror = () => ElMessage.error('图片读取失败，请重试')
+  reader.readAsDataURL(raw)
+}
+
+// 等比缩到 maxW 以内再编码，避免大图把 localStorage 撑爆
+function shrinkToDataUrl(img, maxW) {
+  const scale = Math.min(1, maxW / img.width)
+  const w = Math.max(1, Math.round(img.width * scale))
+  const h = Math.max(1, Math.round(img.height * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fillRect(0, 0, w, h)
+  ctx.drawImage(img, 0, 0, w, h)
+  return canvas.toDataURL('image/jpeg', 0.82)
 }
 
 function applyQuickBuild() {
@@ -432,6 +490,7 @@ function submitCreate() {
       type: form.type,
       group: form.group,
       address: form.address,
+      image: form.image,
       partitions: form.partitions
     })
     createDialogVisible.value = false
@@ -474,6 +533,14 @@ const floorOptions = computed(() => {
   if (part) return [...new Set(part.floors.map(f => f.name))]
   return [...new Set(p.partitions.flatMap(x => x.floors.map(f => f.name)))]
 })
+
+const partitionVisible = ref(false)
+const partitionProjectId = ref('')
+
+function openPartitions(p) {
+  partitionProjectId.value = p.id
+  partitionVisible.value = true
+}
 
 function openAttach(p) {
   attachProject.value = p
@@ -524,15 +591,10 @@ function doDetach() {
 </script>
 
 <style scoped>
-.page-container {
-  padding: 0;
-}
-
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
 }
 
 .page-header h2 {
@@ -544,10 +606,6 @@ function doDetach() {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.kpi-row {
-  margin-bottom: 16px;
 }
 
 .kpi-card {
@@ -563,7 +621,9 @@ function doDetach() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-top: 6px;
+  white-space: nowrap;
 }
 
 .attach-count {
@@ -595,19 +655,13 @@ function doDetach() {
   font-size: 13px;
   font-weight: 400;
   margin-left: 2px;
-  color: #999;
+  color: var(--t-weak);
 }
 
 .kpi-label {
   font-size: 13px;
-  color: #666;
+  color: var(--t-sub);
   margin-top: 4px;
-}
-
-.project-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
 }
 
 .project-card {
@@ -628,7 +682,7 @@ function doDetach() {
   position: relative;
   height: 140px;
   overflow: hidden;
-  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  background: linear-gradient(135deg, var(--c-primary-light) 0%, #B9D4FF 100%);
 }
 
 .card-img img {
@@ -659,19 +713,19 @@ function doDetach() {
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--t-main);
   margin-bottom: 4px;
 }
 
 .card-group {
   font-size: 12px;
-  color: #1890ff;
+  color: var(--c-primary);
   margin-bottom: 6px;
 }
 
 .card-address {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -687,8 +741,8 @@ function doDetach() {
   gap: 4px;
   margin-bottom: 12px;
   padding: 8px 0;
-  border-top: 1px solid #f0f0f0;
-  border-bottom: 1px solid #f0f0f0;
+  border-top: 1px solid var(--bd);
+  border-bottom: 1px solid var(--bd);
 }
 
 .stat-item {
@@ -699,13 +753,13 @@ function doDetach() {
   display: block;
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--t-main);
 }
 
 .stat-lbl {
   display: block;
-  font-size: 11px;
-  color: #999;
+  font-size: 12px;
+  color: var(--t-weak);
   margin-top: 2px;
 }
 
@@ -718,7 +772,7 @@ function doDetach() {
 .rate-bar {
   flex: 1;
   height: 6px;
-  background: #f0f0f0;
+  background: var(--bd);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -731,7 +785,7 @@ function doDetach() {
 
 .rate-text {
   font-size: 12px;
-  color: #666;
+  color: var(--t-sub);
   white-space: nowrap;
 }
 
@@ -747,33 +801,82 @@ function doDetach() {
   flex-wrap: wrap;
 }
 
+.img-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.img-field :deep(.el-upload) {
+  display: block;
+}
+
+.img-preview,
+.img-placeholder {
+  width: 216px;
+  height: 84px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--bd);
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.img-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--bg-th);
+  color: var(--t-weak);
+  font-size: 12px;
+}
+
+.img-placeholder:hover {
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+}
+
+.img-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.img-tip {
+  font-size: 12px;
+  color: var(--t-weak);
+  line-height: 1.5;
+}
+
 .quick-label {
   font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--t-main);
   margin-right: 4px;
 }
 
 .quick-unit {
   font-size: 12px;
-  color: #666;
+  color: var(--t-sub);
   margin-right: 8px;
 }
 
 .structure-editor {
   max-height: 420px;
   overflow-y: auto;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--bd);
   border-radius: 6px;
   padding: 12px;
 }
 
 .partition-block {
   margin-bottom: 12px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--bd);
   border-radius: 6px;
   padding: 10px;
-  background: #fafafa;
+  background: var(--bg-th);
 }
 
 .partition-hd {
@@ -786,13 +889,13 @@ function doDetach() {
 
 .area-unit {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
 }
 
 .floor-block {
   margin-left: 12px;
   margin-bottom: 8px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--bd);
   border-radius: 4px;
   padding: 8px;
   background: #fff;

@@ -5,7 +5,7 @@
       <span class="sub">收费终端设备登记 · 在线状态 · 用户误用/违规登记</span>
     </div>
 
-    <el-tabs v-model="activeTab" type="border-card">
+    <el-tabs v-model="activeTab" type="border-card" class="fill">
       <el-tab-pane label="终端设备" name="devices">
         <div class="toolbar">
           <el-input v-model="devKeyword" placeholder="终端编号/名称/点位" clearable style="width:220px" prefix-icon="Search" />
@@ -198,7 +198,7 @@ const filteredDevices = computed(() => devices.value.filter(d => {
 }))
 
 const devPage = ref(1)
-const devPageSize = ref(10)
+const devPageSize = ref(15)
 const pagedDevices = computed(() => {
   const list = filteredDevices.value
   const start = Math.min((devPage.value - 1) * devPageSize.value, Math.max(0, list.length - devPageSize.value))
@@ -276,7 +276,7 @@ const filteredMisuse = computed(() => misuse.value.filter(m => {
 }))
 
 const misPage = ref(1)
-const misPageSize = ref(10)
+const misPageSize = ref(15)
 const pagedMisuse = computed(() => {
   const list = filteredMisuse.value
   const start = Math.min((misPage.value - 1) * misPageSize.value, Math.max(0, list.length - misPageSize.value))
@@ -310,10 +310,9 @@ function handleMisuse(row) {
 </script>
 
 <style scoped>
-.page-container { padding: 16px; }
-.page-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+.page-header { display: flex; align-items: baseline; gap: 12px; }
 .page-header h2 { margin: 0; font-size: 20px; }
-.page-header .sub { color: #999; font-size: 13px; }
-.toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
-.muted { color: #c0c4cc; }
+.page-header .sub { color: var(--t-weak); font-size: 13px; }
+.toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.muted { color: var(--t-weak); }
 </style>

@@ -25,11 +25,11 @@
       </el-form>
     </div>
 
-    <div style="margin-bottom: 12px; color: #999; font-size: 13px">
+    <div style="color: var(--t-weak); font-size: 13px">
       共 {{ filteredAssets.length }} 宗资产
     </div>
 
-    <el-table :data="pagedAssets" border stripe class="table-card">
+    <el-table :data="pagedAssets" border stripe class="table-card fill">
       <el-table-column prop="id" label="编号" width="90" />
       <el-table-column prop="name" label="资产名称" min-width="200" />
       <el-table-column prop="group" label="所属集团" width="110" />
@@ -50,7 +50,7 @@
     </el-table>
 
     <el-pagination
-      style="margin-top: 16px; justify-content: flex-end"
+      style="justify-content: flex-end"
       background layout="total, prev, pager, next"
       :total="filteredAssets.length"
       :page-size="pageSize"

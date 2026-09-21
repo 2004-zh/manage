@@ -4,7 +4,7 @@
       <h2>部门管理</h2>
     </div>
 
-    <el-card shadow="never" class="filter-bar">
+    <el-card shadow="never" class="filter-card">
       <el-form inline>
         <el-form-item label="部门名称">
           <el-input v-model="deptQuery.deptName" placeholder="请输入部门名称" clearable style="width:180px" />
@@ -24,167 +24,159 @@
       </el-form>
     </el-card>
 
-    <el-row :gutter="16">
-      <el-col :span="6">
-        <el-card shadow="never">
-          <template #header>
-            <span>公司架构</span>
-          </template>
-          <el-tree :data="companyTree" :props="{ label: 'name', children: 'children' }" node-key="id" default-expand-all highlight-current :expand-on-click-node="false" @node-click="handleCompanyNodeClick" />
-        </el-card>
-      </el-col>
-      <el-col :span="18">
-        <el-card shadow="never">
-          <template #header>
-            <span>部门列表</span>
-          </template>
-          <el-table :data="pagedDepartments" border stripe>
-            <el-table-column prop="code" label="编号" width="100" />
-            <el-table-column prop="name" label="部门名称" min-width="130" />
-            <el-table-column prop="company" label="所属公司" min-width="170" show-overflow-tooltip />
-            <el-table-column prop="members" label="部门人员" min-width="150" show-overflow-tooltip>
-              <template #default="{ row }">
-                <span v-if="row.members">{{ row.members }}</span>
-                <span v-else style="color:#c0c4cc">-</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="memberCount" label="部门人数" width="90" align="center" />
-            <el-table-column prop="createTime" label="创建时间" width="170" />
-            <el-table-column label="操作" width="150" fixed="right">
-              <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="openNodeDialog(row)">编辑</el-button>
-                <el-button type="primary" link size="small" @click="openDeptMembers(row)">部门人员</el-button>
-              </template>
-            </el-table-column>
-            <template #empty>
-              <el-empty description="暂无数据" :image-size="70" />
+    <div class="org-split">
+      <el-card shadow="never">
+        <template #header>
+          <span>公司架构</span>
+        </template>
+        <el-tree :data="companyTree" :props="{ label: 'name', children: 'children' }" node-key="id" default-expand-all highlight-current :expand-on-click-node="false" @node-click="handleCompanyNodeClick" />
+      </el-card>
+      <el-card shadow="never" class="fill">
+        <template #header>
+          <span>部门列表</span>
+        </template>
+        <el-table :data="pagedDepartments" border stripe>
+          <el-table-column prop="code" label="编号" width="100" class-name="num" />
+          <el-table-column prop="name" label="部门名称" min-width="130" />
+          <el-table-column prop="company" label="所属公司" min-width="170" show-overflow-tooltip />
+          <el-table-column prop="members" label="部门人员" min-width="150" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span v-if="row.members">{{ row.members }}</span>
+              <span v-else class="muted">-</span>
             </template>
-          </el-table>
-          <div class="pager">
-            <el-pagination
-              v-model:current-page="deptPage"
-              v-model:page-size="deptPageSize"
-              :total="filteredDepartments.length"
-              :page-sizes="[10, 20, 50]"
-              layout="total, sizes, prev, pager, next, jumper"
-            />
+          </el-table-column>
+          <el-table-column prop="memberCount" label="部门人数" width="90" align="center" class-name="num" />
+          <el-table-column prop="createTime" label="创建时间" width="170" />
+          <el-table-column label="操作" width="150" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link size="small" @click="openNodeDialog(row)">编辑</el-button>
+              <el-button type="primary" link size="small" @click="openDeptMembers(row)">部门人员</el-button>
+            </template>
+          </el-table-column>
+          <template #empty>
+            <el-empty description="暂无数据" :image-size="60" />
+          </template>
+        </el-table>
+        <div class="pager">
+          <el-pagination
+            v-model:current-page="deptPage"
+            v-model:page-size="deptPageSize"
+            :total="filteredDepartments.length"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next, jumper"
+          />
+        </div>
+      </el-card>
+    </div>
+
+    <div class="section-title">组织与用户</div>
+
+    <div class="user-split">
+      <el-card shadow="never">
+        <template #header>
+          <div class="card-head">
+            <span>组织架构</span>
+            <el-button type="primary" size="small" @click="showAddOrg = true">新增</el-button>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <div class="section-title" style="margin-top:20px">组织与用户</div>
-
-    <el-row :gutter="16">
-      <el-col :span="8">
-        <el-card shadow="never">
-          <template #header>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span>组织架构</span>
-              <el-button type="primary" size="small" @click="showAddOrg = true">新增</el-button>
+        </template>
+        <el-tree :data="orgTree" :props="{ label: 'name', children: 'children' }" node-key="id" default-expand-all highlight-current @node-click="handleOrgClick">
+          <template #default="{ node, data }">
+            <div class="node-row">
+              <span>{{ node.label }}</span>
+              <span>
+                <el-button type="primary" link size="small" @click.stop="editOrg(data)">编辑</el-button>
+                <el-button type="danger" link size="small" @click.stop="deleteOrg(data)">删除</el-button>
+              </span>
             </div>
           </template>
-          <el-tree :data="orgTree" :props="{ label: 'name', children: 'children' }" node-key="id" default-expand-all highlight-current @node-click="handleOrgClick">
-            <template #default="{ node, data }">
-              <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
-                <span>{{ node.label }}</span>
-                <span>
-                  <el-button type="primary" link size="small" @click.stop="editOrg(data)">编辑</el-button>
-                  <el-button type="danger" link size="small" @click.stop="deleteOrg(data)">删除</el-button>
-                </span>
-              </div>
-            </template>
-          </el-tree>
-        </el-card>
-      </el-col>
-      <el-col :span="16">
-        <el-card shadow="never">
-          <el-tabs v-model="rightTab">
-            <el-tab-pane label="用户管理" name="users">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <span v-if="selectedOrg" style="color:#909399;font-size:13px">{{ selectedOrg.name }}</span>
-                <span v-else style="color:#909399;font-size:13px">全部用户</span>
-                <el-button type="primary" size="small" @click="showAddUser = true">新增用户</el-button>
-              </div>
-              <el-table :data="pagedUsers" border stripe>
-                <el-table-column prop="username" label="用户名" width="120" />
-                <el-table-column prop="name" label="姓名" width="100" />
-                <el-table-column prop="role" label="角色" width="120" />
-                <el-table-column prop="phone" label="手机号" width="130" />
-                <el-table-column prop="email" label="邮箱" min-width="160" />
-                <el-table-column prop="status" label="状态" width="80">
-                  <template #default="{ row }">
-                    <el-tag :type="row.status === '启用' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="150" fixed="right">
-                  <template #default="{ row }">
-                    <el-button type="primary" link size="small" @click="editUser(row)">编辑</el-button>
-                    <el-button type="danger" link size="small" @click="deleteUser(row)">删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-              <div class="pager">
-                <el-pagination
-                  v-model:current-page="userPage"
-                  v-model:page-size="userPageSize"
-                  :total="filteredUsers.length"
-                  :page-sizes="[10, 20, 50]"
-                  layout="total, sizes, prev, pager, next, jumper"
-                />
-              </div>
-            </el-tab-pane>
+        </el-tree>
+      </el-card>
+      <el-card shadow="never">
+        <el-tabs v-model="rightTab">
+          <el-tab-pane label="用户管理" name="users">
+            <div class="row-head">
+              <span v-if="selectedOrg" class="sub-hint">{{ selectedOrg.name }}</span>
+              <span v-else class="sub-hint">全部用户</span>
+              <el-button type="primary" size="small" @click="showAddUser = true">新增用户</el-button>
+            </div>
+            <el-table :data="pagedUsers" border stripe>
+              <el-table-column prop="username" label="用户名" width="120" />
+              <el-table-column prop="name" label="姓名" width="100" />
+              <el-table-column prop="role" label="角色" width="120" />
+              <el-table-column prop="phone" label="手机号" width="130" class-name="num" />
+              <el-table-column prop="email" label="邮箱" min-width="160" />
+              <el-table-column prop="status" label="状态" width="80">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === '启用' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="150" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="primary" link size="small" @click="editUser(row)">编辑</el-button>
+                  <el-button type="danger" link size="small" @click="deleteUser(row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div class="pager">
+              <el-pagination
+                v-model:current-page="userPage"
+                v-model:page-size="userPageSize"
+                :total="filteredUsers.length"
+                :page-sizes="[10, 20, 50]"
+                layout="total, sizes, prev, pager, next, jumper"
+              />
+            </div>
+          </el-tab-pane>
 
-            <el-tab-pane name="companies">
-              <template #label>
-                <span>下属公司收款配置</span>
-              </template>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <span style="color:#909399;font-size:13px">配置各下属公司的收款账户及归属模式</span>
-                <el-button type="primary" size="small" @click="openCompanyDialog(null)">新增公司</el-button>
-              </div>
-              <el-table :data="pagedCompanies" border stripe>
-                <el-table-column prop="name" label="公司名称" min-width="160" />
-                <el-table-column prop="shortName" label="简称" width="100" />
-                <el-table-column prop="collectionMode" label="收款模式" width="130">
-                  <template #default="{ row }">
-                    <el-tag :type="row.collectionMode === '独立收款' ? 'success' : 'warning'" size="small">{{ row.collectionMode }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="parentCollector" label="统收归属" width="130">
-                  <template #default="{ row }">
-                    <span v-if="row.collectionMode === '上级统收'" style="color:#409EFF">{{ row.parentCollector || '-' }}</span>
-                    <span v-else style="color:#c0c4cc">-</span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="bankName" label="开户行" min-width="150" />
-                <el-table-column prop="bankAccount" label="银行账号" min-width="180">
-                  <template #default="{ row }">
-                    <span style="font-family:monospace">{{ row.bankAccount }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="accountName" label="账户名称" width="140" />
-                <el-table-column label="操作" width="150" fixed="right">
-                  <template #default="{ row }">
-                    <el-button type="primary" link size="small" @click="openCompanyDialog(row)">编辑</el-button>
-                    <el-button type="danger" link size="small" @click="deleteCompany(row)">删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-              <div class="pager">
-                <el-pagination
-                  v-model:current-page="companyPage"
-                  v-model:page-size="companyPageSize"
-                  :total="companies.length"
-                  :page-sizes="[10, 20, 50]"
-                  layout="total, sizes, prev, pager, next, jumper"
-                />
-              </div>
-            </el-tab-pane>
-          </el-tabs>
-        </el-card>
-      </el-col>
-    </el-row>
+          <el-tab-pane name="companies">
+            <template #label>
+              <span>下属公司收款配置</span>
+            </template>
+            <div class="row-head">
+              <span class="sub-hint">配置各下属公司的收款账户及归属模式</span>
+              <el-button type="primary" size="small" @click="openCompanyDialog(null)">新增公司</el-button>
+            </div>
+            <el-table :data="pagedCompanies" border stripe>
+              <el-table-column prop="name" label="公司名称" min-width="160" />
+              <el-table-column prop="shortName" label="简称" width="100" />
+              <el-table-column prop="collectionMode" label="收款模式" width="130">
+                <template #default="{ row }">
+                  <el-tag :type="row.collectionMode === '独立收款' ? 'success' : 'warning'" size="small">{{ row.collectionMode }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="parentCollector" label="统收归属" width="130">
+                <template #default="{ row }">
+                  <span v-if="row.collectionMode === '上级统收'" class="link-text">{{ row.parentCollector || '-' }}</span>
+                  <span v-else class="muted">-</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="bankName" label="开户行" min-width="150" />
+              <el-table-column prop="bankAccount" label="银行账号" min-width="180">
+                <template #default="{ row }">
+                  <span class="mono">{{ row.bankAccount }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="accountName" label="账户名称" width="140" />
+              <el-table-column label="操作" width="150" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="primary" link size="small" @click="openCompanyDialog(row)">编辑</el-button>
+                  <el-button type="danger" link size="small" @click="deleteCompany(row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div class="pager">
+              <el-pagination
+                v-model:current-page="companyPage"
+                v-model:page-size="companyPageSize"
+                :total="companies.length"
+                :page-sizes="[10, 20, 50]"
+                layout="total, sizes, prev, pager, next, jumper"
+              />
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
+    </div>
 
     <el-dialog v-model="showAddOrg" :title="editingOrg ? '编辑组织' : '新增组织'" width="500px">
       <el-form :model="orgForm" label-width="100px">
@@ -251,7 +243,7 @@
             <el-radio value="独立收款">独立收款</el-radio>
             <el-radio value="上级统收">上级统收</el-radio>
           </el-radio-group>
-          <div style="color:#909399;font-size:12px;margin-top:4px">
+          <div class="form-tip">
             <span v-if="companyForm.collectionMode === '独立收款'">租金收入直接进入本公司账户</span>
             <span v-else>租金收入归集到上级单位账户</span>
           </div>
@@ -327,7 +319,7 @@
     <el-dialog v-model="showDeptMembers" title="部门人员" width="480px" destroy-on-close>
       <div class="section-title" v-if="currentDept">{{ currentDept.name }}</div>
       <el-checkbox-group v-model="selectedMemberIds">
-        <div v-for="u in users" :key="u.id" style="padding:6px 0;border-bottom:1px dashed #f0f0f0">
+        <div v-for="u in users" :key="u.id" class="member-row">
           <el-checkbox :value="u.id">{{ u.name }}（{{ u.role }} · {{ u.phone }}）</el-checkbox>
         </div>
       </el-checkbox-group>
@@ -643,3 +635,36 @@ const saveUser = () => {
   ElMessage.success('保存成功')
 }
 </script>
+
+<style scoped>
+/* 筛选卡只留卡片自身一层内边距，表单项不再叠加底部空隙 */
+.filter-card :deep(.el-form-item) { margin-bottom: 0; }
+
+/* 树/列表两栏：左栏按内容定宽，右栏吃满剩余宽度，避免中间或右侧大洞 */
+.org-split {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.user-split {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 320px minmax(0, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .org-split,
+  .user-split { grid-template-columns: minmax(0, 1fr); }
+}
+
+.card-head { display: flex; justify-content: space-between; align-items: center; }
+.row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.node-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.member-row { padding: 8px 0; border-bottom: 1px dashed var(--bd-split); }
+.sub-hint { color: var(--t-weak); font-size: 13px; }
+.muted { color: var(--t-weak); }
+.link-text { color: var(--c-primary); }
+.mono { font-family: var(--font-mono); }
+.form-tip { color: var(--t-weak); font-size: 12px; margin-top: 4px; }
+</style>

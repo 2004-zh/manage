@@ -20,16 +20,8 @@ function readSaved(id) {
 export function piniaPersistPlugin({ store }) {
   if (!PERSIST_IDS.includes(store.$id)) return
 
-  const saved = readSaved(store.$id)
-  if (saved) {
-    try {
-      store.$patch(saved)
-      store.onHydrated?.()
-    } catch (e) {
-      console.warn('[persist] hydrate failed', store.$id, e)
-    }
-  }
-
+  // 先挂监听再灌数据：hydrate 期间的归一化（onHydrated 里的状态对齐/招租成交回写）会改 $state，
+  // 若监听在 onHydrated 之后才注册，这批改动永远进不了 storage，只能等下次用户操作才被带出去。
   let timer = null
   watch(
     () => JSON.stringify(store.$state),
@@ -44,6 +36,16 @@ export function piniaPersistPlugin({ store }) {
       }, 200)
     }
   )
+
+  const saved = readSaved(store.$id)
+  if (saved) {
+    try {
+      store.$patch(saved)
+      store.onHydrated?.()
+    } catch (e) {
+      console.warn('[persist] hydrate failed', store.$id, e)
+    }
+  }
 }
 
 export function clearPersisted() {

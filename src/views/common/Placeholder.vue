@@ -1,7 +1,7 @@
 <template>
-  <div class="placeholder-page">
+  <div class="placeholder-page fill">
     <div class="placeholder-content">
-      <el-icon :size="64" color="#d9d9d9"><InfoFilled /></el-icon>
+      <el-icon :size="64" color="var(--t-weak)"><InfoFilled /></el-icon>
       <h2>{{ moduleName }}</h2>
       <p class="placeholder-desc">{{ moduleDesc }}</p>
       <el-tag type="info" size="large" effect="plain">该模块属完整产品版能力，本期原型未展开</el-tag>
@@ -44,30 +44,36 @@ const moduleDesc = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
+  min-height: 320px;
 }
 
 .placeholder-content {
-  text-align: center;
+  width: 100%;
   max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-md);
+  padding: 32px 24px;
 }
 
 .placeholder-content h2 {
   font-size: 20px;
-  color: #333;
+  color: var(--t-main);
   margin: 16px 0 8px;
 }
 
 .placeholder-desc {
   font-size: 14px;
-  color: #666;
-  margin-bottom: 20px;
+  color: var(--t-sub);
+  margin-bottom: 16px;
 }
 
 .placeholder-hint {
   font-size: 13px;
-  color: #999;
-  margin: 20px 0;
+  color: var(--t-weak);
+  margin: 16px 0;
   line-height: 1.6;
 }
 </style>

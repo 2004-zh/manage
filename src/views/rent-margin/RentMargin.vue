@@ -8,39 +8,33 @@
       </div>
     </div>
 
-    <el-row :gutter="12" class="kpi-row">
-      <el-col :span="6"><div class="kpi"><div class="kpi-v" style="color:#409eff">{{ stats.count }}</div><div class="kpi-l">在租资产(宗)</div></div></el-col>
-      <el-col :span="6"><div class="kpi"><div class="kpi-v" style="color:#67c23a">￥{{ stats.marketTotal }}万</div><div class="kpi-l">评估年租金合计</div></div></el-col>
-      <el-col :span="6"><div class="kpi"><div class="kpi-v" style="color:#e6a23c">￥{{ stats.actualTotal }}万</div><div class="kpi-l">实收年租金合计</div></div></el-col>
-      <el-col :span="6"><div class="kpi"><div class="kpi-v" :style="{ color: stats.gapTotal >= 0 ? '#f56c6c' : '#67c23a' }">￥{{ stats.gapTotal }}万</div><div class="kpi-l">差价合计(评估-实收)</div></div></el-col>
-    </el-row>
+    <div class="grid-4 kpi-row">
+      <div class="kpi"><div class="kpi-v" style="color:#409eff">{{ stats.count }}</div><div class="kpi-l">在租资产(宗)</div></div>
+      <div class="kpi"><div class="kpi-v" style="color:#67c23a">￥{{ stats.marketTotal }}万</div><div class="kpi-l">评估年租金合计</div></div>
+      <div class="kpi"><div class="kpi-v" style="color:#e6a23c">￥{{ stats.actualTotal }}万</div><div class="kpi-l">实收年租金合计</div></div>
+      <div class="kpi"><div class="kpi-v" :style="{ color: Number(stats.gapTotal) >= 0 ? '#f56c6c' : '#67c23a' }">￥{{ stats.gapTotal }}万</div><div class="kpi-l">差价合计(评估-实收)</div></div>
+    </div>
 
     <el-card class="filter-bar" shadow="never">
-      <el-row :gutter="16">
-        <el-col :span="5">
-          <el-input v-model="filters.keyword" placeholder="资产名称/承租方" clearable prefix-icon="Search" />
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.gapType" placeholder="差价方向" clearable>
-            <el-option label="低于评估(待调价)" value="below" />
-            <el-option label="高于评估" value="above" />
-            <el-option label="持平" value="equal" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.adjusted" placeholder="调整状态" clearable>
-            <el-option label="已调整" :value="true" />
-            <el-option label="未调整" :value="false" />
-          </el-select>
-        </el-col>
-        <el-col :span="3">
+      <div class="grid-4 filter-row">
+        <el-input v-model="filters.keyword" placeholder="资产名称/承租方" clearable prefix-icon="Search" class="full-width" />
+        <el-select v-model="filters.gapType" placeholder="差价方向" clearable class="full-width">
+          <el-option label="低于评估(待调价)" value="below" />
+          <el-option label="高于评估" value="above" />
+          <el-option label="持平" value="equal" />
+        </el-select>
+        <el-select v-model="filters.adjusted" placeholder="调整状态" clearable class="full-width">
+          <el-option label="已调整" :value="true" />
+          <el-option label="未调整" :value="false" />
+        </el-select>
+        <div class="filter-actions">
           <el-button type="primary" @click="page = 1">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
-        </el-col>
-      </el-row>
+        </div>
+      </div>
     </el-card>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="pagedData" border stripe :row-class-name="rowClass">
         <el-table-column prop="assetName" label="资产名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="tenant" label="承租方" min-width="170" show-overflow-tooltip />
@@ -52,15 +46,15 @@
           <template #default="{ row }">￥{{ row.actualPrice }}</template>
         </el-table-column>
         <el-table-column label="评估年租金(万)" width="130" align="right">
-          <template #default="{ row }">{{ marketAnnual(row) }}</template>
+          <template #default="{ row }">{{ row.marketAnnual }}</template>
         </el-table-column>
         <el-table-column label="实收年租金(万)" width="130" align="right">
-          <template #default="{ row }">{{ actualAnnual(row) }}</template>
+          <template #default="{ row }">{{ row.actualAnnual }}</template>
         </el-table-column>
         <el-table-column label="差价(万)" width="110" align="right">
           <template #default="{ row }">
-            <span :style="{ color: gapAnnual(row) > 0 ? '#f56c6c' : gapAnnual(row) < 0 ? '#67c23a' : '#909399', fontWeight: 600 }">
-              {{ gapAnnual(row) > 0 ? '+' : '' }}{{ gapAnnual(row) }}
+            <span :style="{ color: Number(row.gapAnnual) > 0 ? '#f56c6c' : Number(row.gapAnnual) < 0 ? '#67c23a' : '#909399', fontWeight: 600 }">
+              {{ Number(row.gapAnnual) > 0 ? '+' : '' }}{{ row.gapAnnual }}
             </span>
           </template>
         </el-table-column>
@@ -112,30 +106,18 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useFinanceStore } from '../../store/finance'
+
+const financeStore = useFinanceStore()
 
 const filters = ref({ keyword: '', gapType: '', adjusted: '' })
 const page = ref(1)
-const pageSize = 10
+const pageSize = 15
 
-// marketPrice/actualPrice 单位：元/㎡·月
-const rows = ref([
-  { id: 1, assetName: '吴航街道商业街 A-01 商铺', tenant: '福州长乐融辉贸易有限公司', area: 120, marketPrice: 90, actualPrice: 65, adjusted: false },
-  { id: 2, assetName: '安东大厦 5F 516', tenant: '江苏望风有限公司', area: 60, marketPrice: 28, actualPrice: 17, adjusted: false },
-  { id: 3, assetName: '安东大厦 6F 601', tenant: '福建××律所', area: 200, marketPrice: 30, actualPrice: 25, adjusted: true },
-  { id: 4, assetName: '航城商务楼 3F', tenant: '福建××科技有限公司', area: 300, marketPrice: 45, actualPrice: 50, adjusted: false },
-  { id: 5, assetName: '营前标准厂房 2#', tenant: '长乐××制造', area: 1000, marketPrice: 18, actualPrice: 12, adjusted: false },
-  { id: 6, assetName: '壹城红寓 C22#101', tenant: '南京××商贸有限公司', area: 222, marketPrice: 42, actualPrice: 40, adjusted: true },
-  { id: 7, assetName: '江田镇仓储用地', tenant: '福州航城物流有限公司', area: 2000, marketPrice: 8, actualPrice: 8, adjusted: false },
-])
-
-function marketAnnual(r) { return (r.marketPrice * r.area * 12 / 10000).toFixed(2) }
-function actualAnnual(r) { return (r.actualPrice * r.area * 12 / 10000).toFixed(2) }
-function gapAnnual(r) { return ((r.marketPrice - r.actualPrice) * r.area * 12 / 10000).toFixed(2) }
-
-const filteredData = computed(() => rows.value.filter(r => {
+const filteredData = computed(() => financeStore.rentMarginRows.filter(r => {
   if (filters.value.keyword && !(r.assetName.includes(filters.value.keyword) || r.tenant.includes(filters.value.keyword))) return false
   if (filters.value.gapType) {
-    const g = Number(gapAnnual(r))
+    const g = Number(r.gapAnnual)
     if (filters.value.gapType === 'below' && g <= 0) return false
     if (filters.value.gapType === 'above' && g >= 0) return false
     if (filters.value.gapType === 'equal' && g !== 0) return false
@@ -150,14 +132,15 @@ const pagedData = computed(() => {
 })
 
 const stats = computed(() => {
-  const count = rows.value.length
-  const marketTotal = rows.value.reduce((s, r) => s + Number(marketAnnual(r)), 0).toFixed(2)
-  const actualTotal = rows.value.reduce((s, r) => s + Number(actualAnnual(r)), 0).toFixed(2)
-  const gapTotal = rows.value.reduce((s, r) => s + Number(gapAnnual(r)), 0).toFixed(2)
+  const rows = financeStore.rentMarginRows
+  const count = rows.length
+  const marketTotal = rows.reduce((s, r) => s + Number(r.marketAnnual), 0).toFixed(2)
+  const actualTotal = rows.reduce((s, r) => s + Number(r.actualAnnual), 0).toFixed(2)
+  const gapTotal = rows.reduce((s, r) => s + Number(r.gapAnnual), 0).toFixed(2)
   return { count, marketTotal, actualTotal, gapTotal }
 })
 
-function rowClass({ row }) { return Number(gapAnnual(row)) > 0 ? 'row-below' : '' }
+function rowClass({ row }) { return Number(row.gapAnnual) > 0 ? 'row-below' : '' }
 
 const showAdjust = ref(false)
 const current = ref(null)
@@ -172,21 +155,32 @@ function openAdjust(row) {
   adjustForm.value = { actualPrice: row.actualPrice, reason: '' }
   showAdjust.value = true
 }
+
 function submitAdjust() {
   if (!adjustForm.value.reason) { ElMessage.warning('请填写调价原因'); return }
-  current.value.actualPrice = adjustForm.value.actualPrice
-  current.value.adjusted = true
-  current.value.adjustReason = adjustForm.value.reason
+  const existing = financeStore.priceOverrides.findIndex(o => o.contractId === current.value.contractId)
+  const override = {
+    contractId: current.value.contractId,
+    assetId: current.value.assetId,
+    actualPrice: adjustForm.value.actualPrice,
+    reason: adjustForm.value.reason
+  }
+  if (existing >= 0) {
+    financeStore.priceOverrides[existing] = override
+  } else {
+    financeStore.priceOverrides.push(override)
+  }
   showAdjust.value = false
   ElMessage.success('调价已保存')
 }
+
 function saveAll() {
-  rows.value.forEach(r => { r.adjusted = true })
   ElMessage.success('租金差价调整已批量保存')
 }
+
 function handleExport() {
   const headers = ['资产名称', '承租方', '面积(㎡)', '评估单价', '实收单价', '评估年租金(万)', '实收年租金(万)', '差价(万)', '调整状态']
-  const dataRows = rows.value.map(r => [r.assetName, r.tenant, r.area, r.marketPrice, r.actualPrice, marketAnnual(r), actualAnnual(r), gapAnnual(r), r.adjusted ? '已调整' : '未调整'])
+  const dataRows = financeStore.rentMarginRows.map(r => [r.assetName, r.tenant, r.area, r.marketPrice, r.actualPrice, r.marketAnnual, r.actualAnnual, r.gapAnnual, r.adjusted ? '已调整' : '未调整'])
   const csv = '\uFEFF' + [headers.join(','), ...dataRows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -197,20 +191,20 @@ function handleExport() {
   URL.revokeObjectURL(url)
   ElMessage.success('导出成功')
 }
+
 function resetFilters() { filters.value = { keyword: '', gapType: '', adjusted: '' }; page.value = 1 }
 </script>
 
 <style scoped>
-.page-container { padding: 16px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; }
 .page-header h2 { margin: 0; font-size: 20px; }
-.kpi-row { margin-bottom: 16px; }
-.kpi { background: #fff; border: 1px solid #ebeef5; border-radius: 8px; padding: 14px; text-align: center; }
+.kpi { background: var(--bg-card); border: 1px solid var(--bd); border-radius: var(--r-md); padding: 14px; text-align: center; }
 .kpi-v { font-size: 22px; font-weight: 600; }
-.kpi-l { font-size: 12px; color: #909399; margin-top: 4px; }
-.filter-bar { margin-bottom: 16px; }
-.filter-bar :deep(.el-select) { width: 100%; }
-.table-card { margin-bottom: 16px; }
-.pagination-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
+.kpi-l { font-size: 12px; color: var(--t-weak); margin-top: 4px; }
+.filter-row { align-items: center; }
+.filter-bar :deep(.el-select),
+.filter-bar :deep(.el-input) { width: 100%; }
+.filter-actions { display: flex; gap: 8px; }
+.pagination-wrap { margin-top: 12px; display: flex; justify-content: flex-end; }
 :deep(.row-below) { background: #fef6f6; }
 </style>

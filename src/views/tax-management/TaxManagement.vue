@@ -8,34 +8,28 @@
       </div>
     </div>
 
-    <el-card class="filter-bar" shadow="never">
-      <el-row :gutter="16">
-        <el-col :span="5">
-          <el-input v-model="filters.keyword" placeholder="税费编号/关联资产" clearable prefix-icon="Search" />
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.taxType" placeholder="税费类型" clearable>
-            <el-option label="增值税" value="增值税" />
-            <el-option label="房产税" value="房产税" />
-            <el-option label="土地使用税" value="土地使用税" />
-            <el-option label="印花税" value="印花税" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.payStatus" placeholder="缴纳状态" clearable>
-            <el-option label="待缴纳" value="待缴纳" />
-            <el-option label="已缴纳" value="已缴纳" />
-            <el-option label="已逾期" value="已逾期" />
-          </el-select>
-        </el-col>
-        <el-col :span="3">
+    <div class="filter-bar">
+      <div class="grid-4">
+        <el-input v-model="filters.keyword" placeholder="税费编号/关联资产" clearable prefix-icon="Search" class="full-width" />
+        <el-select v-model="filters.taxType" placeholder="税费类型" clearable class="full-width">
+          <el-option label="增值税" value="增值税" />
+          <el-option label="房产税" value="房产税" />
+          <el-option label="土地使用税" value="土地使用税" />
+          <el-option label="印花税" value="印花税" />
+        </el-select>
+        <el-select v-model="filters.payStatus" placeholder="缴纳状态" clearable class="full-width">
+          <el-option label="待缴纳" value="待缴纳" />
+          <el-option label="已缴纳" value="已缴纳" />
+          <el-option label="已逾期" value="已逾期" />
+        </el-select>
+        <div class="filter-actions">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
-        </el-col>
-      </el-row>
-    </el-card>
+        </div>
+      </div>
+    </div>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="pagedData" border stripe>
         <el-table-column prop="taxNo" label="税费编号" width="140" />
         <el-table-column prop="taxType" label="税费类型" width="120">
@@ -109,24 +103,16 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useFinanceStore } from '../../store/finance'
+
+const financeStore = useFinanceStore()
 
 const filters = ref({ keyword: '', taxType: '', payStatus: '' })
 const page = ref(1)
-const pageSize = 10
-
-const taxes = ref([
-  { id: 1, taxNo: 'TAX20240901', taxType: '房产税', relatedAsset: '滨江科技园A座8层', taxBase: 8000000, taxRate: '1.2%', taxAmount: 96000, deadline: '2024-10-31', payStatus: '待缴纳' },
-  { id: 2, taxNo: 'TAX20240902', taxType: '增值税', relatedAsset: '滨江科技园A座8层', taxBase: 58000, taxRate: '9%', taxAmount: 5220, deadline: '2024-10-15', payStatus: '已缴纳' },
-  { id: 3, taxNo: 'TAX20240903', taxType: '印花税', relatedAsset: 'HT20240201', taxBase: 2160000, taxRate: '0.1%', taxAmount: 2160, deadline: '2024-09-30', payStatus: '已逾期' },
-  { id: 4, taxNo: 'TAX20240904', taxType: '土地使用税', relatedAsset: '余杭区仓储中心3号库', taxBase: 12000, taxRate: '6元/㎡', taxAmount: 72000, deadline: '2024-12-31', payStatus: '待缴纳' },
-  { id: 5, taxNo: 'TAX20240905', taxType: '房产税', relatedAsset: '西湖区文三路商铺', taxBase: 3200000, taxRate: '1.2%', taxAmount: 38400, deadline: '2024-10-31', payStatus: '待缴纳' },
-  { id: 6, taxNo: 'TAX20240906', taxType: '增值税', relatedAsset: '西湖区文三路商铺', taxBase: 22000, taxRate: '9%', taxAmount: 1980, deadline: '2024-10-15', payStatus: '已缴纳' },
-  { id: 7, taxNo: 'TAX20240907', taxType: '印花税', relatedAsset: 'HT20230801', taxBase: 1740000, taxRate: '0.1%', taxAmount: 1740, deadline: '2024-08-31', payStatus: '已逾期' },
-  { id: 8, taxNo: 'TAX20240908', taxType: '房产税', relatedAsset: '余杭区仓储中心3号库', taxBase: 5400000, taxRate: '1.2%', taxAmount: 64800, deadline: '2024-10-31', payStatus: '待缴纳' },
-])
+const pageSize = 15
 
 const filteredData = computed(() => {
-  return taxes.value.filter(t => {
+  return financeStore.taxRecords.filter(t => {
     if (filters.value.keyword && !(t.taxNo.includes(filters.value.keyword) || t.relatedAsset.includes(filters.value.keyword))) return false
     if (filters.value.taxType && t.taxType !== filters.value.taxType) return false
     if (filters.value.payStatus && t.payStatus !== filters.value.payStatus) return false
@@ -164,6 +150,7 @@ function openAddDialog() {
   form.value = { taxType: '', relatedAsset: '', taxBase: 0, taxRate: '', deadline: '', remark: '' }
   addDialogVisible.value = true
 }
+
 function submitAdd() {
   formRef.value.validate(valid => {
     if (!valid) return
@@ -180,9 +167,10 @@ function submitAdd() {
       addDialogVisible.value = false
       ElMessage.success('税费记录已更新')
     } else {
+      const maxId = financeStore.taxRecords.reduce((max, r) => Math.max(max, r.id || 0), 0)
       const no = 'TAX' + Date.now()
-      taxes.value.unshift({
-        id: taxes.value.length + 1,
+      financeStore.taxRecords.unshift({
+        id: maxId + 1,
         taxNo: no,
         taxType: form.value.taxType,
         relatedAsset: form.value.relatedAsset,
@@ -200,9 +188,10 @@ function submitAdd() {
 
 function handleSearch() { page.value = 1; ElMessage.success('查询完成') }
 function resetFilters() { filters.value = { keyword: '', taxType: '', payStatus: '' }; page.value = 1 }
+
 function handleExport() {
   const headers = ['税费编号', '税费类型', '关联资产', '计税基数(元)', '税率', '应缴税额(元)', '缴纳期限', '缴纳状态']
-  const rows = taxes.value.map(r => [r.taxNo, r.taxType, r.relatedAsset, r.taxBase, r.taxRate, r.taxAmount, r.deadline, r.payStatus])
+  const rows = financeStore.taxRecords.map(r => [r.taxNo, r.taxType, r.relatedAsset, r.taxBase, r.taxRate, r.taxAmount, r.deadline, r.payStatus])
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -213,6 +202,7 @@ function handleExport() {
   URL.revokeObjectURL(url)
   ElMessage.success('导出成功')
 }
+
 function handleView(row) {
   ElMessageBox.alert(
     `税费编号：${row.taxNo}\n类型：${row.taxType}\n关联资产：${row.relatedAsset}\n计税基数：${row.taxBase} 元\n税率：${row.taxRate}\n应缴税额：${row.taxAmount} 元\n状态：${row.payStatus}`,
@@ -220,12 +210,14 @@ function handleView(row) {
     { confirmButtonText: '确定' }
   )
 }
+
 function handleEdit(row) {
   isEdit.value = true
   editingRow.value = row
   form.value = { taxType: row.taxType, relatedAsset: row.relatedAsset, taxBase: row.taxBase, taxRate: row.taxRate, deadline: row.deadline, remark: row.remark || '' }
   addDialogVisible.value = true
 }
+
 function handlePay(row) {
   ElMessageBox.confirm(`确认缴纳 ${row.taxAmount} 元？`, '缴纳确认', { type: 'warning' })
     .then(() => { row.payStatus = '已缴纳'; ElMessage.success('缴纳成功') })
@@ -234,11 +226,8 @@ function handlePay(row) {
 </script>
 
 <style scoped>
-.page-container { padding: 16px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.page-header h2 { margin: 0; font-size: 20px; }
-.filter-bar { margin-bottom: 16px; }
-.filter-bar :deep(.el-select) { width: 100%; }
-.table-card { margin-bottom: 16px; }
-.pagination-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
+.filter-bar :deep(.el-select),
+.filter-bar :deep(.el-input) { width: 100%; }
+.filter-actions { display: flex; gap: 8px; }
+.pagination-wrap { display: flex; justify-content: flex-end; margin-top: 12px; }
 </style>

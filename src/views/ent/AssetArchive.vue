@@ -11,12 +11,6 @@
 </script>
 
 <style scoped>
-.page-container {
-  padding: 20px;
-}
-.page-header {
-  margin-bottom: 20px;
-}
 .page-header h2 {
   margin: 0;
   font-size: 20px;

@@ -9,35 +9,29 @@
       </div>
     </div>
 
-    <el-card class="filter-bar" shadow="never">
-      <el-row :gutter="16">
-        <el-col :span="5">
-          <el-input v-model="filters.keyword" placeholder="意向客户/意向编号" clearable prefix-icon="Search" />
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.intentStatus" placeholder="意向状态" clearable>
-            <el-option label="洽谈中" value="洽谈中" />
-            <el-option label="已签约" value="已签约" />
-            <el-option label="已放弃" value="已放弃" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.assetType" placeholder="资产类型" clearable>
-            <el-option label="商铺" value="商铺" />
-            <el-option label="写字楼" value="写字楼" />
-            <el-option label="厂房" value="厂房" />
-            <el-option label="保障房" value="保障房" />
-            <el-option label="农贸市场" value="农贸市场" />
-          </el-select>
-        </el-col>
-        <el-col :span="3">
+    <div class="filter-bar">
+      <div class="grid-4">
+        <el-input v-model="filters.keyword" placeholder="意向客户/意向编号" clearable prefix-icon="Search" class="full-width" />
+        <el-select v-model="filters.intentStatus" placeholder="意向状态" clearable class="full-width">
+          <el-option label="洽谈中" value="洽谈中" />
+          <el-option label="已签约" value="已签约" />
+          <el-option label="已放弃" value="已放弃" />
+        </el-select>
+        <el-select v-model="filters.assetType" placeholder="资产类型" clearable class="full-width">
+          <el-option label="商铺" value="商铺" />
+          <el-option label="写字楼" value="写字楼" />
+          <el-option label="厂房" value="厂房" />
+          <el-option label="保障房" value="保障房" />
+          <el-option label="农贸市场" value="农贸市场" />
+        </el-select>
+        <div class="filter-actions">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
-        </el-col>
-      </el-row>
-    </el-card>
+        </div>
+      </div>
+    </div>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="pagedData" border stripe @selection-change="onSelect">
         <el-table-column type="selection" width="45" />
         <el-table-column prop="intentNo" label="意向编号" width="120" />
@@ -275,10 +269,8 @@ function handleExport() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.page-header h2 { margin: 0; font-size: 18px; }
-.filter-bar { margin-bottom: 16px; }
-.table-card { margin-bottom: 16px; }
-.pagination-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
+.filter-bar :deep(.el-select),
+.filter-bar :deep(.el-input) { width: 100%; }
+.filter-actions { display: flex; gap: 8px; }
+.pagination-wrap { display: flex; justify-content: flex-end; margin-top: 12px; }
 </style>

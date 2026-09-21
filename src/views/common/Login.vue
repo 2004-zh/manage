@@ -12,7 +12,7 @@
       </div>
       <div class="brand-top">
         <div class="brand-logo">
-          <el-icon :size="26" color="#1668DC"><OfficeBuilding /></el-icon>
+          <el-icon :size="26" color="var(--c-primary)"><OfficeBuilding /></el-icon>
         </div>
         <div>
           <div class="brand-title">资管云平台</div>
@@ -83,7 +83,7 @@
 
         <div class="role-section">
           <p class="role-title">选择角色快速进入</p>
-          <div class="role-cards">
+          <div class="role-cards grid-2">
             <div
               v-for="role in filteredRoles"
               :key="role.id"
@@ -96,6 +96,7 @@
               </div>
               <div class="role-name">{{ role.name }}</div>
               <div class="role-desc">{{ role.desc }}</div>
+              <div class="role-enter">进入系统 →</div>
             </div>
           </div>
         </div>
@@ -128,7 +129,7 @@ const captchaLines = ref([])
 
 const REMEMBER_KEY = 'zgy-remembered-username'
 const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXY345678'
-const CAPTCHA_COLORS = ['#1890ff', '#722ed1', '#fa8c16', '#13c2c2', '#eb2f96', '#52c41a']
+const CAPTCHA_COLORS = ['#1668DC', '#722ed1', '#E8912A', '#13c2c2', '#2F54EB', '#18A058']
 
 function rand(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -226,7 +227,7 @@ function quickLogin(role) {
 }
 
 .login-brand {
-  flex: 1;
+  flex: 1 1 55%;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -391,16 +392,17 @@ function quickLogin(role) {
 }
 
 .login-right {
-  width: 560px;
-  flex: none;
+  flex: 1 1 45%;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 48px 24px 0;
+  padding: 24px 40px;
 }
 
 .login-container {
   width: 100%;
+  max-width: 520px;
   background: var(--bg-card);
   border-radius: var(--r-lg);
   padding: 36px 40px;
@@ -473,9 +475,7 @@ function quickLogin(role) {
 }
 
 .role-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  position: relative;
 }
 
 .role-card {
@@ -484,17 +484,33 @@ function quickLogin(role) {
   padding: 16px 8px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
 }
 
 .role-card:hover {
   border-color: var(--c-primary);
   background: var(--c-primary-light);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(22, 104, 220, 0.18);
 }
 
 .role-card.active {
   border-color: var(--c-primary);
   background: var(--c-primary-light);
+}
+
+.role-enter {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-primary);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.role-card:hover .role-enter,
+.role-card.active .role-enter {
+  opacity: 1;
 }
 
 .role-icon {
@@ -510,7 +526,7 @@ function quickLogin(role) {
 }
 
 .role-desc {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--t-weak);
   line-height: 1.3;
 }

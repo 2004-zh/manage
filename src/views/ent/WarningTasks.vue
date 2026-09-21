@@ -10,90 +10,81 @@
       </div>
     </div>
 
-    <el-row :gutter="16" class="filter-row">
-      <el-col :span="5">
-        <el-input v-model="taskSearch" placeholder="搜索任务名称/资产" :prefix-icon="Search" clearable />
-      </el-col>
-      <el-col :span="4">
-        <el-select v-model="taskTypeFilter" placeholder="任务类型" clearable>
-          <el-option label="欠费催缴" value="欠费催缴" />
-          <el-option label="合同临期" value="合同临期" />
-          <el-option label="闲置超期" value="闲置超期" />
-          <el-option label="未办证" value="未办证" />
-          <el-option label="闲置盘活" value="闲置盘活" />
-          <el-option label="督办逾期" value="督办逾期" />
-        </el-select>
-      </el-col>
-      <el-col :span="3">
-        <el-select v-model="taskStatusFilter" placeholder="状态" clearable>
-          <el-option label="待处理" value="待处理" />
-          <el-option label="进行中" value="进行中" />
-          <el-option label="已完成" value="已完成" />
-        </el-select>
-      </el-col>
-      <el-col :span="3">
-        <el-select v-model="taskPriorityFilter" placeholder="优先级" clearable>
-          <el-option label="高" value="高" />
-          <el-option label="中" value="中" />
-          <el-option label="低" value="低" />
-        </el-select>
-      </el-col>
-      <el-col :span="4">
-        <el-select v-model="taskCompanyFilter" placeholder="请选择公司" clearable>
-          <el-option v-for="g in companyGroups" :key="g" :label="g" :value="g" />
-        </el-select>
-      </el-col>
-      <el-col :span="5" style="text-align: right">
-        <el-button type="primary" :icon="Plus" @click="handleCreateTask">新建任务</el-button>
-        <el-button :icon="Download" @click="handleExportTasks">导出</el-button>
-      </el-col>
-    </el-row>
-
-    <el-table :data="pagedTasks" stripe style="width: 100%; margin-top: 16px">
-      <el-table-column prop="id" label="任务编号" width="100" />
-      <el-table-column prop="name" label="任务名称" min-width="180" />
-      <el-table-column prop="asset" label="关联资产" min-width="200" />
-      <el-table-column prop="type" label="任务类型" width="100">
-        <template #default="{ row }">
-          <el-tag :type="typeTagMap[row.type] || 'info'" size="small">{{ row.type }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="level" label="预警等级" width="100">
-        <template #default="{ row }">
-          <el-tag :type="levelTagMap[row.level] || 'info'" size="small" effect="dark">{{ row.level }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="trigger" label="触发条件" min-width="200" show-overflow-tooltip />
-      <el-table-column prop="priority" label="优先级" width="80">
-        <template #default="{ row }">
-          <el-tag :type="priorityTagMap[row.priority]" size="small" effect="dark">{{ row.priority }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="deadline" label="截止时间" width="120" />
-      <el-table-column prop="status" label="状态" width="90">
-        <template #default="{ row }">
-          <el-tag :type="statusTagMap[row.status]" size="small">{{ row.status }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="assignee" label="负责人" width="100" />
-      <el-table-column label="操作" width="160" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="handleViewTask(row)">查看</el-button>
-          <el-button link type="primary" size="small" @click="handleProcessTask(row)" v-if="row.status !== '已完成'">处理</el-button>
-          <el-button link type="success" size="small" @click="handleCompleteTask(row)" v-if="row.status !== '已完成'">完成</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pager">
-      <el-pagination
-        v-model:current-page="taskPage"
-        v-model:page-size="taskPageSize"
-        :total="filteredTasks.length"
-        :page-sizes="[10, 20, 50]"
-        :pager-count="7"
-        layout="total, sizes, prev, pager, next, jumper"
-      />
+    <div class="filter-bar toolbar">
+      <el-input v-model="taskSearch" placeholder="搜索任务名称/资产" :prefix-icon="Search" clearable style="width:220px" />
+      <el-select v-model="taskTypeFilter" placeholder="任务类型" clearable style="width:140px">
+        <el-option label="欠费催缴" value="欠费催缴" />
+        <el-option label="合同临期" value="合同临期" />
+        <el-option label="闲置超期" value="闲置超期" />
+        <el-option label="未办证" value="未办证" />
+        <el-option label="闲置盘活" value="闲置盘活" />
+        <el-option label="督办逾期" value="督办逾期" />
+      </el-select>
+      <el-select v-model="taskStatusFilter" placeholder="状态" clearable style="width:120px">
+        <el-option label="待处理" value="待处理" />
+        <el-option label="进行中" value="进行中" />
+        <el-option label="已完成" value="已完成" />
+      </el-select>
+      <el-select v-model="taskPriorityFilter" placeholder="优先级" clearable style="width:120px">
+        <el-option label="高" value="高" />
+        <el-option label="中" value="中" />
+        <el-option label="低" value="低" />
+      </el-select>
+      <el-select v-model="taskCompanyFilter" placeholder="请选择公司" clearable style="width:160px">
+        <el-option v-for="g in companyGroups" :key="g" :label="g" :value="g" />
+      </el-select>
+      <div class="grow"></div>
+      <el-button type="primary" :icon="Plus" @click="handleCreateTask">新建任务</el-button>
+      <el-button :icon="Download" @click="handleExportTasks">导出</el-button>
     </div>
+
+    <el-card shadow="never" class="fill">
+      <el-table :data="pagedTasks" stripe style="width: 100%">
+        <el-table-column prop="id" label="任务编号" width="100" class-name="num" />
+        <el-table-column prop="name" label="任务名称" min-width="180" />
+        <el-table-column prop="asset" label="关联资产" min-width="200" />
+        <el-table-column prop="type" label="任务类型" width="100">
+          <template #default="{ row }">
+            <el-tag :type="typeTagMap[row.type] || 'info'" size="small">{{ row.type }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="level" label="预警等级" width="100">
+          <template #default="{ row }">
+            <el-tag :type="levelTagMap[row.level] || 'info'" size="small" effect="dark">{{ row.level }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="trigger" label="触发条件" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="priority" label="优先级" width="80">
+          <template #default="{ row }">
+            <el-tag :type="priorityTagMap[row.priority]" size="small" effect="dark">{{ row.priority }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="deadline" label="截止时间" width="120" />
+        <el-table-column prop="status" label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="statusTagMap[row.status]" size="small">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="assignee" label="负责人" width="100" />
+        <el-table-column label="操作" width="160" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleViewTask(row)">查看</el-button>
+            <el-button link type="primary" size="small" @click="handleProcessTask(row)" v-if="row.status !== '已完成'">处理</el-button>
+            <el-button link type="success" size="small" @click="handleCompleteTask(row)" v-if="row.status !== '已完成'">完成</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="taskPage"
+          v-model:page-size="taskPageSize"
+          :total="filteredTasks.length"
+          :page-sizes="[10, 15, 20, 50]"
+          :pager-count="7"
+          layout="total, sizes, prev, pager, next, jumper"
+        />
+      </div>
+    </el-card>
 
     <el-dialog v-model="taskDialogVisible" :title="taskDialogTitle" width="500px">
       <el-form :model="taskForm" label-width="80px">
@@ -159,12 +150,16 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { Search, Plus, Download, WarnTriangleFilled } from '@element-plus/icons-vue'
-import { warningTasks } from '../../data/mock'
+import { useWarningStore } from '../../store/warning'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../../store/user'
 
 const userStore = useUserStore()
+const warningStore = useWarningStore()
+// storeToRefs 保住 warningTasks 的响应式，页面改名不会影响 store 联动
+const { warningTasks } = storeToRefs(warningStore)
 // 预警任务跟着资产走，企业端只留本公司名下的
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
 
@@ -173,7 +168,7 @@ const taskTypeFilter = ref('')
 const taskStatusFilter = ref('')
 const taskPriorityFilter = ref('')
 const taskCompanyFilter = ref('')
-const companyGroups = computed(() => userStore.isEnt ? [currentCompany.value] : ['城投集团', '产投集团', '水投集团', '领航公司'])
+const companyGroups = computed(() => userStore.isGov ? ['城投集团', '产投集团', '水投集团', '领航公司'] : [currentCompany.value])
 
 const taskDialogVisible = ref(false)
 const taskDialogTitle = ref('新建任务')
@@ -194,12 +189,17 @@ const taskExtras = {
 }
 
 const levelTagMap = { '特别紧急': 'danger', '紧急': 'warning', '较急': 'primary', '一般': 'info' }
-const levelColors = { '一般': '#909399', '较急': '#1890ff', '紧急': '#fa8c16', '特别紧急': '#f5222d' }
+const levelColors = { '一般': '#909399', '较急': '#1668DC', '紧急': '#E8912A', '特别紧急': '#D93026' }
 
-const localTasks = ref((userStore.isEnt ? warningTasks.filter(t => t.group === currentCompany.value) : warningTasks).map(t => ({
+// 企业端按登录单位裁剪，监管端账号看全区；等级/触发条件按优先级或手工建单时写入的字段补齐
+const scopedTasks = computed(() =>
+  userStore.isGov ? warningTasks.value : warningStore.tasksOfOrg(currentCompany.value)
+)
+
+const localTasks = computed(() => scopedTasks.value.map(t => ({
   ...t,
-  level: taskExtras[t.id]?.level || '一般',
-  trigger: taskExtras[t.id]?.trigger || '—'
+  level: t.level || taskExtras[t.id]?.level || '一般',
+  trigger: t.trigger || taskExtras[t.id]?.trigger || '—'
 })))
 
 const levelCards = computed(() => ['一般', '较急', '紧急', '特别紧急'].map(l => ({
@@ -226,7 +226,7 @@ const filteredTasks = computed(() => {
 })
 
 const taskPage = ref(1)
-const taskPageSize = ref(10)
+const taskPageSize = ref(15)
 const pagedTasks = computed(() => {
   const list = filteredTasks.value
   const start = Math.min((taskPage.value - 1) * taskPageSize.value, Math.max(0, list.length - taskPageSize.value))
@@ -245,12 +245,12 @@ function handleViewTask(row) {
 }
 
 function handleProcessTask(row) {
-  row.status = '进行中'
+  warningStore.updateTaskStatus(row.id, '进行中', { action: '企业端受理预警', remark: row.name })
   ElMessage.success(`任务 ${row.id} 已开始处理`)
 }
 
 function handleCompleteTask(row) {
-  row.status = '已完成'
+  warningStore.updateTaskStatus(row.id, '已完成', { action: '企业端办结预警', remark: row.name })
   ElMessage.success(`任务 ${row.id} 已完成`)
 }
 
@@ -259,22 +259,19 @@ function submitTask() {
     ElMessage.warning('请填写任务名称')
     return
   }
-  const newTask = {
-    id: `WT-${String(localTasks.value.length + 1).padStart(3, '0')}`,
+  const created = warningStore.addTask({
     name: taskForm.value.name,
     asset: '—',
     type: taskForm.value.type,
     deadline: taskForm.value.deadline,
-    status: '待处理',
     priority: taskForm.value.priority,
     level: { '高': '紧急', '中': '较急', '低': '一般' }[taskForm.value.priority] || '一般',
     trigger: '手动创建任务',
     assignee: taskForm.value.assignee,
     group: currentCompany.value
-  }
-  localTasks.value.unshift(newTask)
+  })
   taskDialogVisible.value = false
-  ElMessage.success('任务创建成功')
+  ElMessage.success(created ? `任务 ${created.id} 创建成功` : '相同来源的任务已存在，未重复创建')
 }
 
 function handleExportTasks() {
@@ -293,11 +290,6 @@ function handleExportTasks() {
 </script>
 
 <style scoped>
-.warning-tasks {
-  padding: 0;
-}
-
-.filter-row {
-  margin-bottom: 0;
-}
+.toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.grow { flex: 1 1 auto; }
 </style>

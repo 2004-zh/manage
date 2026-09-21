@@ -8,6 +8,7 @@ import { useRevitalizeStore } from './revitalize'
 import { useNotifyStore } from './notify'
 import { useChangeLogStore } from './changeLog'
 import { useUserStore } from './user'
+import { useFinanceStore } from './finance'
 
 export const useContractStore = defineStore('contract', () => {
   const contracts = ref([...initialContracts])
@@ -148,6 +149,22 @@ export const useContractStore = defineStore('contract', () => {
     return Math.max(1, Math.round(months / 12))
   }
 
+  // 首期应计租金（合同期摊月）：从起租日到今天的整计费月数（含当期），封顶合同总月数；未起租为 0。
+  function computeAccruedRent(c) {
+    const annualRent = c.annualRent || 0
+    if (!annualRent) return 0
+    const start = new Date(c.startDate)
+    const now = new Date()
+    if (isNaN(start.getTime()) || start > now) return 0
+    let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1
+    const end = new Date(c.endDate)
+    if (!isNaN(end.getTime())) {
+      const dur = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
+      months = Math.min(months, Math.max(1, dur))
+    }
+    return Math.round(months * (annualRent / 12) * 100) / 100
+  }
+
   function signContract(payload) {
     const assetStore = useAssetStore()
     const before = assetStore.getAssetById(payload.assetId)
@@ -155,13 +172,14 @@ export const useContractStore = defineStore('contract', () => {
 
     const contract = addContract(payload)
     const num = feeRecords.value.length + 1
+    const accrued = computeAccruedRent(contract)
     feeRecords.value.push({
       id: num,
       contractId: contract.id,
       assetId: contract.assetId || null,
       assetName: contract.assetName,
       tenant: contract.tenant,
-      cumReceivable: 0,
+      cumReceivable: accrued,
       cumActual: 0,
       yearReceivable: contract.annualRent || 0,
       yearActual: 0,
@@ -169,6 +187,28 @@ export const useContractStore = defineStore('contract', () => {
       status: '正常'
     })
     syncAssetLeaseState(contract.assetId, { action: '签约联动', billNo: contract.id })
+
+    // 已起租且挂到真实资产的合同，签约即生成首期租金账单，供收费大厅收款并计入工作台应收
+    const signedAsset = assetStore.getAssetById(contract.assetId)
+    if (signedAsset && accrued > 0) {
+      const now = new Date()
+      const p = n => String(n).padStart(2, '0')
+      const billMonth = `${now.getFullYear()}-${p(now.getMonth() + 1)}`
+      const due = new Date(now.getFullYear(), Math.ceil((now.getMonth() + 1) / 3) * 3, 0)
+      useFinanceStore().addBill({
+        contractId: contract.id,
+        tenant: contract.tenant,
+        assetId: signedAsset.id,
+        assetName: contract.assetName || signedAsset.name,
+        feeType: '租金',
+        billMonth,
+        billPeriod: billMonth,
+        receivable: Math.round(accrued * 10000),
+        received: 0,
+        dueDate: `${due.getFullYear()}-${p(due.getMonth() + 1)}-${p(due.getDate())}`,
+        status: '待缴费'
+      })
+    }
 
     // 承租方一律落客商档案，不允许只留自由文本
     usePartyStore().resolveParty({ name: contract.tenant, contact: contract.contact, phone: contract.phone })
@@ -258,6 +298,34 @@ export const useContractStore = defineStore('contract', () => {
       detail: `承租方 ${c.tenant}，终止时欠费 ${c.arrears || 0} 万元`
     })
     syncAssetLeaseState(c.assetId, { action: '退租联动', billNo: contractId })
+  }
+
+  /**
+   * 通用状态变更入口：改状态 + 可选附带字段，统一留痕。
+   * 用于续租/退租/电子签章等既需要写状态、又需要写业务动作字段的场景。
+   * meta = { module, action, remark, detail, fields }  fields 为随状态一起写入的附加字段
+   */
+  function updateContractStatus(id, status, meta = {}) {
+    const c = getContractById(id)
+    if (!c) return false
+    const beforeStatus = c.status
+    updateContract(id, { status, ...(meta.fields || {}) })
+    const asset = useAssetStore().getAssetById(c.assetId)
+    useAuditStore().recordEvent({
+      assetId: c.assetId,
+      assetName: c.assetName,
+      group: asset?.group || '',
+      module: meta.module || '合同管理',
+      action: meta.action || '状态变更',
+      billNo: id,
+      remark: meta.remark || `合同状态：${beforeStatus} → ${status}`,
+      detail: meta.detail || ''
+    })
+    // 退租 / 终止要联动资产租赁状态，正常类状态变更不动资产
+    if (status === '退租' || status === '已终止') {
+      syncAssetLeaseState(c.assetId, { action: '退租联动', billNo: id, module: meta.module })
+    }
+    return true
   }
 
   function todayStr() {
@@ -361,6 +429,7 @@ export const useContractStore = defineStore('contract', () => {
     signContract,
     renewContract,
     terminateContract,
+    updateContractStatus,
     payFee,
     projectReceipts,
     syncAssetLeaseState

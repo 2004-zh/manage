@@ -4,9 +4,9 @@
       <h2>数据上报</h2>
     </div>
 
-    <el-alert title="口径提示：所有资产数据以账面原值（历史成本）计量，不含暂估入账；闲置超12个月自动纳入督办池。" type="info" :closable="false" show-icon style="margin-bottom:16px" />
+    <el-alert title="口径提示：所有资产数据以账面原值（历史成本）计量，不含暂估入账；闲置超12个月自动纳入督办池。" type="info" :closable="false" show-icon />
 
-    <el-row :gutter="16" style="margin-bottom:16px">
+    <el-row :gutter="16">
       <el-col :span="12">
         <el-card shadow="never" class="data-card pq-card">
           <template #header>
@@ -35,7 +35,7 @@
             </el-table-column>
             <el-table-column prop="unCert" label="未办证" width="65" align="right">
               <template #default="{ row }">
-                <span :style="{ color: row.unCert > 0 ? '#f5222d' : '#999' }">{{ row.unCert }}</span>
+                <span :style="{ color: row.unCert > 0 ? '#D93026' : '#94A3B8' }">{{ row.unCert }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -71,7 +71,7 @@
             </el-table-column>
             <el-table-column label="收缴率" width="65" align="right">
               <template #default="{ row }">
-                <span :style="{ color: collectRate(row) >= 95 ? '#52c41a' : collectRate(row) >= 80 ? '#faad14' : '#f5222d' }">{{ collectRate(row) }}%</span>
+                <span :style="{ color: collectRate(row) >= 95 ? '#18A058' : collectRate(row) >= 80 ? '#E8912A' : '#D93026' }">{{ collectRate(row) }}%</span>
               </template>
             </el-table-column>
           </el-table>
@@ -79,7 +79,7 @@
       </el-col>
     </el-row>
 
-    <el-card shadow="never">
+    <el-card shadow="never" class="fill">
       <template #header>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span>上报记录</span>
@@ -179,11 +179,11 @@ const companyRow = computed(() => reportStore.computeCompanyData(currentCompany.
 const panqingKpis = computed(() => {
   const row = companyRow.value
   return [
-    { label: '资产总数', value: row.assets + ' 处', color: '#1890ff' },
-    { label: '账面总值', value: row.bookValue.toFixed(2) + ' 亿', color: '#1890ff' },
-    { label: '出租率', value: row.rentalRate + '%', color: '#52c41a' },
-    { label: '闲置率', value: row.idleRate + '%', color: '#faad14' },
-    { label: '未办证', value: row.unCert + ' 处', color: row.unCert > 0 ? '#f5222d' : '#999' }
+    { label: '资产总数', value: row.assets + ' 处', color: '#1668DC' },
+    { label: '账面总值', value: row.bookValue.toFixed(2) + ' 亿', color: '#1668DC' },
+    { label: '出租率', value: row.rentalRate + '%', color: '#18A058' },
+    { label: '闲置率', value: row.idleRate + '%', color: '#E8912A' },
+    { label: '未办证', value: row.unCert + ' 处', color: row.unCert > 0 ? '#D93026' : '#94A3B8' }
   ]
 })
 
@@ -194,11 +194,11 @@ const panhuoKpis = computed(() => {
   const cumRate = row.cumReceivable > 0 ? Math.round(row.cumActual / row.cumReceivable * 1000) / 10 : 0
   const yearRate = row.yearReceivable > 0 ? Math.round(row.yearActual / row.yearReceivable * 1000) / 10 : 0
   return [
-    { label: '累计应收', value: row.cumReceivable.toFixed(2) + ' 亿', color: '#1890ff' },
-    { label: '累计实收', value: row.cumActual.toFixed(2) + ' 亿', color: '#52c41a' },
-    { label: '累计收缴率', value: cumRate + '%', color: cumRate >= 95 ? '#52c41a' : '#faad14' },
-    { label: '当年实收', value: Math.round(row.yearActual * 10000) + ' 万', color: '#1890ff' },
-    { label: '当年收缴率', value: yearRate + '%', color: yearRate >= 95 ? '#52c41a' : '#faad14' }
+    { label: '累计应收', value: row.cumReceivable.toFixed(2) + ' 亿', color: '#1668DC' },
+    { label: '累计实收', value: row.cumActual.toFixed(2) + ' 亿', color: '#18A058' },
+    { label: '累计收缴率', value: cumRate + '%', color: cumRate >= 95 ? '#18A058' : '#E8912A' },
+    { label: '当年实收', value: Math.round(row.yearActual * 10000) + ' 万', color: '#1668DC' },
+    { label: '当年收缴率', value: yearRate + '%', color: yearRate >= 95 ? '#18A058' : '#E8912A' }
   ]
 })
 
@@ -227,16 +227,10 @@ const viewDetail = (row) => {
 </script>
 
 <style scoped>
-.page-container {
-  padding: 20px;
-}
-.page-header {
-  margin-bottom: 20px;
-}
 .page-header h2 {
   margin: 0;
   font-size: 20px;
-  color: #303133;
+  color: var(--t-main);
 }
 .card-banner {
   display: flex;
@@ -244,7 +238,7 @@ const viewDetail = (row) => {
   gap: 8px;
 }
 .pq-banner {
-  background: linear-gradient(90deg, #e6f7ff, #f0f9ff);
+  background: linear-gradient(90deg, var(--c-primary-light), #B9D4FF);
   padding: 8px 12px;
   border-radius: 4px;
 }
@@ -255,7 +249,7 @@ const viewDetail = (row) => {
 }
 .banner-text {
   font-weight: 600;
-  color: #303133;
+  color: var(--t-main);
 }
 .kpi-row {
   display: flex;

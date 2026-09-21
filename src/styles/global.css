@@ -815,3 +815,132 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ============ 页面排版体系（对齐《原型视觉与交互设计规范》第四、五章） ============ */
+/* 内容区边距只由 .main-content 出一层（24px），页面根不再自带 padding，避免双重留白。
+   页面纵向用 flex + gap:16 统一"卡片间距 16px"，子项自带的 margin-bottom 一律作废。 */
+.page-container,
+.workbench,
+.ent-cert,
+.ent-contract,
+.ent-fee,
+.contract-detail,
+.warning-tasks,
+.gov-assets,
+.gov-contact,
+.gov-dashboard,
+.gov-report-manage,
+.gov-risk,
+.gov-statement,
+.gov-supervise,
+.supervise-create,
+.supervise-detail,
+.bigscreen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+  padding: 0;
+}
+
+.page-container > *,
+.workbench > *,
+.ent-cert > *,
+.ent-contract > *,
+.ent-fee > *,
+.warning-tasks > *,
+.gov-assets > *,
+.gov-contact > *,
+.gov-dashboard > *,
+.gov-report-manage > *,
+.gov-risk > *,
+.gov-statement > *,
+.gov-supervise > *,
+.supervise-create > *,
+.supervise-detail > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* 大屏是一屏定高布局，不参与纵向撑满 */
+.bigscreen {
+  min-height: 0;
+  gap: 12px;
+}
+
+/* 主体区块：需要吃掉剩余高度时加 .fill（表格/图表卡片），内部自己滚动 */
+.fill {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 栅格：优先用下面四档，替代"el-row + 凑不满 24 的 el-col"，杜绝右侧大洞 */
+.grid-4,
+.grid-3,
+.grid-2,
+.grid-auto {
+  display: grid;
+  gap: 16px;
+}
+
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-auto { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+@media (max-width: 1440px) {
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1100px) {
+  .grid-4, .grid-3, .grid-2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 图表/看板行：同一行的块必须等高，短的一侧靠内部撑开而不是留空 */
+.chart-row {
+  display: grid;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.chart-row-7-5 { grid-template-columns: 7fr 5fr; }
+.chart-row-1-1 { grid-template-columns: 1fr 1fr; }
+.chart-row-3-1 { grid-template-columns: 3fr 1fr; }
+
+/* 图表容器：全局只管宽度。高度必须由页面 scoped 自己给可解析值
+   （ECharts 初始化要读到非 0 的 clientHeight，这里写 min-height 会把图表压没） */
+.chart-box {
+  width: 100%;
+}
+
+/* 通栏区块：不允许出现固定窄宽 */
+.full-width {
+  width: 100% !important;
+}
+
+/* 空态压缩：默认 el-empty 上下 40px padding 会撑出一块空白 */
+.el-empty {
+  padding: 20px 0;
+}
+
+.el-empty__description {
+  margin-top: 8px;
+}
+
+/* 页内表格与分页之间不留大缝 */
+.pager {
+  margin-top: 12px;
+}
+
+/* 卡片内的表格/列表贴边，去掉最后一层多余外边距 */
+.el-card__body > :last-child {
+  margin-bottom: 0;
+}
+
+/* 数字统一等宽对齐（3.5：表格金额右对齐、纵向可对齐） */
+.el-table .cell .num,
+.num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+}

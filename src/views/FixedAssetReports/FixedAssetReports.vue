@@ -9,25 +9,23 @@
         </el-button>
       </div>
     </div>
-    <el-card>
+    <el-card class="fill">
 
       <el-tabs v-model="activeTab">
         <!-- 分类统计 -->
         <el-tab-pane label="分类统计" name="category">
-          <el-row :gutter="20" class="stat-cards">
-            <el-col :span="6" v-for="item in categoryStats" :key="item.name">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-name">{{ item.name }}</div>
-                <div class="stat-value">{{ item.count }} <span class="stat-unit">件</span></div>
-                <div class="stat-amount">¥{{ item.amount.toLocaleString() }}</div>
-              </el-card>
-            </el-col>
-          </el-row>
-          <el-table :data="pagedCategoryStats" style="width: 100%; margin-top: 20px">
+          <div class="grid-4 stat-cards">
+            <el-card v-for="item in categoryStats" :key="item.name" shadow="hover" class="stat-card">
+              <div class="stat-name">{{ item.name }}</div>
+              <div class="stat-value"><span class="num">{{ item.count }}</span> <span class="stat-unit">件</span></div>
+              <div class="stat-amount num">¥{{ item.amount.toLocaleString() }}</div>
+            </el-card>
+          </div>
+          <el-table :data="pagedCategoryStats" style="width: 100%">
             <el-table-column prop="name" label="资产分类" width="120" />
             <el-table-column prop="count" label="数量" width="100" />
-            <el-table-column prop="amount" label="总金额" width="150">
-              <template #default="{ row }">¥{{ row.amount.toLocaleString() }}</template>
+            <el-table-column prop="amount" label="总金额" width="150" align="right">
+              <template #default="{ row }"><span class="num">¥{{ row.amount.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="percentage" label="占比" width="100">
               <template #default="{ row }">{{ row.percentage }}%</template>
@@ -55,8 +53,8 @@
           <el-table :data="pagedLocationStats" style="width: 100%">
             <el-table-column prop="location" label="存放位置" min-width="180" />
             <el-table-column prop="count" label="资产数量" width="120" />
-            <el-table-column prop="amount" label="资产总值" width="150">
-              <template #default="{ row }">¥{{ row.amount.toLocaleString() }}</template>
+            <el-table-column prop="amount" label="资产总值" width="150" align="right">
+              <template #default="{ row }"><span class="num">¥{{ row.amount.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="departments" label="涉及部门" min-width="200" show-overflow-tooltip />
             <el-table-column label="占比" width="150">
@@ -82,12 +80,12 @@
           <el-table :data="pagedDepartmentStats" style="width: 100%">
             <el-table-column prop="department" label="部门名称" width="150" />
             <el-table-column prop="assetCount" label="资产数量" width="120" />
-            <el-table-column prop="assetAmount" label="资产总值" width="150">
-              <template #default="{ row }">¥{{ row.assetAmount.toLocaleString() }}</template>
+            <el-table-column prop="assetAmount" label="资产总值" width="150" align="right">
+              <template #default="{ row }"><span class="num">¥{{ row.assetAmount.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="userCount" label="使用人数" width="100" />
-            <el-table-column prop="perCapita" label="人均资产" width="130">
-              <template #default="{ row }">¥{{ row.perCapita.toLocaleString() }}</template>
+            <el-table-column prop="perCapita" label="人均资产" width="130" align="right">
+              <template #default="{ row }"><span class="num">¥{{ row.perCapita.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column label="占比" min-width="200">
               <template #default="{ row }">
@@ -127,8 +125,8 @@
             <el-table-column prop="department" label="所属部门" width="120" />
             <el-table-column prop="position" label="职位" width="100" />
             <el-table-column prop="assetCount" label="持有资产数" width="120" />
-            <el-table-column prop="assetAmount" label="资产总值" width="140">
-              <template #default="{ row }">¥{{ row.assetAmount.toLocaleString() }}</template>
+            <el-table-column prop="assetAmount" label="资产总值" width="140" align="right">
+              <template #default="{ row }"><span class="num">¥{{ row.assetAmount.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="assetDetail" label="资产明细" min-width="200" show-overflow-tooltip />
           </el-table>
@@ -180,10 +178,10 @@
             <el-table-column prop="assetType" label="资产类型" width="110" />
             <el-table-column prop="company" label="所属承租公司" min-width="190" show-overflow-tooltip />
             <el-table-column prop="original" label="原值(元)" width="120" align="right">
-              <template #default="{ row }">¥{{ row.original.toLocaleString() }}</template>
+              <template #default="{ row }"><span class="num">¥{{ row.original.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="netValue" label="当前净值(元)" width="130" align="right">
-              <template #default="{ row }">¥{{ row.netValue.toLocaleString() }}</template>
+              <template #default="{ row }"><span class="num">¥{{ row.netValue.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="periodAmount" label="本期折旧额(元)" width="140" align="center">
               <template #default="{ row }">
@@ -191,7 +189,7 @@
               </template>
             </el-table-column>
             <el-table-column prop="accumulatedDepreciation" label="累计折旧额(元)" width="140" align="right">
-              <template #default="{ row }">¥{{ row.accumulatedDepreciation.toLocaleString() }}</template>
+              <template #default="{ row }"><span class="num">¥{{ row.accumulatedDepreciation.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="residualRate" label="残值率(%)" width="100" align="right">
               <template #default="{ row }">{{ row.residualRate }}%</template>
@@ -235,18 +233,18 @@
           </el-form>
 
           <el-table :data="displayDepreciationList" style="width: 100%">
-            <el-table-column prop="assetNo" label="资产编号" width="130" />
+            <el-table-column prop="assetNo" label="资产编号" width="130" fixed />
             <el-table-column prop="name" label="资产名称" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="originalValue" label="原值" width="120">
-              <template #default="{ row }">¥{{ row.originalValue.toLocaleString() }}</template>
+            <el-table-column prop="originalValue" label="原值" width="120" align="right">
+              <template #default="{ row }"><span class="num">¥{{ row.originalValue.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="depreciationMethod" label="折旧方式" width="130" />
-            <el-table-column prop="usefulLife" label="使用年限" width="100" />
-            <el-table-column prop="accumulatedDepreciation" label="累计折旧" width="130">
-              <template #default="{ row }">¥{{ row.accumulatedDepreciation.toLocaleString() }}</template>
+            <el-table-column prop="usefulLife" label="使用年限" width="100" align="right" />
+            <el-table-column prop="accumulatedDepreciation" label="累计折旧" width="130" align="right">
+              <template #default="{ row }"><span class="num">¥{{ row.accumulatedDepreciation.toLocaleString() }}</span></template>
             </el-table-column>
-            <el-table-column prop="netValue" label="净值" width="120">
-              <template #default="{ row }">¥{{ row.netValue.toLocaleString() }}</template>
+            <el-table-column prop="netValue" label="净值" width="120" align="right">
+              <template #default="{ row }"><span class="num">¥{{ row.netValue.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column prop="depreciationRate" label="折旧进度" width="150">
               <template #default="{ row }">
@@ -337,7 +335,7 @@ const displayUserStats = computed(() => {
 })
 
 const userPage = ref(1)
-const userPageSize = ref(10)
+const userPageSize = ref(15)
 const userTotal = computed(() => filteredUserStats.value.length)
 
 // 折旧明细
@@ -368,7 +366,7 @@ const displayDepreciationList = computed(() => {
 })
 
 const depreciationPage = ref(1)
-const depreciationPageSize = ref(10)
+const depreciationPageSize = ref(15)
 const depreciationTotal = computed(() => filteredDepreciationList.value.length)
 
 const getDepreciationColor = (percentage) => {
@@ -419,21 +417,21 @@ const handleExport = () => {
 }
 
 const catPage = ref(1)
-const catPageSize = ref(10)
+const catPageSize = ref(15)
 const pagedCategoryStats = computed(() => {
   const start = (catPage.value - 1) * catPageSize.value
   return categoryStats.value.slice(start, start + catPageSize.value)
 })
 
 const locPage = ref(1)
-const locPageSize = ref(10)
+const locPageSize = ref(15)
 const pagedLocationStats = computed(() => {
   const start = (locPage.value - 1) * locPageSize.value
   return locationStats.value.slice(start, start + locPageSize.value)
 })
 
 const deptPage = ref(1)
-const deptPageSize = ref(10)
+const deptPageSize = ref(15)
 const pagedDepartmentStats = computed(() => {
   const start = (deptPage.value - 1) * deptPageSize.value
   return departmentStats.value.slice(start, start + deptPageSize.value)
@@ -473,7 +471,7 @@ const depreciationDetails = computed(() => depreciationDetailSource.map(r => {
 
 const detailSearch = reactive({ month: '2026-09', keyword: '' })
 const detPage = ref(1)
-const detPageSize = ref(10)
+const detPageSize = ref(15)
 watch(detailSearch, () => { detPage.value = 1 }, { deep: true })
 
 const filteredDepreciationDetails = computed(() => {
@@ -515,10 +513,6 @@ const handleDetailExport = () => {
 </script>
 
 <style scoped>
-.page-container {
-  height: 100%;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -532,7 +526,7 @@ const handleDetailExport = () => {
 }
 
 .stat-cards {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .stat-card {
@@ -547,25 +541,25 @@ const handleDetailExport = () => {
 
 .stat-name {
   font-size: 14px;
-  color: #8c8c8c;
+  color: var(--t-weak);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: bold;
-  color: #262626;
+  color: var(--t-main);
   margin-bottom: 4px;
 }
 
 .stat-unit {
   font-size: 14px;
-  color: #8c8c8c;
+  color: var(--t-weak);
   font-weight: normal;
 }
 
 .stat-amount {
   font-size: 13px;
-  color: #f5222d;
+  color: var(--c-danger);
 }
 </style>

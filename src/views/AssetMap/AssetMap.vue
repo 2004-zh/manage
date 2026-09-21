@@ -28,8 +28,8 @@
             >
               <template #default="{ data }">
                 <span class="zt-node">
-                  <el-icon v-if="!data.children" color="#1890ff"><LocationFilled /></el-icon>
-                  <el-icon v-else color="#1890ff"><OfficeBuilding /></el-icon>
+                  <el-icon v-if="!data.children" color="#1668DC"><LocationFilled /></el-icon>
+                  <el-icon v-else color="#1668DC"><OfficeBuilding /></el-icon>
                   <span class="zt-name">{{ data.name }}</span>
                   <el-tag size="small" type="info" effect="plain">{{ data.count }} 项</el-tag>
                 </span>
@@ -143,16 +143,16 @@
         <div class="geo-breadcrumb">
           <el-breadcrumb separator="/">
             <el-breadcrumb-item @click="drillTo(0)">
-              <span style="cursor:pointer;color:#1890ff">长乐区</span>
+              <span style="cursor:pointer;color:#1668DC">长乐区</span>
             </el-breadcrumb-item>
             <el-breadcrumb-item v-if="drillLevel >= 1" @click="drillTo(1)">
-              <span style="cursor:pointer;color:#1890ff">{{ currentTown?.name || '' }}</span>
+              <span style="cursor:pointer;color:#1668DC">{{ currentTown?.name || '' }}</span>
             </el-breadcrumb-item>
             <el-breadcrumb-item v-if="drillLevel >= 2">
               <span>{{ currentProject?.name || '' }}</span>
             </el-breadcrumb-item>
           </el-breadcrumb>
-          <el-button v-if="drillLevel > 0" link type="primary" size="small" @click="drillTo(drillLevel - 1)" style="margin-left:12px;color:#1890ff">
+          <el-button v-if="drillLevel > 0" link type="primary" size="small" @click="drillTo(drillLevel - 1)" style="margin-left:12px;color:#1668DC">
             ← 返回上一级
           </el-button>
         </div>
@@ -164,7 +164,7 @@
         <div class="geo-kpi-panel" v-show="drillLevel === 0 && kpiPanelVisible">
           <div class="gkp-title">
             <span>长乐区资产总览</span>
-            <el-button link size="small" @click="kpiPanelVisible = false" style="color:#999;padding:0;margin-left:8px">
+            <el-button link size="small" @click="kpiPanelVisible = false" style="color:#94A3B8;padding:0;margin-left:8px">
               <el-icon><Close /></el-icon>
             </el-button>
           </div>
@@ -206,7 +206,7 @@
                 <span>{{ p.totalArea.toLocaleString() }} m²</span>
               </div>
               <div class="gtp-card-row">
-                <span>出租率 <b :style="{ color: p.rentalRate > 70 ? '#52c41a' : '#faad14' }">{{ p.rentalRate }}%</b></span>
+                <span>出租率 <b :style="{ color: p.rentalRate > 70 ? '#52c41a' : '#E8912A' }">{{ p.rentalRate }}%</b></span>
                 <span>年租金 {{ p.yearIncome }} 万</span>
               </div>
             </div>
@@ -242,9 +242,9 @@
               <div class="gd-prog-frac">已出租 {{ ovRentedCount }} / 总计 {{ ovTotalCount }} 宗</div>
             </div>
             <div class="gd-prog">
-              <div class="gd-prog-head"><span>上月收费率</span><b style="color:#1890ff">{{ ovChargeRate }}%</b></div>
-              <el-progress :percentage="ovChargeRate" :show-text="false" :stroke-width="10" color="#1890ff" />
-              <div class="gd-prog-frac">实收 96.8 / 应收 112.0 万元</div>
+              <div class="gd-prog-head"><span>上月收费率</span><b style="color:#1668DC">{{ ovChargeRate }}%</b></div>
+              <el-progress :percentage="ovChargeRate" :show-text="false" :stroke-width="10" color="#1668DC" />
+              <div class="gd-prog-frac">实收 {{ ovLastActual }} / 应收 {{ ovLastPlan }} 万元</div>
             </div>
           </div>
           <div class="gd-toggle">
@@ -269,18 +269,18 @@
                 </span>
               </div>
               <div class="legend-chips">
-                <span class="lg-chip"><i style="background:#8c8c8c"></i>空置超1年 {{ idleOver1y }}</span>
-                <span class="lg-chip"><i style="background:#bfbfbf"></i>空置6月-1年 {{ idleHalf1y }}</span>
+                <span class="lg-chip"><i style="background:#94A3B8"></i>空置超1年 {{ idleOver1y }}</span>
+                <span class="lg-chip"><i style="background:#909399"></i>空置6月-1年 {{ idleHalf1y }}</span>
                 <span class="lg-chip"><i style="background:#fa8c16"></i>3个月内到期 {{ expiringCount }}</span>
               </div>
               <div class="gd-filters">
                 <el-checkbox v-model="showUnrentable" size="small">不可租资产</el-checkbox>
                 <span class="gd-filter-label">资产面积筛选</span>
-                <el-slider v-model="areaRange" range :min="0" :max="1000" size="small" style="width:200px" />
+                <el-slider v-model="areaRange" range :min="0" :max="areaMax" size="small" style="width:200px" />
                 <span class="gd-range-text">{{ areaRange[0] }} - {{ areaRange[1] }} m²</span>
               </div>
               <div class="room-grid">
-                <div class="room-card" v-for="r in visibleRooms" :key="r.code" :style="{ borderTopColor: statusColor(r.status) }">
+                <div class="room-card" v-for="r in visibleRooms" :key="r.code" :style="{ borderTopColor: statusColor(r.status) }" @click="openRoom(r)">
                   <div class="room-head">
                     <el-tag v-if="r.status !== '已租赁'" size="small" type="warning" effect="dark">未使用</el-tag>
                     <el-tag v-else size="small" type="success" effect="dark">已租赁</el-tag>
@@ -341,12 +341,12 @@
           </div>
 
           <div class="section-title" style="margin-top:20px">项目资产清单</div>
-          <el-table :data="currentProject?.assets || []" border stripe size="small" max-height="420">
+          <el-table :data="projectAssetRows" border stripe size="small" max-height="420">
             <el-table-column prop="code" label="资产编号" width="100" />
             <el-table-column prop="name" label="资产名称" min-width="180" />
             <el-table-column prop="type" label="类型" width="90" />
             <el-table-column prop="area" label="面积(m²)" width="100" align="right">
-              <template #default="{ row }">{{ row.area.toLocaleString() }}</template>
+              <template #default="{ row }">{{ (row.area || 0).toLocaleString() }}</template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }">
@@ -387,7 +387,7 @@
         <!-- 图例 -->
         <div class="geo-legend">
           <div class="gl-title">资产性质</div>
-          <div class="gl-item"><span class="gl-dot" style="background:#1890ff"></span>经营性资产</div>
+          <div class="gl-item"><span class="gl-dot" style="background:#1668DC"></span>经营性资产</div>
           <div class="gl-item"><span class="gl-dot" style="background:#7c4dff"></span>行政事业性资产</div>
           <div class="gl-item"><span class="gl-dot" style="background:#ff6e40"></span>公共资源类资产</div>
         </div>
@@ -456,7 +456,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount, onMounted, onActivated } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import {
@@ -468,6 +468,7 @@ import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
 
 const route = useRoute()
+const router = useRouter()
 const isRegionMode = computed(() => route.name === 'EntRegionDivision')
 const projectStore = useProjectStore()
 const assetStore = useAssetStore()
@@ -575,7 +576,7 @@ function loadDistrictBoundary() {
           })
           const polygon = new window.AMap.Polygon({
             path,
-            fillColor: '#1890ff',
+            fillColor: '#1668DC',
             fillOpacity: 0.06,
             strokeColor: '#f5222d',
             strokeWeight: 2,
@@ -638,8 +639,8 @@ function addProjectMarkers() {
     const marker = new window.AMap.Marker({
       position: new window.AMap.LngLat(c.lng, c.lat),
       content: `<div style="position:relative;width:14px;height:14px;">
-        <div style="position:absolute;inset:0;border-radius:50%;background:rgba(24,144,255,0.25);animation:amap-ping 2s infinite"></div>
-        <div style="position:absolute;inset:3px;border-radius:50%;background:#1890ff;border:1.5px solid #fff"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;background:rgba(22,104,220,0.25);animation:amap-ping 2s infinite"></div>
+        <div style="position:absolute;inset:3px;border-radius:50%;background:#1668DC;border:1.5px solid #fff"></div>
       </div>`,
       offset: new window.AMap.Pixel(-7, -7),
       cursor: 'pointer'
@@ -661,8 +662,8 @@ function addTownMarkers() {
     const marker = new window.AMap.Marker({
       position: new window.AMap.LngLat(c.lng, c.lat),
       content: `<div style="position:relative;width:16px;height:16px;">
-        <div style="position:absolute;inset:0;border-radius:50%;background:rgba(24,144,255,0.25);animation:amap-ping 2s infinite"></div>
-        <div style="position:absolute;inset:3px;border-radius:50%;background:#1890ff;border:1.5px solid #fff"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;background:rgba(22,104,220,0.25);animation:amap-ping 2s infinite"></div>
+        <div style="position:absolute;inset:3px;border-radius:50%;background:#1668DC;border:1.5px solid #fff"></div>
       </div>`,
       offset: new window.AMap.Pixel(-8, -8),
       cursor: 'pointer'
@@ -686,18 +687,18 @@ function addTownMarkers() {
   })
 }
 
-/* 9 个乡镇 — 用于 KPI 面板和镇级下钻 */
-const towns = ref([
-  { code: 'wh', name: '吴航街道', lng: 119.525, lat: 25.962, assetCount: 126, totalArea: 18500, rentalRate: 78 },
-  { code: 'hc', name: '航城街道', lng: 119.498, lat: 25.918, assetCount: 86, totalArea: 22000, rentalRate: 75 },
-  { code: 'sz', name: '首占新区', lng: 119.535, lat: 25.858, assetCount: 73, totalArea: 28000, rentalRate: 68 },
-  { code: 'yq', name: '营前街道', lng: 119.558, lat: 25.902, assetCount: 52, totalArea: 15600, rentalRate: 82 },
-  { code: 'hs', name: '鹤上镇', lng: 119.582, lat: 25.842, assetCount: 28, totalArea: 12400, rentalRate: 70 },
-  { code: 'zg', name: '漳港街道', lng: 119.648, lat: 25.918, assetCount: 45, totalArea: 16800, rentalRate: 72 },
-  { code: 'jt', name: '江田镇', lng: 119.618, lat: 25.802, assetCount: 18, totalArea: 35000, rentalRate: 45 },
-  { code: 'mh', name: '梅花镇', lng: 119.735, lat: 25.955, assetCount: 12, totalArea: 8500, rentalRate: 65 },
-  { code: 'yt', name: '玉田镇', lng: 119.460, lat: 25.830, assetCount: 15, totalArea: 12000, rentalRate: 40 }
-])
+/* 9 个乡镇 — 用于 KPI 面板和镇级下钻；资产数/面积/出租率按镇域项目的真实资产统计派生 */
+const TOWN_SEED = [
+  { code: 'wh', name: '吴航街道', lng: 119.525, lat: 25.962 },
+  { code: 'hc', name: '航城街道', lng: 119.498, lat: 25.918 },
+  { code: 'sz', name: '首占新区', lng: 119.535, lat: 25.858 },
+  { code: 'yq', name: '营前街道', lng: 119.558, lat: 25.902 },
+  { code: 'hs', name: '鹤上镇', lng: 119.582, lat: 25.842 },
+  { code: 'zg', name: '漳港街道', lng: 119.648, lat: 25.918 },
+  { code: 'jt', name: '江田镇', lng: 119.618, lat: 25.802 },
+  { code: 'mh', name: '梅花镇', lng: 119.735, lat: 25.955 },
+  { code: 'yt', name: '玉田镇', lng: 119.460, lat: 25.830 }
+]
 
 /* 项目坐标映射 (BLD-002 ~ BLD-012) */
 const projectCoords = {
@@ -726,6 +727,23 @@ const townProjectMap = {
   mh: [],
   yt: []
 }
+
+const towns = computed(() => TOWN_SEED.map(t => {
+  const ids = townProjectMap[t.code] || []
+  let assetCount = 0, totalArea = 0, rentedCount = 0
+  ids.forEach(id => {
+    const s = assetStore.projectStats(id)
+    assetCount += s.totalAssets
+    totalArea += s.totalArea
+    rentedCount += s.rentedCount
+  })
+  return {
+    ...t,
+    assetCount,
+    totalArea,
+    rentalRate: assetCount ? Math.round(rentedCount / assetCount * 1000) / 10 : 0
+  }
+}))
 
 const allProjects = computed(() => {
   const list = projectStore.visibleProjects || []
@@ -761,7 +779,7 @@ const geoKpis = computed(() => {
 })
 
 const townRank = computed(() => {
-  const max = Math.max(...towns.value.map(t => t.assetCount))
+  const max = Math.max(1, ...towns.value.map(t => t.assetCount))
   return [...towns.value].sort((a, b) => b.assetCount - a.assetCount).map(t => ({
     code: t.code,
     name: t.name,
@@ -775,7 +793,7 @@ const projKpis = computed(() => {
   if (!currentProject.value) return []
   const p = currentProject.value
   return [
-    { label: '资产总数', value: p.totalAssets, unit: '宗', color: '#1890ff' },
+    { label: '资产总数', value: p.totalAssets, unit: '宗', color: '#1668DC' },
     { label: '总面积', value: (p.totalArea / 10000).toFixed(1), unit: '万m²', color: '#722ed1' },
     { label: '出租率', value: p.rentalRate, unit: '%', color: '#52c41a' },
     { label: '累计收入', value: p.cumIncome.toFixed(0), unit: '万元', color: '#fa8c16' },
@@ -793,15 +811,19 @@ function handleTownClick(t) {
   }
 }
 
-function handleMarkerClick(m) {
-  currentProject.value = m
+/* 进入项目层：房间清单为派生只读视图，楼栋/楼层选中值跟随真实结构 */
+function enterProject(p) {
+  currentProject.value = p
   drillLevel.value = 2
-  rooms.value = generateRooms(m)
+  const rs = roomsOfProject(p)
+  activeBuilding.value = [...new Set(rs.map(r => r.building))][0] || ''
+  const floors = [...new Set(rs.filter(r => r.building === activeBuilding.value).map(r => r.floor))]
+    .sort((a, b) => (parseInt(a) || 1) - (parseInt(b) || 1))
+  activeFloor.value = floors[0] || '1F'
   detailView.value = 'map'
-  activeBuilding.value = buildingList[0]
-  activeFloor.value = '1F'
   showUnrentable.value = false
-  areaRange.value = [0, 1000]
+  const maxArea = Math.max(1000, Math.ceil(rs.reduce((m, r) => Math.max(m, r.area || 0), 0) / 100) * 100)
+  areaRange.value = [0, maxArea]
   listCodeKw.value = ''
   appliedListCode.value = ''
   listStatus.value = ''
@@ -811,22 +833,12 @@ function handleMarkerClick(m) {
   nextTick(initDetailCharts)
 }
 
+function handleMarkerClick(m) {
+  enterProject(m)
+}
+
 function handleProjectClick(p) {
-  currentProject.value = p
-  drillLevel.value = 2
-  rooms.value = generateRooms(p)
-  detailView.value = 'map'
-  activeBuilding.value = buildingList[0]
-  activeFloor.value = '1F'
-  showUnrentable.value = false
-  areaRange.value = [0, 1000]
-  listCodeKw.value = ''
-  appliedListCode.value = ''
-  listStatus.value = ''
-  listType.value = ''
-  listZone.value = ''
-  listPage.value = 1
-  nextTick(initDetailCharts)
+  enterProject(p)
 }
 
 const drillTo = (level) => {
@@ -852,64 +864,130 @@ watch(drillLevel, (v) => {
 
 /* ==================== 资产明细 ==================== */
 const detailView = ref('map')
-const rooms = ref([])
-const buildingList = ['A栋', 'B栋', 'C栋']
-const activeBuilding = ref('A栋')
+/* 房间清单：由 assetStore 房间级资产 + contractStore 在租合同派生，不再随机生成 */
+const rooms = computed(() => currentProject.value ? roomsOfProject(currentProject.value) : [])
+const buildingList = computed(() => [...new Set(rooms.value.map(r => r.building))])
+const activeBuilding = ref('')
 const activeFloor = ref('1F')
 const showUnrentable = ref(false)
 const areaRange = ref([0, 1000])
+const areaMax = computed(() => {
+  const m = rooms.value.reduce((s, r) => Math.max(s, r.area || 0), 0)
+  return Math.max(1000, Math.ceil(m / 100) * 100)
+})
 
 const statusLegend = [
   { name: '已租赁', color: '#52c41a' },
-  { name: '未租赁', color: '#faad14' },
-  { name: '审批中', color: '#1890ff' },
+  { name: '未租赁', color: '#E8912A' },
+  { name: '审批中', color: '#1668DC' },
   { name: '已占用', color: '#722ed1' },
   { name: '处置中', color: '#f5222d' },
   { name: '流转中', color: '#13c2c2' },
-  { name: '调拨中', color: '#eb2f96' }
+  { name: '调拨中', color: '#2F54EB' }
 ]
-const roomTypeOptions = ['商铺', '办公', '厂房', '仓储', '综合用房']
-const zoneOptions = ['A区', 'B区', 'C区']
+const roomTypeOptions = computed(() => [...new Set(rooms.value.map(r => r.type).filter(Boolean))])
+const zoneOptions = computed(() => [...new Set(rooms.value.map(r => r.zone).filter(Boolean))])
 
-function statusColor(s) { return (statusLegend.find(x => x.name === s) || {}).color || '#8c8c8c' }
+function statusColor(s) { return (statusLegend.find(x => x.name === s) || {}).color || '#94A3B8' }
 function certTagType(c) { return { 有产权证: 'success', 无产权: 'danger', 办理中: 'warning' }[c] || 'info' }
 function statusCount(s) { return rooms.value.filter(r => r.status === s).length }
 
-function generateRooms(project) {
-  const statuses = statusLegend.map(s => s.name)
-  const weights = [46, 20, 8, 8, 6, 6, 6]
-  const result = []
-  let seed = String(project.id || project.code || '').split('').reduce((s, ch) => s + ch.charCodeAt(0), 0) + 7
-  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280 }
-  const pickStatus = () => {
-    const r = rnd() * 100; let acc = 0
-    for (let i = 0; i < weights.length; i++) { acc += weights[i]; if (r <= acc) return statuses[i] }
-    return statuses[1]
+/* 真实房间资产 → 地图房间视图：楼栋=分区、楼层=层名，租赁状态优先看在租合同 */
+function statusOfRoom(a, c) {
+  if (c) return '已租赁'
+  switch (a.status) {
+    case '已出租': case '部分出租': return '已租赁'
+    case '自用': return '已占用'
+    case '待处置': case '报废': return '处置中'
+    case '流转中': return '流转中'
+    case '调拨中': return '调拨中'
+    case '审批中': return '审批中'
+    default: return '未租赁'
   }
-  buildingList.forEach((b, bi) => {
-    const floorCount = 4 + Math.floor(rnd() * 3)
-    for (let f = 1; f <= floorCount; f++) {
-      const roomCount = 4 + Math.floor(rnd() * 4)
-      for (let r = 1; r <= roomCount; r++) {
-        const status = pickStatus()
-        const cert = rnd() < 0.7 ? '有产权证' : (rnd() < 0.5 ? '无产权' : '办理中')
-        result.push({
-          building: b, floor: `${f}F`, zone: zoneOptions[(bi + f + r) % 3],
-          code: `${project.id || 'X'}-${bi + 1}${String(f).padStart(2, '0')}${String(r).padStart(2, '0')}`,
-          name: `${project.name} ${b} ${f}层 ${String(r).padStart(2, '0')}室`,
-          location: `长乐区${project.address || project.name}${b}${f}层`,
-          type: roomTypeOptions[Math.floor(rnd() * roomTypeOptions.length)],
-          area: Math.round(60 + rnd() * 900), status,
-          unrentable: rnd() < 0.12, certStatus: cert,
-          certNo: cert === '有产权证' ? `闽(2024)长乐区不动产权第${100000 + Math.floor(rnd() * 899999)}号` : '—',
-          mortgage: rnd() < 0.3 ? '已抵押' : '未抵押',
-          idlePeriod: status === '未租赁' ? (rnd() < 0.4 ? '空置超1年' : '空置6月-1年') : '',
-          expiring: status === '已租赁' && rnd() < 0.15
-        })
-      }
+}
+
+function certOfRoom(a) {
+  const s = String(a.certStatus || '')
+  if (s === '已办证' || s === '有产权证') return '有产权证'
+  if (s.includes('办理中')) return '办理中'
+  return '无产权'
+}
+
+function roomsOfProject(project) {
+  const list = assetStore.getProjectAssets(project.id)
+  const now = Date.now()
+  return list.map(a => {
+    const c = contractStore.getContractsByAsset(a.id).find(x => x.status !== '已终止' && x.status !== '退租')
+    const status = statusOfRoom(a, c)
+    const rented = status === '已租赁'
+    let idlePeriod = ''
+    if (!rented) {
+      const vd = Number(a.vacancyDays) || 0
+      if (vd >= 365) idlePeriod = '空置超1年'
+      else if (vd >= 180) idlePeriod = '空置6月-1年'
+    }
+    let expiring = false
+    const expiry = a.leaseExpiry || (c ? c.endDate : '')
+    if (rented && expiry) {
+      const days = (new Date(expiry).getTime() - now) / 86400000
+      expiring = days >= 0 && days <= 90
+    }
+    return {
+      id: a.id,
+      contractId: c ? c.id : '',
+      building: a.zoneName || project.name || '项目本部',
+      floor: a.floorName || '1F',
+      zone: a.zoneName || '—',
+      code: a.assetNo || a.id,
+      name: a.name,
+      location: a.location || `长乐区${project.name || ''}`,
+      type: a.type || '综合用房',
+      area: Number(a.area) || 0,
+      status,
+      unrentable: status === '已占用' || status === '处置中',
+      certStatus: certOfRoom(a),
+      certNo: a.certDetail || '—',
+      mortgage: a.mortgageStatus || '—',
+      tenant: a.tenant || (c ? c.tenant : ''),
+      idlePeriod,
+      expiring
     }
   })
-  return result
+}
+
+/* 房间点击：企业端有在租合同 → 跳合同详情，否则弹资产详情 */
+function openRoom(r) {
+  if (r.contractId && route.name === 'EntAssetMap') {
+    router.push({ name: 'EntContractDetail', params: { id: r.contractId } })
+    return
+  }
+  const a = assetStore.getAssetById(r.id)
+  selectedAssetDetail.value = a
+    ? {
+        code: a.assetNo || a.id,
+        name: a.name,
+        type: a.type,
+        status: a.status,
+        area: a.area,
+        annualRent: a.annualRent,
+        tenant: r.tenant || a.tenant || '-',
+        project: a.projectName || (currentProject.value && currentProject.value.name) || '-',
+        location: a.location,
+        certStatus: a.certStatus
+      }
+    : {
+        code: r.code,
+        name: r.name,
+        type: r.type,
+        status: r.status,
+        area: r.area,
+        annualRent: null,
+        tenant: r.tenant || '-',
+        project: currentProject.value ? currentProject.value.name : '-',
+        location: r.location,
+        certStatus: r.certStatus
+      }
+  assetDialogVisible.value = true
 }
 
 const floorList = computed(() => {
@@ -931,7 +1009,26 @@ const expiringCount = computed(() => rooms.value.filter(r => r.expiring).length)
 const ovTotalCount = computed(() => rooms.value.length)
 const ovRentedCount = computed(() => rooms.value.filter(r => r.status === '已租赁').length)
 const ovRentRate = computed(() => (ovTotalCount.value ? Math.round(ovRentedCount.value / ovTotalCount.value * 1000) / 10 : 0))
-const ovChargeRate = 86.4
+/* 上月收费率/实收/计划：全部取自合同库真实实收流水 */
+const projReceipts = computed(() => currentProject.value ? contractStore.projectReceipts(currentProject.value.id) : null)
+const ovChargeRate = computed(() => projReceipts.value ? projReceipts.value.lastMonthRate : 0)
+const ovLastActual = computed(() => projReceipts.value ? Math.round(projReceipts.value.lastMonthActual * 10) / 10 : 0)
+const ovLastPlan = computed(() => projReceipts.value ? Math.round(projReceipts.value.monthlyPlan * 10) / 10 : 0)
+
+/* 项目资产清单：真实项目资产（房间级 + 挂入的平铺资产），承租方兜底取在租合同 */
+const projectAssetRows = computed(() => {
+  if (!currentProject.value) return []
+  return assetStore.getProjectAssets(currentProject.value.id).map(a => {
+    const c = contractStore.getContractsByAsset(a.id).find(x => x.status !== '已终止' && x.status !== '退租')
+    return {
+      ...a,
+      code: a.assetNo || a.id,
+      project: a.projectName || currentProject.value.name,
+      tenant: a.tenant || (c ? c.tenant : ''),
+      annualRent: a.annualRent || (c ? c.annualRent : null)
+    }
+  })
+})
 
 const listCodeKw = ref('')
 const appliedListCode = ref('')
@@ -963,9 +1060,9 @@ const incomeTrendRef = ref(null)
 let rentDonut = null, typePie = null, monthBar = null, typeDist = null, townRateChart = null, incomeTrend = null
 
 const darkAxis = {
-  axisLine: { lineStyle: { color: '#d9d9d9' } },
-  axisLabel: { color: '#666', fontSize: 10 },
-  splitLine: { lineStyle: { color: '#f0f0f0' } }
+  axisLine: { lineStyle: { color: '#E2E8F0' } },
+  axisLabel: { color: '#94A3B8', fontSize: 12 },
+  splitLine: { lineStyle: { color: '#E2E8F0' } }
 }
 
 function disposeDetailCharts() {
@@ -986,12 +1083,12 @@ function initDetailCharts() {
     rentDonut = echarts.init(rentDonutRef.value)
     rentDonut.setOption({
       tooltip: { trigger: 'item', formatter: '{b}: {c}宗 ({d}%)' },
-      legend: { bottom: 0, textStyle: { fontSize: 11, color: '#666' }, itemWidth: 10, itemHeight: 10 },
+      legend: { bottom: 0, textStyle: { fontSize: 12, color: '#94A3B8' }, itemWidth: 10, itemHeight: 10 },
       series: [{
         type: 'pie', radius: ['48%', '70%'], center: ['50%', '44%'], label: { show: false },
         data: [
           { value: ovRentedCount.value, name: '已租赁', itemStyle: { color: '#52c41a' } },
-          { value: ovTotalCount.value - ovRentedCount.value, name: '未租赁', itemStyle: { color: '#faad14' } }
+          { value: ovTotalCount.value - ovRentedCount.value, name: '未租赁', itemStyle: { color: '#E8912A' } }
         ]
       }]
     })
@@ -1000,33 +1097,30 @@ function initDetailCharts() {
     typePie = echarts.init(typePieRef.value)
     const counts = {}
     rooms.value.forEach(r => { counts[r.type] = (counts[r.type] || 0) + 1 })
-    const colors = { 商铺: '#52c41a', 办公: '#fa8c16', 厂房: '#722ed1', 仓储: '#1890ff', 综合用房: '#13c2c2' }
+    const colors = { 商铺: '#52c41a', 办公: '#fa8c16', 厂房: '#722ed1', 仓储: '#1668DC', 综合用房: '#13c2c2' }
     typePie.setOption({
       tooltip: { trigger: 'item', formatter: '{b}: {c}宗 ({d}%)' },
-      legend: { bottom: 0, textStyle: { fontSize: 11, color: '#666' }, itemWidth: 10, itemHeight: 10 },
+      legend: { bottom: 0, textStyle: { fontSize: 12, color: '#94A3B8' }, itemWidth: 10, itemHeight: 10 },
       series: [{
         type: 'pie', radius: '62%', center: ['50%', '44%'], label: { show: false },
-        data: Object.keys(counts).map(k => ({ value: counts[k], name: k, itemStyle: { color: colors[k] || '#8c8c8c' } }))
+        data: Object.keys(counts).map(k => ({ value: counts[k], name: k, itemStyle: { color: colors[k] || '#94A3B8' } }))
       }]
     })
   }
   if (monthBarRef.value) {
     monthBar = echarts.init(monthBarRef.value)
-    const months = []
-    const now = new Date()
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      months.push(`${d.getMonth() + 1}月`)
-    }
+    // 近一年每月实收：合同库实收流水按项目聚合
+    const r = projReceipts.value
+    const months = r ? r.months.map(x => x.m) : []
     monthBar.setOption({
       grid: { left: 36, right: 10, top: 16, bottom: 22 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      xAxis: { type: 'category', data: months, ...darkAxis, axisLabel: { color: '#666', fontSize: 10, interval: 0 } },
+      xAxis: { type: 'category', data: months, ...darkAxis, axisLabel: { color: '#94A3B8', fontSize: 12, interval: 0 } },
       yAxis: { type: 'value', ...darkAxis },
       series: [{
         type: 'bar', barWidth: 8,
-        data: [12.6, 14.2, 11.8, 15.4, 13.9, 16.2, 14.8, 17.6, 15.2, 18.4, 16.8, 19.2],
-        itemStyle: { color: '#1890ff', borderRadius: [3, 3, 0, 0] }
+        data: r ? r.months.map(x => x.v) : [],
+        itemStyle: { color: '#1668DC', borderRadius: [3, 3, 0, 0] }
       }]
     })
   }
@@ -1043,20 +1137,22 @@ function initBottomCharts() {
   if (typeDistRef.value) {
     console.log('[AssetMap] init typeDist chart, size:', typeDistRef.value.offsetWidth, 'x', typeDistRef.value.offsetHeight)
     typeDist = echarts.init(typeDistRef.value)
+    // 资产类型分布：全量在册资产按类型计数
+    const counts = {}
+    assetStore.visibleAssets.forEach(a => {
+      const k = a.type || '其他'
+      counts[k] = (counts[k] || 0) + 1
+    })
+    const palette = ['#1668DC', '#13C2C2', '#C8963E', '#722ED1', '#52C41A', '#FA8C16', '#F5222D', '#2F54EB']
     typeDist.setOption({
       tooltip: { trigger: 'item' },
-      legend: { bottom: 0, textStyle: { color: '#666', fontSize: 10 }, itemWidth: 10, itemHeight: 10 },
+      legend: { bottom: 0, textStyle: { color: '#94A3B8', fontSize: 12 }, itemWidth: 10, itemHeight: 10 },
       series: [{
         type: 'pie', radius: ['40%', '65%'], center: ['50%', '42%'], label: { show: false },
-        data: [
-          { value: 68, name: '商铺', itemStyle: { color: '#52c41a' } },
-          { value: 62, name: '厂房', itemStyle: { color: '#722ed1' } },
-          { value: 45, name: '写字楼', itemStyle: { color: '#fa8c16' } },
-          { value: 38, name: '保障房', itemStyle: { color: '#1890ff' } },
-          { value: 35, name: '综合用房', itemStyle: { color: '#13c2c2' } },
-          { value: 30, name: '仓储/土地', itemStyle: { color: '#eb2f96' } },
-          { value: 22, name: '农贸市场', itemStyle: { color: '#faad14' } }
-        ]
+        data: Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([k, v], i) => ({ value: v, name: k, itemStyle: { color: palette[i % palette.length] } }))
       }]
     })
   }
@@ -1067,18 +1163,25 @@ function initBottomCharts() {
       grid: { left: 70, right: 16, top: 10, bottom: 20 },
       tooltip: { trigger: 'axis' },
       xAxis: { type: 'value', max: 100, ...darkAxis },
-      yAxis: { type: 'category', data: sorted.map(t => t.name), ...darkAxis, axisLabel: { color: '#666', fontSize: 10 } },
+      yAxis: { type: 'category', data: sorted.map(t => t.name), ...darkAxis, axisLabel: { color: '#94A3B8', fontSize: 12 } },
       series: [{
         type: 'bar', barWidth: 10,
         data: sorted.map(t => ({
           value: t.rentalRate,
-          itemStyle: { color: t.rentalRate > 70 ? '#52c41a' : t.rentalRate > 50 ? '#faad14' : '#f5222d', borderRadius: [0, 3, 3, 0] }
+          itemStyle: { color: t.rentalRate > 70 ? '#52c41a' : t.rentalRate > 50 ? '#E8912A' : '#f5222d', borderRadius: [0, 3, 3, 0] }
         }))
       }]
     })
   }
   if (incomeTrendRef.value) {
     incomeTrend = echarts.init(incomeTrendRef.value)
+    // 近12个月收入趋势：全部管辖项目的实收流水逐月合并
+    const agg = {}
+    allProjects.value.forEach(p => {
+      contractStore.projectReceipts(p.id).months.forEach(({ m, v }) => {
+        agg[m] = (agg[m] || 0) + v
+      })
+    })
     const months = []
     const now = new Date()
     for (let i = 11; i >= 0; i--) {
@@ -1088,16 +1191,16 @@ function initBottomCharts() {
     incomeTrend.setOption({
       grid: { left: 40, right: 16, top: 20, bottom: 22 },
       tooltip: { trigger: 'axis' },
-      xAxis: { type: 'category', data: months, ...darkAxis, axisLabel: { color: '#666', fontSize: 10, interval: 0 } },
+      xAxis: { type: 'category', data: months, ...darkAxis, axisLabel: { color: '#94A3B8', fontSize: 12, interval: 0 } },
       yAxis: { type: 'value', ...darkAxis },
       series: [{
         type: 'line', smooth: true, symbol: 'circle', symbolSize: 5,
-        data: [86.4, 92.1, 88.6, 96.2, 91.8, 102.5, 98.4, 108.6, 104.2, 112.8, 106.4, 118.6],
-        lineStyle: { color: '#1890ff', width: 2 },
-        itemStyle: { color: '#1890ff' },
+        data: months.map(m => Math.round((agg[m] || 0) * 10) / 10),
+        lineStyle: { color: '#1668DC', width: 2 },
+        itemStyle: { color: '#1668DC' },
         areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(24,144,255,0.3)' },
-          { offset: 1, color: 'rgba(24,144,255,0.02)' }
+          { offset: 0, color: 'rgba(22,104,220,0.3)' },
+          { offset: 1, color: 'rgba(22,104,220,0.02)' }
         ]) }
       }]
     })
@@ -1168,7 +1271,7 @@ const zoneTree = ref([
   {
     id: 'd1', name: '长乐区中心城区', count: 6,
     children: [
-      { id: 'z1-1', name: '吴航街道', type: '街道', projectCount: 2, assetCount: 42, area: 18500, owner: '陈志强', code: '350112001', color: '#1890ff', span: 2, boundary: '东至鳌山路，西至西洋路，南至郑和路，北至闽江口' },
+      { id: 'z1-1', name: '吴航街道', type: '街道', projectCount: 2, assetCount: 42, area: 18500, owner: '陈志强', code: '350112001', color: '#1668DC', span: 2, boundary: '东至鳌山路，西至西洋路，南至郑和路，北至闽江口' },
       { id: 'z1-2', name: '航城街道', type: '街道', projectCount: 2, assetCount: 38, area: 22000, owner: '林晓峰', code: '350112002', color: '#13c2c2', span: 2, boundary: '东至机场路，西至吴航街道，南至首占镇，北至闽江' },
       { id: 'z1-3', name: '首占新区', type: '片区', projectCount: 2, assetCount: 35, area: 28000, owner: '黄丽华', code: '350112003', color: '#722ed1', span: 2, boundary: '东至岱边村，西至玉田镇，南至营前街道，北至航城街道' }
     ]
@@ -1178,14 +1281,14 @@ const zoneTree = ref([
     children: [
       { id: 'z2-1', name: '漳港街道', type: '街道', projectCount: 1, assetCount: 25, area: 16800, owner: '郑文海', code: '350112004', color: '#fa8c16', span: 2, boundary: '东至海边，西至鹤上镇，南至江田镇，北至航城街道' },
       { id: 'z2-2', name: '江田镇', type: '镇', projectCount: 1, assetCount: 18, area: 35000, owner: '王建国', code: '350112005', color: '#52c41a', span: 3, boundary: '东至海滨，西至玉田镇，南至福清界，北至漳港街道' },
-      { id: 'z2-3', name: '梅花镇', type: '镇', projectCount: 1, assetCount: 12, area: 8500, owner: '刘梅芳', code: '350112006', color: '#eb2f96', span: 1, boundary: '东至闽江口，西至航城街道，南至漳港街道，北至连江界' }
+      { id: 'z2-3', name: '梅花镇', type: '镇', projectCount: 1, assetCount: 12, area: 8500, owner: '刘梅芳', code: '350112006', color: '#2F54EB', span: 1, boundary: '东至闽江口，西至航城街道，南至漳港街道，北至连江界' }
     ]
   },
   {
     id: 'd3', name: '长乐区内陆片区', count: 4,
     children: [
       { id: 'z3-1', name: '营前街道', type: '街道', projectCount: 1, assetCount: 28, area: 15600, owner: '吴晓东', code: '350112007', color: '#1c7ed6', span: 2, boundary: '东至首占新区，西至闽侯界，南至玉田镇，北至闽江' },
-      { id: 'z3-2', name: '鹤上镇', type: '镇', projectCount: 1, assetCount: 22, area: 12400, owner: '张永和', code: '350112008', color: '#faad14', span: 2, boundary: '东至漳港街道，西至首占新区，南至江田镇，北至航城街道' },
+      { id: 'z3-2', name: '鹤上镇', type: '镇', projectCount: 1, assetCount: 22, area: 12400, owner: '张永和', code: '350112008', color: '#E8912A', span: 2, boundary: '东至漳港街道，西至首占新区，南至江田镇，北至航城街道' },
       { id: 'z3-3', name: '玉田镇', type: '镇', projectCount: 1, assetCount: 15, area: 12000, owner: '李春华', code: '350112009', color: '#2f54eb', span: 2, boundary: '东至江田镇，西至福清界，南至福清界，北至营前街道' }
     ]
   }
@@ -1249,7 +1352,7 @@ function saveZone() {
     }
     ElMessage.success(f.editBoundary ? '边界已保存' : '区域划分已调整')
   } else {
-    const palette = ['#1890ff', '#13c2c2', '#722ed1', '#fa8c16', '#52c41a', '#eb2f96']
+    const palette = ['#1668DC', '#13C2C2', '#C8963E', '#722ED1', '#52C41A', '#FA8C16']
     parent.children.push({
       id: 'z-new-' + Date.now(), name: f.name, type: f.type, projectCount: 0,
       assetCount: 0, area: f.area, owner: f.owner,
@@ -1265,7 +1368,7 @@ function saveZone() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
+/* 页面根 padding/height 交给全局骨架，此处不再覆盖 */
 
 /* ==================== 区域划分视图 ==================== */
 .region-wrap { display: flex; gap: 20px; align-items: flex-start; }
@@ -1275,30 +1378,30 @@ function saveZone() {
 .region-right :deep(.el-card) { background: #fff; }
 .rr-head { display: flex; justify-content: space-between; align-items: center; }
 .zt-node { display: flex; align-items: center; gap: 6px; font-size: 13px; }
-.zt-name { color: #262626; }
-.zt-summary { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e8e8e8; font-size: 12px; color: #8c8c8c; line-height: 1.6; }
+.zt-name { color: var(--t-main); }
+.zt-summary { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #E2E8F0; font-size: 12px; color: var(--t-weak); line-height: 1.6; }
 .detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.dg-item { background: #f7f9fc; border: 1px solid #ebeef5; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; }
-.dg-label { font-size: 12px; color: #8c8c8c; }
+.dg-item { background: var(--bg-th); border: 1px solid var(--bd); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; }
+.dg-label { font-size: 12px; color: var(--t-weak); }
 .dg-value { font-size: 17px; font-weight: 700; color: var(--c-primary); font-variant-numeric: tabular-nums; margin-top: 3px; }
-.section-title { font-size: 14px; font-weight: 600; color: #262626; padding-left: 8px; border-left: 3px solid var(--c-primary); margin-bottom: 10px; }
+.section-title { font-size: 14px; font-weight: 600; color: var(--t-main); padding-left: 8px; border-left: 3px solid var(--c-primary); margin-bottom: 10px; }
 .pager { display: flex; justify-content: flex-end; margin-top: 12px; }
 .rd-table { font-size: 13px; }
 .zone-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.zone-card { background: #fff; border: 1px solid #ebeef5; border-top: 3px solid var(--c-primary); border-radius: 6px; padding: 12px 14px; cursor: pointer; transition: box-shadow 0.2s, border-color 0.2s; }
-.zone-card:hover { box-shadow: 0 2px 12px rgba(24, 144, 255, 0.2); }
-.zone-card.on { border-color: var(--c-primary); box-shadow: 0 2px 12px rgba(24, 144, 255, 0.25); }
+.zone-card { background: #fff; border: 1px solid var(--bd); border-top: 3px solid var(--c-primary); border-radius: 6px; padding: 12px 14px; cursor: pointer; transition: box-shadow 0.2s, border-color 0.2s; }
+.zone-card:hover { box-shadow: 0 2px 12px rgba(22, 104, 220, 0.2); }
+.zone-card.on { border-color: var(--c-primary); box-shadow: 0 2px 12px rgba(22, 104, 220, 0.25); }
 .zc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.zc-name { font-size: 14px; font-weight: 600; color: #262626; }
+.zc-name { font-size: 14px; font-weight: 600; color: var(--t-main); }
 .zc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 .zc-stat { display: flex; flex-direction: column; }
-.zc-stat .label { font-size: 12px; color: #8c8c8c; }
-.zc-stat .value { font-size: 13px; font-weight: 600; color: #262626; font-variant-numeric: tabular-nums; }
-.zc-foot { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ebeef5; text-align: right; }
+.zc-stat .label { font-size: 12px; color: var(--t-weak); }
+.zc-stat .value { font-size: 13px; font-weight: 600; color: var(--t-main); font-variant-numeric: tabular-nums; }
+.zc-foot { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--bd); text-align: right; }
 .block-map { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
 .block-cell { border-radius: 6px; padding: 14px 12px; color: #fff; cursor: pointer; opacity: 0.88; transition: opacity 0.2s, transform 0.2s; min-height: 92px; }
 .block-cell:hover { opacity: 1; transform: translateY(-2px); }
-.block-cell.on { opacity: 1; outline: 2px solid #262626; outline-offset: 1px; }
+.block-cell.on { opacity: 1; outline: 2px solid var(--t-main); outline-offset: 1px; }
 .bc-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
 .bc-meta { font-size: 12px; opacity: 0.92; }
 .bc-owner { font-size: 12px; opacity: 0.85; margin-top: 4px; }
@@ -1306,24 +1409,29 @@ function saveZone() {
 
 /* ==================== GIS 地图 — 深色主题 ==================== */
 .geo-map {
-  min-height: 720px;
-  background: #f0f2f5;
+  /* 地图页按视口撑满剩余高度，避免写死 720 造成下方灰底空洞 */
+  height: calc(100vh - 260px);
+  min-height: 520px;
+  background: var(--bg-page);
   position: relative; display: flex; flex-direction: column;
-  border-radius: 6px;
+  border-radius: var(--r-md);
 }
 
 .geo-breadcrumb {
   padding: 10px 16px;
   background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid #E2E8F0;
   display: flex; align-items: center;
   z-index: 30;
 }
 .geo-breadcrumb :deep(.el-breadcrumb__inner) { color: #333; }
-.geo-breadcrumb :deep(.el-breadcrumb__separator) { color: #999; }
+.geo-breadcrumb :deep(.el-breadcrumb__separator) { color: var(--t-weak); }
 
 .amap-container {
-  height: 500px; width: 100%;
+  /* 地图吃掉剩余区域；配合 .geo-map 的视口高度，不再写死 500 */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
 }
 .geo-map:fullscreen {
   height: 100vh;
@@ -1331,7 +1439,6 @@ function saveZone() {
 }
 .geo-map:fullscreen .amap-container {
   flex: 1;
-  height: auto;
   min-height: 0;
 }
 .amap-container :deep(.amap-marker-label) {
@@ -1355,25 +1462,25 @@ function saveZone() {
   position: absolute; top: 52px; left: 12px; z-index: 20;
   background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
   border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 6px;
-  padding: 8px 12px; color: #1890ff; font-size: 12px; cursor: pointer;
+  padding: 8px 12px; color: #1668DC; font-size: 12px; cursor: pointer;
   display: flex; align-items: center; gap: 6px;
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-.geo-kpi-toggle:hover { background: #fff; border-color: #1890ff; }
-.gkp-title { font-size: 14px; font-weight: 700; color: #1890ff; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(24, 144, 255, 0.2); display: flex; justify-content: space-between; align-items: center; }
+.geo-kpi-toggle:hover { background: #fff; border-color: #1668DC; }
+.gkp-title { font-size: 14px; font-weight: 700; color: #1668DC; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(22, 104, 220, 0.2); display: flex; justify-content: space-between; align-items: center; }
 .gkp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
-.gkp-item { background: #f7f9fc; border: 1px solid #ebeef5; border-radius: 5px; padding: 6px 8px; }
-.gkp-value { font-size: 15px; font-weight: 700; color: #262626; font-variant-numeric: tabular-nums; }
-.gkp-unit { font-size: 10px; font-weight: normal; color: #8c8c8c; margin-left: 2px; }
-.gkp-label { font-size: 11px; color: #8c8c8c; margin-top: 2px; }
-.gkp-rank-title { font-size: 12px; font-weight: 600; color: #1890ff; padding-top: 6px; border-top: 1px solid rgba(24, 144, 255, 0.15); margin-bottom: 6px; }
+.gkp-item { background: var(--bg-th); border: 1px solid var(--bd); border-radius: 5px; padding: 6px 8px; }
+.gkp-value { font-size: 15px; font-weight: 700; color: var(--t-main); font-variant-numeric: tabular-nums; }
+.gkp-unit { font-size: 12px; font-weight: normal; color: var(--t-weak); margin-left: 2px; }
+.gkp-label { font-size: 12px; color: var(--t-weak); margin-top: 2px; }
+.gkp-rank-title { font-size: 12px; font-weight: 600; color: #1668DC; padding-top: 6px; border-top: 1px solid rgba(22, 104, 220, 0.15); margin-bottom: 6px; }
 .gkp-rank { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; }
-.gkp-rank-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
-.gkp-rank-name { width: 56px; flex: none; color: #595959; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gkp-rank-bar { flex: 1; height: 7px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
-.gkp-rank-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #1890ff, #40a9ff); }
-.gkp-rank-val { width: 24px; text-align: right; color: #262626; font-variant-numeric: tabular-nums; }
+.gkp-rank-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.gkp-rank-name { width: 56px; flex: none; color: var(--t-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gkp-rank-bar { flex: 1; height: 7px; background: var(--bd); border-radius: 4px; overflow: hidden; }
+.gkp-rank-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #1668DC, #4C8DFF); }
+.gkp-rank-val { width: 24px; text-align: right; color: var(--t-main); font-variant-numeric: tabular-nums; }
 
 /* 镇项目面板 */
 .geo-town-panel {
@@ -1383,65 +1490,65 @@ function saveZone() {
   max-height: calc(100% - 180px); overflow-y: auto;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
-.gtp-title { font-size: 14px; font-weight: 700; color: #1890ff; margin-bottom: 10px; }
-.gtp-stats { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(24, 144, 255, 0.15); }
+.gtp-title { font-size: 14px; font-weight: 700; color: #1668DC; margin-bottom: 10px; }
+.gtp-stats { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(22, 104, 220, 0.15); }
 .gtp-stat { display: flex; justify-content: space-between; font-size: 12px; }
-.gtp-stat .label { color: #8c8c8c; }
-.gtp-stat .value { color: #262626; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gtp-stat .label { color: var(--t-weak); }
+.gtp-stat .value { color: var(--t-main); font-weight: 600; font-variant-numeric: tabular-nums; }
 .gtp-list { display: flex; flex-direction: column; gap: 8px; }
 .gtp-card {
-  background: #f7f9fc; border: 1px solid #ebeef5;
+  background: var(--bg-th); border: 1px solid var(--bd);
   border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s;
 }
-.gtp-card:hover { background: #e6f7ff; border-color: #1890ff; }
-.gtp-card-name { font-size: 13px; font-weight: 600; color: #262626; margin-bottom: 6px; }
-.gtp-card-row { display: flex; justify-content: space-between; font-size: 11px; color: #8c8c8c; margin-bottom: 3px; }
-.gtp-card-row b { color: #262626; }
+.gtp-card:hover { background: #E8F2FF; border-color: #1668DC; }
+.gtp-card-name { font-size: 13px; font-weight: 600; color: var(--t-main); margin-bottom: 6px; }
+.gtp-card-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--t-weak); margin-bottom: 3px; }
+.gtp-card-row b { color: var(--t-main); }
 
 /* 项目明细 */
 .geo-detail {
   flex: 1; overflow-y: auto; padding: 16px; background: #fff; margin: 8px 12px 12px; border-radius: 8px;
 }
 .gd-kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px; }
-.gd-kpi { background: #f7f9fc; border: 1px solid #ebeef5; border-radius: 6px; padding: 10px 12px; text-align: center; }
+.gd-kpi { background: var(--bg-th); border: 1px solid var(--bd); border-radius: 6px; padding: 10px 12px; text-align: center; }
 .gd-kpi-value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.gd-kpi-unit { font-size: 11px; font-weight: normal; color: #999; margin-left: 3px; }
-.gd-kpi-label { font-size: 12px; color: #999; margin-top: 4px; }
+.gd-kpi-unit { font-size: 12px; font-weight: normal; color: var(--t-weak); margin-left: 3px; }
+.gd-kpi-label { font-size: 12px; color: var(--t-weak); margin-top: 4px; }
 .gd-charts { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 10px; margin-bottom: 14px; }
-.gd-card { border: 1px solid #ebeef5; border-radius: 6px; padding: 10px 12px; }
+.gd-card { border: 1px solid var(--bd); border-radius: 6px; padding: 10px 12px; }
 .gd-card-title { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 4px; padding-left: 6px; border-left: 3px solid var(--c-primary); }
 .gd-chart { height: 190px; }
 .gd-progress { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.gd-prog { border: 1px solid #ebeef5; border-radius: 6px; padding: 10px 14px; }
+.gd-prog { border: 1px solid var(--bd); border-radius: 6px; padding: 10px 14px; }
 .gd-prog-head { display: flex; justify-content: space-between; font-size: 13px; color: #333; margin-bottom: 8px; }
-.gd-prog-frac { font-size: 12px; color: #999; margin-top: 6px; }
+.gd-prog-frac { font-size: 12px; color: var(--t-weak); margin-top: 6px; }
 .gd-toggle { margin-bottom: 12px; }
 .gd-mapview { display: flex; gap: 14px; }
-.gd-side { width: 170px; flex: none; border: 1px solid #ebeef5; border-radius: 6px; padding: 12px; }
-.gd-side-title { font-size: 12px; font-weight: 600; color: #999; margin-bottom: 8px; }
+.gd-side { width: 170px; flex: none; border: 1px solid var(--bd); border-radius: 6px; padding: 12px; }
+.gd-side-title { font-size: 12px; font-weight: 600; color: var(--t-weak); margin-bottom: 8px; }
 .gd-building {
-  padding: 8px 12px; border-radius: 5px; border: 1px solid #d9d9d9; background: #fff;
+  padding: 8px 12px; border-radius: 5px; border: 1px solid var(--bd); background: #fff;
   font-size: 13px; color: #333; cursor: pointer; margin-bottom: 8px; transition: all 0.2s;
 }
 .gd-building:hover { border-color: var(--c-primary); color: var(--c-primary); }
 .gd-building.on { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
 .floor-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.floor-chip { padding: 3px 10px; border-radius: 3px; background: #f5f5f5; color: #666; font-size: 12px; cursor: pointer; user-select: none; }
+.floor-chip { padding: 3px 10px; border-radius: 3px; background: #F5F7FA; color: var(--t-weak); font-size: 12px; cursor: pointer; user-select: none; }
 .floor-chip:hover { color: var(--c-primary); }
 .floor-chip.on { background: var(--c-primary); color: #fff; }
 .gd-main { flex: 1; min-width: 0; }
 .legend-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-.lg-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 3px; background: #fafafa; border: 1px solid #f0f0f0; font-size: 12px; color: #666; }
+.lg-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 3px; background: #F5F7FA; border: 1px solid var(--bd); font-size: 12px; color: var(--t-weak); }
 .lg-chip i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
-.gd-filters { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px dashed #ebeef5; margin-top: 4px; }
-.gd-filter-label { font-size: 12px; color: #999; }
-.gd-range-text { font-size: 12px; color: #666; font-variant-numeric: tabular-nums; }
+.gd-filters { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px dashed var(--bd); margin-top: 4px; }
+.gd-filter-label { font-size: 12px; color: var(--t-weak); }
+.gd-range-text { font-size: 12px; color: var(--t-weak); font-variant-numeric: tabular-nums; }
 .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; margin-top: 10px; max-height: 320px; overflow-y: auto; }
-.room-card { border: 1px solid #ebeef5; border-top: 3px solid var(--c-primary); border-radius: 6px; padding: 8px 10px; background: #fff; transition: box-shadow 0.2s; }
-.room-card:hover { box-shadow: 0 2px 12px rgba(24, 144, 255, 0.2); }
+.room-card { border: 1px solid var(--bd); border-top: 3px solid var(--c-primary); border-radius: 6px; padding: 8px 10px; background: #fff; cursor: pointer; transition: box-shadow 0.2s; }
+.room-card:hover { box-shadow: 0 2px 12px rgba(22, 104, 220, 0.2); }
 .room-head { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
 .room-code { font-size: 12px; font-weight: 600; color: #333; margin-bottom: 3px; }
-.room-meta { font-size: 11px; color: #999; margin-bottom: 3px; }
+.room-meta { font-size: 12px; color: var(--t-weak); margin-bottom: 3px; }
 .room-area { font-size: 12px; color: var(--c-primary); font-weight: 600; }
 .room-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
 .gd-list-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -1451,19 +1558,19 @@ function saveZone() {
   display: flex; gap: 10px; padding: 0 12px 12px;
 }
 .geo-bottom-card {
-  flex: 1; background: #fff; border: 1px solid #e8e8e8;
+  flex: 1; background: #fff; border: 1px solid #E2E8F0;
   border-radius: 8px; padding: 10px 12px;
 }
-.gbc-title { font-size: 12px; font-weight: 600; color: #1890ff; margin-bottom: 6px; }
+.gbc-title { font-size: 12px; font-weight: 600; color: #1668DC; margin-bottom: 6px; }
 .gbc-chart { height: 160px; }
 
 /* 图例 */
 .geo-legend {
   position: absolute; right: 12px; bottom: 12px; z-index: 25;
   padding: 10px 12px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(6px);
-  border: 1px solid #e8e8e8; border-radius: 8px; color: #333; font-size: 12px;
+  border: 1px solid #E2E8F0; border-radius: 8px; color: #333; font-size: 12px;
 }
-.gl-title { font-weight: 600; color: #1890ff; margin-bottom: 6px; }
+.gl-title { font-weight: 600; color: #1668DC; margin-bottom: 6px; }
 .gl-item { display: flex; align-items: center; gap: 6px; line-height: 20px; }
 .gl-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 
@@ -1471,10 +1578,10 @@ function saveZone() {
 .geo-fullscreen {
   position: absolute; top: 52px; right: 12px; z-index: 30;
   width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-  background: rgba(255, 255, 255, 0.9); border: 1px solid #d9d9d9;
-  border-radius: 6px; color: #1890ff; cursor: pointer;
+  background: rgba(255, 255, 255, 0.9); border: 1px solid var(--bd);
+  border-radius: 6px; color: #1668DC; cursor: pointer;
 }
-.geo-fullscreen:hover { background: rgba(24, 144, 255, 0.1); }
+.geo-fullscreen:hover { background: rgba(22, 104, 220, 0.1); }
 
 /* 当 drillLevel=1 时全屏按钮位置调整 */
 </style>

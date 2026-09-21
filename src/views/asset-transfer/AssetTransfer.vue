@@ -11,17 +11,17 @@
 
     <el-card class="filter-bar" shadow="never">
       <el-row :gutter="16">
-        <el-col :span="5">
+        <el-col :span="7">
           <el-input v-model="filters.keyword" placeholder="资产名称/调拨编号" clearable prefix-icon="Search" />
         </el-col>
-        <el-col :span="4">
+        <el-col :span="5">
           <el-select v-model="filters.transferType" placeholder="调拨类型" clearable>
             <el-option label="划拨" value="划拨" />
             <el-option label="转让" value="转让" />
             <el-option label="置换" value="置换" />
           </el-select>
         </el-col>
-        <el-col :span="4">
+        <el-col :span="5">
           <el-select v-model="filters.approvalStatus" placeholder="审批状态" clearable>
             <el-option label="待审批" value="待审批" />
             <el-option label="已审批" value="已审批" />
@@ -40,7 +40,7 @@
       </el-row>
     </el-card>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="pagedData" border stripe>
         <el-table-column type="expand">
           <template #default="{ row }">
@@ -298,9 +298,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, MoreFilled } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useUserStore } from '../../store/user'
+import { useControlStore } from '../../store/control'
 
 const assetStore = useAssetStore()
 const userStore = useUserStore()
+const controlStore = useControlStore()
 // 调出/调入单位仍要能选其他公司（资产本来就是调给别人的），但列表只放行本公司参与的调拨
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
 const groups = ['城投集团', '产投集团', '水投集团', '领航公司']
@@ -309,7 +311,7 @@ const deptOptions = ['资产管理部', '运营管理部', '财务部', '综合�
 const personOptions = ['张伟', '李娜', '王磊', '赵敏', '孙强', '周芳']
 
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(15)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 
@@ -383,6 +385,14 @@ function saveRecord() {
   if (!form.value.assetName || !form.value.fromUnit || !form.value.toUnit || !form.value.transferType || !form.value.transferDate) {
     ElMessage.warning('请填写必填项')
     return
+  }
+  if (!isEdit.value) {
+    const asset = assetStore.visibleAssets.find(a => a.name === form.value.assetName)
+    const { ok, reasons } = controlStore.canTransfer(asset?.id || '')
+    if (!ok) {
+      ElMessageBox.alert(reasons.map(r => `· ${r}`).join('<br/>'), '该资产不可调拨', { type: 'warning', dangerouslyUseHTMLString: true })
+      return
+    }
   }
   if (isEdit.value) {
     const target = transferRecords.value.find(r => r.transferNo === form.value.transferNo)
@@ -530,6 +540,5 @@ function submitSaveTransfer() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
 .expand-grid { margin: 8px 16px 12px 48px; }
 </style>

@@ -37,7 +37,7 @@
         </el-button>
       </div>
     </div>
-    <el-card>
+    <el-card class="fill">
 
       <el-tabs v-model="activeTab">
         <el-tab-pane label="固定资产" name="asset">
@@ -718,14 +718,14 @@
           </template>
 
           <template v-else>
-          <el-row :gutter="12" class="kpi-row">
-            <el-col :span="4"><div class="kpi-card"><div class="kpi-label">盘点计划</div><div class="kpi-value">{{ inventoryPlans.length }}</div></div></el-col>
-            <el-col :span="4"><div class="kpi-card"><div class="kpi-label">进行中</div><div class="kpi-value" style="color:#e6a23c">{{ inventoryStats.running }}</div></div></el-col>
-            <el-col :span="4"><div class="kpi-card"><div class="kpi-label">应盘资产</div><div class="kpi-value">{{ inventoryStats.total }}</div></div></el-col>
-            <el-col :span="4"><div class="kpi-card"><div class="kpi-label">已盘</div><div class="kpi-value" style="color:#67c23a">{{ inventoryStats.counted }}</div></div></el-col>
-            <el-col :span="4"><div class="kpi-card"><div class="kpi-label">盘盈</div><div class="kpi-value" style="color:#409eff">{{ inventoryStats.profit }}</div></div></el-col>
-            <el-col :span="4"><div class="kpi-card"><div class="kpi-label">盘亏</div><div class="kpi-value" style="color:#f56c6c">{{ inventoryStats.loss }}</div></div></el-col>
-          </el-row>
+          <div class="grid-4 kpi-row">
+            <div class="kpi-card"><div class="kpi-label">盘点计划</div><div class="kpi-value num">{{ inventoryPlans.length }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">进行中</div><div class="kpi-value num" style="color:#e6a23c">{{ inventoryStats.running }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">应盘资产</div><div class="kpi-value num">{{ inventoryStats.total }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">已盘</div><div class="kpi-value num" style="color:#67c23a">{{ inventoryStats.counted }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">盘盈</div><div class="kpi-value num" style="color:var(--c-primary)">{{ inventoryStats.profit }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">盘亏</div><div class="kpi-value num" style="color:#f56c6c">{{ inventoryStats.loss }}</div></div>
+          </div>
 
           <el-table :data="inventoryPlans" style="width: 100%">
             <el-table-column prop="planNo" label="计划编号" width="130" />
@@ -765,12 +765,12 @@
 
         <!-- 折旧管理 -->
         <el-tab-pane label="折旧管理" name="depreciation">
-          <el-row :gutter="12" class="kpi-row">
-            <el-col :span="6"><div class="kpi-card"><div class="kpi-label">资产原值合计</div><div class="kpi-value">¥{{ depreciationSummary.original.toLocaleString() }}</div></div></el-col>
-            <el-col :span="6"><div class="kpi-card"><div class="kpi-label">累计折旧</div><div class="kpi-value" style="color:#e6a23c">¥{{ depreciationSummary.accumulated.toLocaleString() }}</div></div></el-col>
-            <el-col :span="6"><div class="kpi-card"><div class="kpi-label">资产净值</div><div class="kpi-value" style="color:#67c23a">¥{{ depreciationSummary.net.toLocaleString() }}</div></div></el-col>
-            <el-col :span="6"><div class="kpi-card"><div class="kpi-label">本月计提折旧</div><div class="kpi-value" style="color:#409eff">¥{{ depreciationSummary.monthly.toLocaleString() }}</div></div></el-col>
-          </el-row>
+          <div class="grid-4 kpi-row">
+            <div class="kpi-card"><div class="kpi-label">资产原值合计</div><div class="kpi-value num">¥{{ depreciationSummary.original.toLocaleString() }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">累计折旧</div><div class="kpi-value num" style="color:#e6a23c">¥{{ depreciationSummary.accumulated.toLocaleString() }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">资产净值</div><div class="kpi-value num" style="color:#67c23a">¥{{ depreciationSummary.net.toLocaleString() }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">本月计提折旧</div><div class="kpi-value num" style="color:var(--c-primary)">¥{{ depreciationSummary.monthly.toLocaleString() }}</div></div>
+          </div>
 
           <div class="section-title">
             <span>折旧方案配置</span>
@@ -1352,39 +1352,29 @@
           </el-col>
         </el-row>
         <div class="section-title"><span>折旧信息</span></div>
-        <el-row :gutter="16">
-          <el-col :span="8">
-            <el-form-item label="是否折旧">
-              <el-switch v-model="assetForm.depreciate" />
-            </el-form-item>
-          </el-col>
+        <div class="grid-3">
+          <el-form-item label="是否折旧">
+            <el-switch v-model="assetForm.depreciate" />
+          </el-form-item>
           <template v-if="assetForm.depreciate">
-            <el-col :span="8">
-              <el-form-item label="原值">
-                <el-input-number v-model="assetForm.original" :min="0" :precision="2" :controls="false" style="width:100%" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="购置方式">
-                <el-select v-model="assetForm.purchaseMode" placeholder="请选择购置方式" style="width:100%">
-                  <el-option v-for="m in purchaseModeOptions" :key="m" :label="m" :value="m" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="租赁使用期限(月)">
-                <el-input-number v-model="assetForm.leaseMonths" :min="1" :max="600" style="width:100%" />
-              </el-form-item>
-            </el-col>
-          </template>
-        </el-row>
-        <el-row :gutter="16" v-if="!assetEditId">
-          <el-col :span="8">
-            <el-form-item label="新增数量">
-              <el-input-number v-model="assetForm.quantity" :min="1" :max="99" />
+            <el-form-item label="原值">
+              <el-input-number v-model="assetForm.original" :min="0" :precision="2" :controls="false" style="width:100%" />
             </el-form-item>
-          </el-col>
-        </el-row>
+            <el-form-item label="购置方式">
+              <el-select v-model="assetForm.purchaseMode" placeholder="请选择购置方式" style="width:100%">
+                <el-option v-for="m in purchaseModeOptions" :key="m" :label="m" :value="m" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="租赁使用期限(月)">
+              <el-input-number v-model="assetForm.leaseMonths" :min="1" :max="600" style="width:100%" />
+            </el-form-item>
+          </template>
+        </div>
+        <div class="grid-3" v-if="!assetEditId">
+          <el-form-item label="新增数量">
+            <el-input-number v-model="assetForm.quantity" :min="1" :max="99" />
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="assetDialogVisible = false">取消</el-button>
@@ -1719,7 +1709,7 @@ const displayInboundList = computed(() => {
 })
 
 const inboundPage = ref(1)
-const inboundPageSize = ref(10)
+const inboundPageSize = ref(15)
 const inboundTotal = computed(() => filteredInboundList.value.length)
 
 // 派发/退库
@@ -1747,7 +1737,7 @@ const displayDispatchList = computed(() => {
 })
 
 const dispatchPage = ref(1)
-const dispatchPageSize = ref(10)
+const dispatchPageSize = ref(15)
 const dispatchTotal = computed(() => filteredDispatchList.value.length)
 
 // 借出使用
@@ -1775,7 +1765,7 @@ const displayBorrowList = computed(() => {
 })
 
 const borrowPage = ref(1)
-const borrowPageSize = ref(10)
+const borrowPageSize = ref(15)
 const borrowTotal = computed(() => filteredBorrowList.value.length)
 
 // 资产变更
@@ -1801,7 +1791,7 @@ const displayChangeList = computed(() => {
 })
 
 const changePage = ref(1)
-const changePageSize = ref(10)
+const changePageSize = ref(15)
 const changeTotal = computed(() => filteredChangeList.value.length)
 
 // 资产处置
@@ -1827,7 +1817,7 @@ const displayDisposeList = computed(() => {
 })
 
 const disposePage = ref(1)
-const disposePageSize = ref(10)
+const disposePageSize = ref(15)
 const disposeTotal = computed(() => filteredDisposeList.value.length)
 
 // 对话框
@@ -2665,27 +2655,27 @@ function buildDocs(prefix, count, names) {
 const docLists = reactive({
   inbound: {
     docs: buildDocs('RK', 8, ['联想笔记本采购入库', '办公设备季度补充入库', '车辆采购入库验收', '打印耗材批量入库', '会议设备采购入库']),
-    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 10
+    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   },
   alloc: {
     docs: buildDocs('FP', 7, ['新员工入职设备分配', '市场部办公设备派发', '项目部现场设备派发', '财务部电脑更新派发']),
-    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 10
+    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   },
   back: {
     docs: buildDocs('TK', 6, ['员工离职设备退库', '项目结束设备退库', '部门调整资产退库']),
-    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 10
+    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   },
   transfer: {
     docs: buildDocs('DB', 6, ['总部调拨至分公司', '仓库间资产调拨', '跨区域调拨支援项目']),
-    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 10
+    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   },
   repair: {
     docs: buildDocs('WX', 6, ['打印机故障送修', '车辆年度维修保养', '空调机组检修']),
-    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 10
+    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   },
   dispose: {
     docs: buildDocs('CZ', 7, ['超期设备报废处置', '盘亏资产核销处置', '旧家具变卖处置']),
-    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 10
+    search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   }
 })
 
@@ -2802,7 +2792,7 @@ const inventoryDocs = ref([
 
 const invSearch = reactive({ docNo: '', company: '', status: '', createRange: null, finishRange: null })
 const invPage = ref(1)
-const invPageSize = ref(10)
+const invPageSize = ref(15)
 watch(invSearch, () => { invPage.value = 1 }, { deep: true })
 
 const filteredInvDocs = computed(() => {
@@ -3055,7 +3045,7 @@ const assetList = ref([
 
 const assetSearch = reactive({ keyword: '', type: '', status: '' })
 const assetPage = ref(1)
-const assetPageSize = ref(10)
+const assetPageSize = ref(15)
 watch(assetSearch, () => { assetPage.value = 1 }, { deep: true })
 
 const filteredAssetList = computed(() => assetList.value.filter(a =>
@@ -3218,10 +3208,6 @@ const assetRecordData = {
 </script>
 
 <style scoped>
-.page-container {
-  height: 100%;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -3240,8 +3226,8 @@ const assetRecordData = {
 
 .kpi-card {
   background: #f7f9fc;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
+  border: 1px solid #E2E8F0;
+  border-radius: var(--r-md);
   padding: 12px 16px;
 }
 
@@ -3266,7 +3252,7 @@ const assetRecordData = {
   color: #303133;
   margin-bottom: 12px;
   padding-left: 8px;
-  border-left: 3px solid #409eff;
+  border-left: 3px solid var(--c-primary);
 }
 
 .progress-text {
@@ -3283,7 +3269,7 @@ const assetRecordData = {
 
 .plan-hint {
   font-size: 13px;
-  color: #409eff;
+  color: var(--c-primary);
 }
 
 .sub-tabs {
@@ -3312,7 +3298,7 @@ const assetRecordData = {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
 }
 
 .drawer-head {
@@ -3325,29 +3311,29 @@ const assetRecordData = {
 .drawer-title {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--t-main);
 }
 
 .drawer-sub {
   font-size: 12px;
-  color: #999;
-  margin-bottom: 14px;
+  color: var(--t-weak);
+  margin-bottom: 16px;
 }
 
 .qr-box {
   width: 132px;
   height: 132px;
   border: 1px dashed #d9d9d9;
-  border-radius: 6px;
+  border-radius: var(--r-md);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #999;
+  color: var(--t-weak);
   font-size: 12px;
-  margin-bottom: 14px;
-  background: #fafafa;
+  margin-bottom: 16px;
+  background: #F5F7FA;
 }
 
 .checklist-bar {
@@ -3366,11 +3352,11 @@ const assetRecordData = {
 
 .approval-node {
   font-weight: 600;
-  color: #333;
+  color: var(--t-main);
 }
 
 .approval-meta {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
 }
 </style>

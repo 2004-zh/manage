@@ -101,6 +101,7 @@
           <el-menu-item index="/ent/report-asset-stats">资产统计报表</el-menu-item>
           <el-menu-item index="/ent/report-operation-stats">经营分析报表</el-menu-item>
           <el-menu-item index="/ent/report-finance-stats">财务报表</el-menu-item>
+          <el-menu-item index="/ent/inventory">盘点清查</el-menu-item>
           <el-menu-item index="/ent/report-inventory-stats">盘点报表</el-menu-item>
           <el-menu-item index="/ent/report-repair-stats">维修统计报表</el-menu-item>
         </el-sub-menu>
@@ -134,6 +135,7 @@
           <el-menu-item index="/ent/system/log">操作日志</el-menu-item>
           <el-menu-item index="/ent/system/workflow">流程配置</el-menu-item>
           <el-menu-item index="/ent/system/params">系统参数</el-menu-item>
+          <el-menu-item index="/ent/system/message-center">消息中心</el-menu-item>
           <el-menu-item index="/ent/system/msg-template">消息模板</el-menu-item>
           <el-menu-item index="/ent/terminal-manage">终端管理</el-menu-item>
         </el-sub-menu>

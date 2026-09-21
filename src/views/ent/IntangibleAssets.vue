@@ -5,35 +5,27 @@
       <span class="page-subtitle">权证登记 · 价值评估 · 摊销管理 · 处置审批 · 权属维权</span>
     </div>
 
-    <el-row :gutter="16" style="margin-bottom:16px">
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#1890ff">{{ activeAssets.length }}</div>
-          <div class="kpi-label">有效无形资产(项)</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#52c41a">{{ totalValue }}<span class="kpi-unit">万元</span></div>
-          <div class="kpi-label">账面总价值</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#fa8c16">{{ expiringSoon }}</div>
-          <div class="kpi-label">一年内到期(项)</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#722ed1">{{ pendingDisposals.length }}</div>
-          <div class="kpi-label">待审批处置(件)</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="grid-4">
+      <el-card shadow="hover">
+        <div class="kpi-value" style="color:var(--c-primary)">{{ activeAssets.length }}</div>
+        <div class="kpi-label">有效无形资产(项)</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value" style="color:var(--c-success)">{{ totalValue }}<span class="kpi-unit">万元</span></div>
+        <div class="kpi-label">账面总价值</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value" style="color:var(--c-warning)">{{ expiringSoon }}</div>
+        <div class="kpi-label">一年内到期(项)</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value" style="color:#722ed1">{{ pendingDisposals.length }}</div>
+        <div class="kpi-label">待审批处置(件)</div>
+      </el-card>
+    </div>
 
     <el-card shadow="never">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
         <el-input v-model="iaFilter.keyword" placeholder="资产名称/资产编号/管理人" clearable style="width:220px" @keyup.enter="doIaSearch">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
@@ -111,7 +103,7 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination v-model:current-page="iaPage" v-model:page-size="iaSize" :total="filteredAssets.length" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="iaPage = 1" />
+            <el-pagination v-model:current-page="iaPage" v-model:page-size="iaSize" :total="filteredAssets.length" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="iaPage = 1" />
           </div>
         </el-tab-pane>
 
@@ -227,7 +219,7 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination v-model:current-page="rbPage" v-model:page-size="rbSize" :total="filteredRightsBiz.length" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="rbPage = 1" />
+            <el-pagination v-model:current-page="rbPage" v-model:page-size="rbSize" :total="filteredRightsBiz.length" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="rbPage = 1" />
           </div>
         </el-tab-pane>
 
@@ -285,7 +277,7 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination v-model:current-page="dpPage" v-model:page-size="dpSize" :total="filteredDisposals.length" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="dpPage = 1" />
+            <el-pagination v-model:current-page="dpPage" v-model:page-size="dpSize" :total="filteredDisposals.length" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="dpPage = 1" />
           </div>
         </el-tab-pane>
 
@@ -319,7 +311,7 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination v-model:current-page="arPage" v-model:page-size="arSize" :total="filteredArchives.length" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="arPage = 1" />
+            <el-pagination v-model:current-page="arPage" v-model:page-size="arSize" :total="filteredArchives.length" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="arPage = 1" />
           </div>
         </el-tab-pane>
 
@@ -342,7 +334,7 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination v-model:current-page="tyPage" v-model:page-size="tySize" :total="typeList.length" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="tyPage = 1" />
+            <el-pagination v-model:current-page="tyPage" v-model:page-size="tySize" :total="typeList.length" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="tyPage = 1" />
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -373,7 +365,7 @@
           <el-descriptions-item label="有效期至">{{ current.validUntil }}</el-descriptions-item>
           <el-descriptions-item label="账面原值">{{ current.value }} 万元</el-descriptions-item>
           <el-descriptions-item label="累计摊销">
-            <span style="color:#f56c6c">{{ current.amortizeLogs.reduce((s, l) => s + l.amount, 0).toFixed(2) }} 万元</span>
+            <span style="color:var(--c-danger)">{{ current.amortizeLogs.reduce((s, l) => s + l.amount, 0).toFixed(2) }} 万元</span>
           </el-descriptions-item>
           <el-descriptions-item label="摊销方式">{{ current.amortizeMethod }}</el-descriptions-item>
           <el-descriptions-item label="状态">
@@ -395,14 +387,14 @@
           </el-tab-pane>
           <el-tab-pane label="摊销记录" name="amortize">
             <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:13px;color:#666">摊销方式：{{ current.amortizeMethod }} | 累计摊销：{{ current.amortizeLogs.reduce((s, l) => s + l.amount, 0).toFixed(2) }} 万元</span>
+              <span style="font-size:13px;color:var(--t-sub)">摊销方式：{{ current.amortizeMethod }} | 累计摊销：{{ current.amortizeLogs.reduce((s, l) => s + l.amount, 0).toFixed(2) }} 万元</span>
               <el-button v-if="current.status === '使用中'" type="primary" size="small" @click="openAmortize(current)">新增摊销</el-button>
             </div>
             <el-table :data="current.amortizeLogs" border size="small" v-if="current.amortizeLogs.length">
               <el-table-column prop="period" label="摊销期间" width="160" />
               <el-table-column prop="amount" label="摊销金额(万元)" width="120" align="right">
                 <template #default="{ row }">
-                  <span style="color:#f56c6c">-{{ row.amount.toFixed(2) }}</span>
+                  <span style="color:var(--c-danger)">-{{ row.amount.toFixed(2) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="bookValue" label="摊后账面价值(万元)" width="140" align="right" />
@@ -418,7 +410,7 @@
           </el-tab-pane>
           <el-tab-pane label="权属维权" name="rights">
             <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:13px;color:#666">续展 · 变更 · 许可授权</span>
+              <span style="font-size:13px;color:var(--t-sub)">续展 · 变更 · 许可授权</span>
               <el-button v-if="current.status === '使用中'" type="primary" size="small" @click="openRightsAction(current)">新增记录</el-button>
             </div>
             <el-table :data="current.rightsLogs" border size="small" v-if="current.rightsLogs.length">
@@ -685,7 +677,7 @@
           <el-timeline>
             <el-timeline-item v-for="(log, i) in currentDisposal.approvalLogs" :key="i" :timestamp="log.time" :type="log.type === '通过' ? 'success' : log.type === '驳回' ? 'danger' : 'primary'">
               {{ log.action }} — {{ log.user }}
-              <span v-if="log.comment" style="color:#999;margin-left:8px">（{{ log.comment }}）</span>
+              <span v-if="log.comment" style="color:var(--t-weak);margin-left:8px">（{{ log.comment }}）</span>
             </el-timeline-item>
           </el-timeline>
         </div>
@@ -694,7 +686,7 @@
 
     <el-drawer v-model="showProfile" title="资产详情" size="880px">
       <template v-if="profile">
-        <div style="display:flex;gap:16px;margin-bottom:14px">
+        <div style="display:flex;gap:16px;margin-bottom:12px">
           <div class="qr-box">
             <div class="cert-qr big">
               <div v-for="(cell, i) in qrFor(profile.certNo)" :key="i" class="qr-cell" :class="{ dark: cell }"></div>
@@ -733,7 +725,7 @@
           <div class="cell"><div class="label">有效期</div><div class="value">{{ profile.rightsValid }}</div></div>
           <div class="cell"><div class="label">权属占有类型</div><div class="value">{{ profile.holdType }}</div></div>
         </div>
-        <el-table :data="profile.holders" border size="small" style="margin-bottom:14px">
+        <el-table :data="profile.holders" border size="small" style="margin-bottom:12px">
           <el-table-column prop="unit" label="所属人单位" min-width="280" />
           <el-table-column prop="ratio" label="权属占比(%)" width="140" align="right">
             <template #default="{ row }">{{ row.ratio }}%</template>
@@ -789,7 +781,7 @@
             <el-table :data="pagedOpRows('amortize')" border size="small">
               <el-table-column prop="period" label="摊销期间" width="170" />
               <el-table-column prop="amount" label="摊销金额(万元)" width="130" align="right">
-                <template #default="{ row }"><span style="color:#f56c6c">-{{ row.amount.toFixed(2) }}</span></template>
+                <template #default="{ row }"><span style="color:var(--c-danger)">-{{ row.amount.toFixed(2) }}</span></template>
               </el-table-column>
               <el-table-column prop="bookValue" label="摊后账面价值(万元)" width="150" align="right" />
               <el-table-column prop="method" label="摊销方法" width="100" />
@@ -1042,8 +1034,8 @@
         </el-form-item>
         <el-form-item label="已添加流程">
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <el-tag v-for="(f, i) in approvalRow?.approvals || []" :key="i" closable @close="approvalRow.approvals.splice(i, 1)">{{ f }}</el-tag>
-            <span v-if="!approvalRow?.approvals?.length" style="color:#999;font-size:12px">尚未添加审批流程</span>
+            <el-tag v-for="(f, i) in approvalDraft" :key="i" closable @close="approvalDraft.splice(i, 1)">{{ f }}</el-tag>
+            <span v-if="!approvalDraft.length" style="color:var(--t-weak);font-size:12px">尚未添加审批流程</span>
           </div>
         </el-form-item>
       </el-form>
@@ -1070,7 +1062,7 @@
         <div class="section-title">审批流程</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <el-tag v-for="(f, i) in dpDetail.approvals" :key="i" type="success">{{ f }}</el-tag>
-          <span v-if="!dpDetail.approvals?.length" style="color:#999;font-size:12px">尚未设置审批流程</span>
+          <span v-if="!dpDetail.approvals?.length" style="color:var(--t-weak);font-size:12px">尚未设置审批流程</span>
         </div>
       </template>
     </el-dialog>
@@ -1094,8 +1086,26 @@
 
 <script setup>
 import { ref, computed, reactive, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Download, Picture, MoreFilled } from '@element-plus/icons-vue'
+import { useSpecialAssetStore } from '../../store/specialAsset'
+
+const store = useSpecialAssetStore()
+const {
+  intangibleAssets: assets,
+  intangibleRightsBiz: rightsBizList,
+  intangibleDisposals: disposalList,
+  intangibleArchives: archiveList,
+  intangibleTypes: typeList,
+} = storeToRefs(store)
+
+/** store 统一返回 { ok, msg }：校验规则与留痕都在 store 内，页面只负责语气 */
+function feedback(res) {
+  if (!res) return false
+  ElMessage({ type: res.ok ? 'success' : 'warning', message: res.msg })
+  return res.ok
+}
 
 const categories = ['专利权', '商标权', '著作权', '土地使用权', '特许经营权', '商誉']
 const activeTab = ref('专利权')
@@ -1109,33 +1119,6 @@ const showDisposal = ref(false)
 const showDisposalDetail = ref(false)
 const current = ref(null)
 const currentDisposal = ref(null)
-
-function makeAsset(overrides) {
-  return {
-    amortizeMethod: '直线法',
-    patentType: '',
-    summary: '',
-    receiveLogs: [],
-    evalLogs: [],
-    useLogs: [],
-    amortizeLogs: [],
-    rightsLogs: [],
-    transferLogs: [],
-    disposalLogs: [],
-    ...overrides,
-  }
-}
-
-const assets = ref([
-  makeAsset({ category: '专利权', name: '一种纺织面料节水印染装置', certNo: 'ZL2026-0001', owner: '长乐区国有资产投资经营有限公司', regNo: 'ZL202320XXXXXX5.6', regDate: '2023-06-15', validUntil: '2033-06-14', value: 320, status: '使用中', ownershipType: '国有', acquireWay: '自行研发', amortizeMethod: '直线法', patentType: '发明专利', summary: '涉及纺织面料印染领域的节水技术', coOwner: '', otherRights: '', receiveLogs: [{ time: '2023-06-20', text: '完成专利证书接收登记' }], evalLogs: [{ time: '2025-06-30', text: '福建中兴评估：评估价值 320 万元' }], useLogs: [{ time: '2024-01-10', text: '许可鸿运纺织使用该专利，年许可费 12 万元' }], amortizeLogs: [{ period: '2023-07 ~ 2024-06', amount: 32, bookValue: 288, method: '直线法', remark: '年度摊销（10年期限）' }, { period: '2024-07 ~ 2025-06', amount: 32, bookValue: 256, method: '直线法', remark: '年度摊销' }], rightsLogs: [{ type: '许可', date: '2024-01-10', content: '许可鸿运纺织使用该专利', target: '福建省长乐市鸿运纺织有限公司', validUntil: '2027-01-09', fee: 12 }], transferLogs: [] }),
-  makeAsset({ category: '专利权', name: '智能停车道闸控制系统', certNo: 'ZL2026-0002', owner: '长乐区国有资产投资经营有限公司', regNo: 'ZL202420XXXXXX8.2', regDate: '2024-09-01', validUntil: '2034-08-31', value: 85, status: '使用中', ownershipType: '国有', acquireWay: '外购', amortizeMethod: '直线法', patentType: '实用新型', summary: '停车场智能道闸控制技术', coOwner: '', otherRights: '', receiveLogs: [{ time: '2024-09-05', text: '外购专利完成权属变更登记' }], evalLogs: [], useLogs: [{ time: '2025-03-01', text: '应用于城西停车场智能化改造' }], amortizeLogs: [{ period: '2024-10 ~ 2025-09', amount: 8.5, bookValue: 76.5, method: '直线法', remark: '年度摊销（10年期限）' }], rightsLogs: [], transferLogs: [], disposalLogs: [] }),
-  makeAsset({ category: '商标权', name: '"长乐城投"服务商标', certNo: 'SB2026-0001', owner: '长乐区国有资产投资经营有限公司', regNo: '第58XXXX21号', regDate: '2022-03-14', validUntil: '2032-03-13', value: 150, status: '使用中', ownershipType: '国有', acquireWay: '自行研发', amortizeMethod: '直线法', coOwner: '', otherRights: '', receiveLogs: [{ time: '2022-03-20', text: '商标注册证归档登记' }], evalLogs: [{ time: '2025-12-31', text: '年度评估：评估价值 150 万元' }], useLogs: [{ time: '2022-04-01', text: '用于公司对外品牌宣传' }], amortizeLogs: [{ period: '2022-04 ~ 2023-03', amount: 15, bookValue: 135, method: '直线法', remark: '年度摊销（10年期限）' }, { period: '2023-04 ~ 2024-03', amount: 15, bookValue: 120, method: '直线法', remark: '年度摊销' }, { period: '2024-04 ~ 2025-03', amount: 15, bookValue: 105, method: '直线法', remark: '年度摊销' }], rightsLogs: [{ type: '续展', date: '2025-12-01', content: '商标续展申请已提交，有效期至2042年', target: '', validUntil: '2042-03-13' }], transferLogs: [], disposalLogs: [] }),
-  makeAsset({ category: '著作权', name: '资产云管理平台软件著作权', certNo: 'ZR2026-0001', owner: '长乐区国有资产投资经营有限公司', regNo: '2025SR0XXXX12', regDate: '2025-02-18', validUntil: '2075-02-17', value: 60, status: '使用中', ownershipType: '国有', acquireWay: '自行研发', amortizeMethod: '直线法', coOwner: '', otherRights: '', receiveLogs: [{ time: '2025-02-20', text: '软著证书接收登记' }], evalLogs: [], useLogs: [{ time: '2025-03-01', text: '内部系统上线使用' }], amortizeLogs: [], rightsLogs: [], transferLogs: [], disposalLogs: [] }),
-  makeAsset({ category: '土地使用权', name: '航城片区工业用地（宗地号350112-08）', certNo: 'TD2026-0001', owner: '长乐区国有资产投资经营有限公司', regNo: '闽(2021)长乐区不动产权第00XXXX号', regDate: '2021-05-20', validUntil: '2071-05-19', value: 4200, status: '使用中', ownershipType: '国有出让', acquireWay: '划转', amortizeMethod: '不摊销', coOwner: '', otherRights: '已抵押（工行长乐支行，最高额2000万元）', receiveLogs: [{ time: '2021-06-01', text: '完成划转接收，权证入库' }], evalLogs: [{ time: '2026-01-15', text: '中兴评估：市场价值 4600 万元' }], useLogs: [{ time: '2022-01-01', text: '出租给鸿运纺织建设厂房，年租金 45 万元' }], amortizeLogs: [], rightsLogs: [], transferLogs: [], disposalLogs: [] }),
-  makeAsset({ category: '特许经营权', name: '城区公共停车场特许经营权', certNo: 'TX2026-0001', owner: '长乐区国有资产投资经营有限公司', regNo: '长政综[2024]XX号', regDate: '2024-01-10', validUntil: '2044-01-09', value: 1800, status: '使用中', ownershipType: '国有', acquireWay: '政府授权', amortizeMethod: '直线法', coOwner: '', otherRights: '', receiveLogs: [{ time: '2024-01-15', text: '区政府授权文件归档' }], evalLogs: [{ time: '2025-06-30', text: '收益法评估：1800 万元' }], useLogs: [{ time: '2024-03-01', text: '委托物业公司运营12处停车场' }], amortizeLogs: [{ period: '2024-01 ~ 2024-12', amount: 90, bookValue: 1710, method: '直线法', remark: '年度摊销（20年期限）' }, { period: '2025-01 ~ 2025-12', amount: 90, bookValue: 1620, method: '直线法', remark: '年度摊销' }], rightsLogs: [], transferLogs: [], disposalLogs: [] }),
-  makeAsset({ category: '特许经营权', name: '农贸市场摊位经营权', certNo: 'TX2026-0002', owner: '长乐区国有资产投资经营有限公司', regNo: '长国资[2025]XX号', regDate: '2025-04-01', validUntil: '2035-03-31', value: 260, status: '闲置', ownershipType: '国有', acquireWay: '政府授权', amortizeMethod: '直线法', coOwner: '', otherRights: '', receiveLogs: [{ time: '2025-04-05', text: '授权文件接收' }], evalLogs: [], useLogs: [], amortizeLogs: [], rightsLogs: [], transferLogs: [], disposalLogs: [] }),
-  makeAsset({ category: '商誉', name: '并购鑫源物业形成的商誉', certNo: 'SY2026-0001', owner: '长乐区国有资产投资经营有限公司', regNo: '—', regDate: '2023-12-31', validUntil: '—', value: 500, status: '已注销', ownershipType: '国有', acquireWay: '并购', amortizeMethod: '不摊销', coOwner: '', otherRights: '', receiveLogs: [{ time: '2024-01-10', text: '并购完成，商誉入账登记' }], evalLogs: [{ time: '2025-12-31', text: '减值测试：可收回金额低于账面价值 500 万元' }], useLogs: [], amortizeLogs: [], rightsLogs: [], transferLogs: [{ time: '2026-06-30', text: '全额计提减值，商誉注销' }], disposalLogs: [{ applyDate: '2026-06-15', type: '核销', reason: '减值测试可收回金额低于账面价值', amount: 500, status: '已生效', applicant: '张会计', approvalLogs: [{ time: '2026-06-15', action: '提交处置申请', user: '张会计', type: '提交' }, { time: '2026-06-20', action: '部门审核通过', user: '李经理', type: '通过' }, { time: '2026-06-25', action: '总经理审批通过', user: '王总', type: '通过', comment: '同意核销' }, { time: '2026-06-30', action: '处置生效，资产已注销', user: '系统', type: '生效' }] }] }),
-])
 
 const activeAssets = computed(() => assets.value.filter(a => a.status !== '已注销'))
 const certAssets = computed(() => assets.value.filter(a => a.status !== '已注销'))
@@ -1211,6 +1194,7 @@ function qrFor(seedStr) {
   return cells
 }
 
+/* ==================== 登记：权证要素登记 / 资产要素保存 ==================== */
 const createForm = ref({})
 function openCreate() {
   createForm.value = { category: categories.includes(activeTab.value) ? activeTab.value : categories[0], name: '', certNo: '', regNo: '', owner: '长乐区国有资产投资经营有限公司', regDate: '', validUntil: '', value: 0, acquireWay: '自行研发', amortizeMethod: '直线法', patentType: '', summary: '' }
@@ -1218,59 +1202,10 @@ function openCreate() {
 }
 
 function saveCreate() {
-  const f = createForm.value
-  if (!f.name || !f.certNo || !f.owner || !f.regDate || !f.validUntil) {
-    ElMessage.warning('请填写完整的登记信息')
-    return
-  }
-  if (assets.value.some(a => a.certNo === f.certNo)) {
-    ElMessage.warning('证书编号已存在')
-    return
-  }
-  const today0 = new Date().toISOString().slice(0, 10)
-  const idx0 = assets.value.length + 1
-  assets.value.unshift(makeAsset({
-    ...f,
-    status: '闲置',
-    ownershipType: '国有',
-    coOwner: '',
-    otherRights: '',
-    receiveLogs: [{ time: today0, text: '完成权证接收登记' }],
-    company: f.owner,
-    assetNo: `WC2026-${String(idx0).padStart(4, '0')}`,
-    manager: managers[0],
-    region: ['福建省', '福州市', '长乐区', '航城街道'],
-    regionText: '福建省福州市长乐区航城街道',
-    lnglat: '',
-    initValue: f.value,
-    createTime: nowTime(),
-    updateTime: nowTime(),
-    attachments: [],
-    patentNo: f.patentType ? f.regNo : '—',
-    patentOwner: f.owner,
-    patentField: '—',
-    applyDate: f.regDate,
-    grantDate: f.regDate,
-    claimSummary: f.summary || '',
-    desc: f.summary || '',
-    rightsNo: `QS2026-${String(idx0).padStart(4, '0')}`,
-    rightsValid: f.validUntil,
-    holdType: '单独所有',
-    rightsRatioType: '单独所有',
-    acquireDate: f.regDate,
-    holders: [{ unit: f.owner, ratio: 100 }],
-    opLogs: {
-      receive: [{ source: f.acquireWay, sourceParty: f.owner, docNo: f.regNo || '—', acquireDate: f.regDate, cost: f.value, receiveDate: today0, handler: managers[0], note: '完成权证接收登记' }],
-      evaluate: [],
-      use: [],
-      amortize: [],
-      ownership: [],
-    },
-  }))
-  showCreate.value = false
-  ElMessage.success('无形资产登记成功')
+  if (feedback(store.registerIntangibleAsset(createForm.value))) showCreate.value = false
 }
 
+/* ==================== 价值评估 ==================== */
 const evalForm = ref({ agency: '', evalValue: 0, baseDate: '' })
 function openEvaluate(row) {
   current.value = row
@@ -1279,20 +1214,11 @@ function openEvaluate(row) {
 }
 
 function submitEvaluate() {
-  const row = current.value
-  if (!evalForm.value.evalValue) {
-    ElMessage.warning('请填写评估价值')
-    return
-  }
-  row.evalLogs.push({
-    time: evalForm.value.baseDate,
-    text: `${evalForm.value.agency}：评估价值 ${evalForm.value.evalValue} 万元`
-  })
-  row.value = evalForm.value.evalValue
-  showEvaluate.value = false
-  ElMessage.success('评估记录已保存，账面价值已更新')
+  if (!current.value) return
+  if (feedback(store.evaluateIntangible(current.value.uid, evalForm.value))) showEvaluate.value = false
 }
 
+/* ==================== 摊销 ==================== */
 const amortizeForm = ref({ period: [], amount: 0, method: '直线法', remark: '' })
 function openAmortize(row) {
   current.value = row
@@ -1301,33 +1227,11 @@ function openAmortize(row) {
 }
 
 function submitAmortize() {
-  const row = current.value
-  const f = amortizeForm.value
-  if (!f.period || f.period.length < 2) {
-    ElMessage.warning('请选择摊销期间')
-    return
-  }
-  if (!f.amount || f.amount <= 0) {
-    ElMessage.warning('请填写摊销金额')
-    return
-  }
-  const totalAmortized = row.amortizeLogs.reduce((s, l) => s + l.amount, 0)
-  if (totalAmortized + f.amount > row.value) {
-    ElMessage.warning('摊销金额超出账面价值')
-    return
-  }
-  const bookValue = +(row.value - totalAmortized - f.amount).toFixed(2)
-  row.amortizeLogs.push({
-    period: `${f.period[0]} ~ ${f.period[1]}`,
-    amount: f.amount,
-    bookValue,
-    method: f.method,
-    remark: f.remark || `${f.period[0]}至${f.period[1]}摊销`,
-  })
-  showAmortize.value = false
-  ElMessage.success('摊销记录已保存')
+  if (!current.value) return
+  if (feedback(store.amortizeIntangible(current.value.uid, amortizeForm.value))) showAmortize.value = false
 }
 
+/* ==================== 权属维权：续展 / 变更 / 许可 ==================== */
 const rightsForm = ref({ type: '续展', date: '', content: '', target: '', validUntil: '', fee: 0 })
 const rightsContentPlaceholder = computed(() => {
   const map = { '续展': '续展说明，如：商标续展至XX年', '变更': '变更内容说明', '许可': '许可内容说明，如：授权XX公司使用' }
@@ -1341,51 +1245,23 @@ function openRightsAction(row) {
 }
 
 function submitRightsAction() {
-  const row = current.value
-  const f = rightsForm.value
-  if (!f.date || !f.content) {
-    ElMessage.warning('请填写日期和内容说明')
-    return
-  }
-  if (f.type === '许可' && !f.target) {
-    ElMessage.warning('许可类型需填写许可对象')
-    return
-  }
-  row.rightsLogs.push({
-    type: f.type,
-    date: f.date,
-    content: f.content,
-    target: f.target || '',
-    validUntil: f.validUntil || '',
-    fee: f.fee || 0,
-  })
-  if (f.type === '许可') {
-    row.useLogs.push({ time: f.date, text: `许可${f.target}使用，费用 ${f.fee} 万元/年` })
-  }
-  if (f.type === '续展' && f.validUntil) {
-    row.validUntil = f.validUntil
-    row.transferLogs.push({ time: f.date, text: `权证续展，新有效期至 ${f.validUntil}` })
-  }
-  showRightsAction.value = false
-  ElMessage.success('权属维权记录已保存')
+  if (!current.value) return
+  if (feedback(store.rightsActionIntangible(current.value.uid, rightsForm.value))) showRightsAction.value = false
 }
 
 function suspendAsset(row) {
   ElMessageBox.confirm(`确认停用"${row.name}"？停用后将暂停该资产的一切运营操作。`, '停用确认', { type: 'warning' }).then(() => {
-    row.status = '已停用'
-    row.transferLogs.push({ time: new Date().toISOString().slice(0, 10), text: '资产停用' })
-    ElMessage.success('资产已停用')
+    feedback(store.suspendIntangible(row.uid))
   }).catch(() => {})
 }
 
 function resumeAsset(row) {
   ElMessageBox.confirm(`确认重新启用"${row.name}"？`, '启用确认', { type: 'info' }).then(() => {
-    row.status = '使用中'
-    row.transferLogs.push({ time: new Date().toISOString().slice(0, 10), text: '资产重新启用' })
-    ElMessage.success('资产已重新启用')
+    feedback(store.resumeIntangible(row.uid))
   }).catch(() => {})
 }
 
+/* ==================== 处置申请与审批 ==================== */
 const disposalForm = ref({ type: '转让', reason: '', amount: 0, receiver: '' })
 function openDisposal(row) {
   current.value = row
@@ -1394,29 +1270,8 @@ function openDisposal(row) {
 }
 
 function submitDisposal() {
-  const row = current.value
-  const f = disposalForm.value
-  if (!f.reason) {
-    ElMessage.warning('请填写处置原因')
-    return
-  }
-  const today = new Date().toISOString().slice(0, 10)
-  const record = {
-    applyDate: today,
-    type: f.type,
-    reason: f.reason,
-    amount: f.amount || null,
-    receiver: f.receiver || '',
-    status: '审批中',
-    applicant: '当前用户',
-    approvalLogs: [
-      { time: today, action: '提交处置申请', user: '当前用户', type: '提交' },
-    ],
-  }
-  row.disposalLogs.push(record)
-  row.status = '处置中'
-  showDisposal.value = false
-  ElMessage.success('处置申请已提交审批')
+  if (!current.value) return
+  if (feedback(store.disposeIntangible(current.value.uid, disposalForm.value))) showDisposal.value = false
 }
 
 function viewDisposal(row) {
@@ -1426,29 +1281,19 @@ function viewDisposal(row) {
 
 function approveDisposal(row) {
   ElMessageBox.confirm(`确认通过"${row.assetName}"的${row.type}处置申请？`, '审批确认', { type: 'warning' }).then(() => {
-    const today = new Date().toISOString().slice(0, 10)
-    row.status = '已通过'
-    row.approvalLogs.push({ time: today, action: '审批通过', user: '审批人', type: '通过', comment: '同意处置' })
-    row.approvalLogs.push({ time: today, action: '处置生效', user: '系统', type: '生效' })
-    const asset = assets.value.find(a => a.certNo === row.certNo)
-    if (asset) {
-      asset.status = '已注销'
-      asset.transferLogs.push({ time: today, text: `${row.type}处置完成，资产注销` })
-    }
-    ElMessage.success('处置审批已通过，资产已注销')
+    feedback(store.approveIntangibleDisposal(row.certNo, row))
   }).catch(() => {})
 }
 
 function transferOwnership() {
+  if (!current.value) return
+  const row = current.value
   ElMessageBox.prompt('请输入变更后权属人名称', '权属变更', { inputPlaceholder: '如：长乐区某国有企业' }).then(({ value }) => {
-    const row = current.value
-    row.transferLogs.push({ time: new Date().toISOString().slice(0, 10), text: `权属由"${row.owner}"变更为"${value}"` })
-    row.rightsLogs.push({ type: '变更', date: new Date().toISOString().slice(0, 10), content: `权属人由"${row.owner}"变更为"${value}"`, target: value, validUntil: '' })
-    row.owner = value
-    ElMessage.success('权属变更已记录')
+    feedback(store.transferIntangibleOwnership(row.uid, value))
   }).catch(() => {})
 }
 
+/* ==================== 档案下载与台账导出（纯文件生成，不改状态） ==================== */
 function downloadArchive(type) {
   const a = current.value
   if (!a) return
@@ -1506,6 +1351,21 @@ function exportCategory() {
   ElMessage.success(`${activeTab.value}台账导出成功`)
 }
 
+function downloadTemplate() {
+  const headers = ['资产类别', '名称', '证书编号', '注册号', '权属人', '登记日期', '有效期至', '账面价值(万元)', '取得方式', '摊销方式', '资产说明']
+  const example = ['专利权', 'XX专利权', 'ZL2026-XXXX', 'ZL20XXXXXXXXX', 'XX有限公司', '2026-01-01', '2036-01-01', '100', '自行研发', '直线法', '专利简要说明']
+  const csv = '\uFEFF' + [headers.join(','), example.join(',')].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `无形资产导入模板_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success('无形资产导入模板下载成功')
+}
+
+/* ==================== 筛选与分页（页面态） ==================== */
 const companyOptions = ['长乐区国有资产投资经营有限公司', '长乐城投建设有限公司', '长乐区鑫源物业服务有限公司', '福建海峡新能源科技有限公司', '长乐文旅发展有限公司']
 const acquireWays = ['自行研发', '外购', '划转', '出资入股', '政府授权', '并购', '接收']
 const disposeTypes = ['转让', '报废', '置换', '捐赠', '核销']
@@ -1529,152 +1389,13 @@ const regionOptions = [
 const iaFilter = reactive({ keyword: '', company: '', status: '', acquireWay: '' })
 const iaQuery = reactive({ keyword: '', company: '', status: '', acquireWay: '' })
 const iaPage = ref(1)
-const iaSize = ref(10)
+const iaSize = ref(15)
 function doIaSearch() {
   Object.assign(iaQuery, iaFilter)
   iaPage.value = 1
 }
 
-function nowTime() {
-  const d = new Date()
-  const p = n => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
-}
-
-const managers = ['林志强', '王芳', '陈志明', '周琳']
-assets.value.forEach((a, i) => {
-  a.company = a.owner
-  a.assetNo = `WC2026-${String(i + 1).padStart(4, '0')}`
-  a.manager = managers[i % managers.length]
-  a.region = ['福建省', '福州市', '长乐区', '航城街道']
-  a.regionText = a.region.join('')
-  a.lnglat = ''
-  a.initValue = a.value
-  a.createTime = `${a.regDate} 09:30`
-  a.updateTime = '2026-08-16 15:42'
-  a.attachments = [{ name: `${a.name}-权证扫描件.pdf` }]
-  a.patentNo = a.category === '专利权' ? a.regNo : '—'
-  a.patentOwner = a.owner
-  a.patentType = a.patentType || ''
-  a.patentField = a.category === '专利权' ? (a.summary || '节能环保技术') : '—'
-  a.applyDate = a.regDate
-  a.grantDate = a.regDate
-  a.claimSummary = a.summary || ''
-  a.desc = a.summary || ''
-  a.rightsNo = `QS2026-${String(i + 1).padStart(4, '0')}`
-  a.rightsValid = a.validUntil
-  a.holdType = '单独所有'
-  a.rightsRatioType = '单独所有'
-  a.acquireDate = a.regDate
-  a.holders = [{ unit: a.owner, ratio: 100 }]
-  a.opLogs = {
-    receive: (a.receiveLogs.length ? a.receiveLogs : [{ time: a.regDate, text: '资产接收入库' }]).map(l => ({
-      source: a.acquireWay,
-      sourceParty: a.acquireWay === '政府授权' ? '长乐区人民政府' : a.acquireWay === '划转' ? '长乐区国资办' : a.owner,
-      docNo: a.regNo,
-      acquireDate: a.regDate,
-      cost: a.initValue,
-      receiveDate: l.time,
-      handler: a.manager,
-      note: l.text,
-    })),
-    evaluate: a.evalLogs.map(l => ({ source: '委托评估', sourceParty: '福建中兴资产评估有限公司', date: l.time, note: l.text })),
-    use: a.useLogs.map(l => ({ source: '经营使用', useParty: a.owner, date: l.time, note: l.text })),
-    amortize: a.amortizeLogs,
-    ownership: a.rightsLogs.map((l, j) => ({ type: l.type, holder: l.target || a.owner, ratio: 100, date: l.date, applyNo: `SQ2026${String(j + 1).padStart(6, '0')}`, status: '审批通过' })),
-  }
-})
-
-const showSaveAsset = ref(false)
-const saveForm = ref({})
-function openSaveAsset() {
-  saveForm.value = { company: companyOptions[0], name: '', region: [], lnglat: '', category: categories[0], initValue: 0, acquireWay: '自行研发', materialNo: '', manager: '', useTerm: [], patentNo: '', patentType: '', applyDate: '', grantDate: '', patentOwner: '', techField: '', claimSummary: '', desc: '' }
-  showSaveAsset.value = true
-}
-
-function fetchLngLat() {
-  saveForm.value.lnglat = '119.523456,25.962345'
-  ElMessage.success('已获取地图经纬度')
-}
-
-function submitSaveAsset() {
-  const f = saveForm.value
-  if (!f.name || !f.company) {
-    ElMessage.warning('请填写资产名称与所属公司')
-    return
-  }
-  const today = new Date().toISOString().slice(0, 10)
-  const idx = assets.value.length + 1
-  const a = makeAsset({
-    category: f.category,
-    name: f.name,
-    certNo: f.patentNo || `ZC${today.slice(0, 4)}-${String(idx).padStart(4, '0')}`,
-    owner: f.company,
-    regNo: f.materialNo || '—',
-    regDate: today,
-    validUntil: (f.useTerm && f.useTerm[1]) || '—',
-    value: f.initValue,
-    status: '闲置',
-    ownershipType: '国有',
-    acquireWay: f.acquireWay,
-    amortizeMethod: '直线法',
-    patentType: f.patentType,
-    summary: f.desc,
-    coOwner: '',
-    otherRights: '',
-    receiveLogs: [{ time: today, text: '完成资产接收登记' }],
-  })
-  Object.assign(a, {
-    company: f.company,
-    assetNo: `WC2026-${String(idx).padStart(4, '0')}`,
-    manager: f.manager || '—',
-    region: f.region || [],
-    regionText: (f.region || []).join(''),
-    lnglat: f.lnglat,
-    initValue: f.initValue,
-    createTime: nowTime(),
-    updateTime: nowTime(),
-    attachments: [],
-    patentNo: f.patentNo || '—',
-    patentOwner: f.patentOwner || f.company,
-    patentField: f.techField || '—',
-    applyDate: f.applyDate || '',
-    grantDate: f.grantDate || '',
-    claimSummary: f.claimSummary,
-    desc: f.desc,
-    rightsNo: `QS2026-${String(idx).padStart(4, '0')}`,
-    rightsValid: (f.useTerm && f.useTerm[1]) || '—',
-    holdType: '单独所有',
-    rightsRatioType: '单独所有',
-    acquireDate: (f.useTerm && f.useTerm[0]) || today,
-    holders: [{ unit: f.company, ratio: 100 }],
-    opLogs: {
-      receive: [{ source: '新增登记', sourceParty: f.company, docNo: f.materialNo || '—', acquireDate: today, cost: f.initValue, receiveDate: today, handler: f.manager || '—', note: '初始登记入库' }],
-      evaluate: [],
-      use: [],
-      amortize: [],
-      ownership: [],
-    },
-  })
-  assets.value.unshift(a)
-  showSaveAsset.value = false
-  ElMessage.success('无形资产保存成功')
-}
-
-function downloadTemplate() {
-  const headers = ['资产类别', '名称', '证书编号', '注册号', '权属人', '登记日期', '有效期至', '账面价值(万元)', '取得方式', '摊销方式', '资产说明']
-  const example = ['专利权', 'XX专利权', 'ZL2026-XXXX', 'ZL20XXXXXXXXX', 'XX有限公司', '2026-01-01', '2036-01-01', '100', '自行研发', '直线法', '专利简要说明']
-  const csv = '\uFEFF' + [headers.join(','), example.join(',')].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `无形资产导入模板_${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-  ElMessage.success('无形资产导入模板下载成功')
-}
-
+/* ==================== 资产详情（八类操作记录） ==================== */
 const showProfile = ref(false)
 const profile = ref(null)
 const opTab = ref('receive')
@@ -1699,12 +1420,24 @@ function pagedOpRows(key) {
   return opRows(key).slice((opPage[key] - 1) * opSize.value, opPage[key] * opSize.value)
 }
 
-const rightsBizList = ref([
-  { company: '长乐区国有资产投资经营有限公司', assetName: '"长乐城投"服务商标', assetNo: 'WC2026-0003', rightsNo: 'QS2026-0003', type: '续展', applyNo: 'SQ2025120100001', holders: [{ unit: '长乐区国有资产投资经营有限公司', ratio: 100 }], status: '审批通过', createTime: '2025-12-01 10:20', finishTime: '2025-12-18 16:00' },
-  { company: '长乐区国有资产投资经营有限公司', assetName: '一种纺织面料节水印染装置', assetNo: 'WC2026-0001', rightsNo: 'QS2026-0001', type: '许可', applyNo: 'SQ2024011000002', holders: [{ unit: '长乐区国有资产投资经营有限公司', ratio: 60 }, { unit: '福建省长乐市鸿运纺织有限公司', ratio: 40 }], status: '审批通过', createTime: '2024-01-10 09:00', finishTime: '2024-01-25 15:30' },
-  { company: '长乐区国有资产投资经营有限公司', assetName: '城区公共停车场特许经营权', assetNo: 'WC2026-0006', rightsNo: 'QS2026-0006', type: '变更', applyNo: 'SQ2026082000003', holders: [{ unit: '长乐区国有资产投资经营有限公司', ratio: 80 }, { unit: '长乐城投建设有限公司', ratio: 20 }], status: '审批中', createTime: '2026-08-20 14:10', finishTime: '' },
-])
+/* ==================== 新增：完整资产表单 ==================== */
+const showSaveAsset = ref(false)
+const saveForm = ref({})
+function openSaveAsset() {
+  saveForm.value = { company: companyOptions[0], name: '', region: [], lnglat: '', category: categories[0], initValue: 0, acquireWay: '自行研发', materialNo: '', manager: '', useTerm: [], patentNo: '', patentType: '', applyDate: '', grantDate: '', patentOwner: '', techField: '', claimSummary: '', desc: '' }
+  showSaveAsset.value = true
+}
 
+function fetchLngLat() {
+  saveForm.value.lnglat = '119.523456,25.962345'
+  ElMessage.success('已获取地图经纬度')
+}
+
+function submitSaveAsset() {
+  if (feedback(store.saveIntangibleAsset(saveForm.value))) showSaveAsset.value = false
+}
+
+/* ==================== 权属业务办理 ==================== */
 const showRightsBiz = ref(false)
 const rightsBizForm = ref({ holders: [], type: '续展', applyNo: '' })
 function openRightsBiz(row) {
@@ -1713,26 +1446,15 @@ function openRightsBiz(row) {
   showRightsBiz.value = true
 }
 function submitRightsBiz() {
-  const row = current.value
+  if (!current.value) return
   const f = rightsBizForm.value
-  const holders = f.holders.filter(h => h.unit)
-  if (!holders.length) {
-    ElMessage.warning('请填写权利人信息')
-    return
-  }
-  rightsBizList.value.unshift({ company: row.company, assetName: row.name, assetNo: row.assetNo, rightsNo: row.rightsNo, type: f.type, applyNo: f.applyNo, holders, status: '审批中', createTime: nowTime(), finishTime: '' })
-  row.rightsLogs.push({ type: f.type, date: new Date().toISOString().slice(0, 10), content: `${f.type}业务已提交，申请单号 ${f.applyNo}`, target: holders[0].unit, validUntil: '' })
-  if (row.opLogs) {
-    row.opLogs.ownership.push({ type: f.type, holder: holders[0].unit, ratio: holders[0].ratio, date: new Date().toISOString().slice(0, 10), applyNo: f.applyNo, status: '审批中' })
-  }
-  showRightsBiz.value = false
-  ElMessage.success('权属业务已提交')
+  if (feedback(store.submitRightsBiz(current.value.uid, { type: f.type, applyNo: f.applyNo, holders: f.holders }))) showRightsBiz.value = false
 }
 
 const rbFilter = reactive({ keyword: '', company: '', type: '', status: '' })
 const rbQuery = reactive({ keyword: '', company: '', type: '', status: '' })
 const rbPage = ref(1)
-const rbSize = ref(10)
+const rbSize = ref(15)
 function doRbSearch() {
   Object.assign(rbQuery, rbFilter)
   rbPage.value = 1
@@ -1749,16 +1471,11 @@ function viewRightsBiz(row) {
   showRbDetail.value = true
 }
 
-const disposalList = ref([
-  { no: 'CZ2026-0001', company: '长乐区国有资产投资经营有限公司', assetName: '并购鑫源物业形成的商誉', assetNo: 'WC2026-0008', type: '核销', reason: '减值测试可收回金额低于账面价值', amount: 500, applicant: '张会计', status: '已生效', createTime: '2026-06-15 10:00', approvals: ['国有资产处置审批流程'] },
-  { no: 'CZ2026-0002', company: '长乐区国有资产投资经营有限公司', assetName: '农贸市场摊位经营权', assetNo: 'WC2026-0007', type: '转让', reason: '长期闲置，公开挂牌转让', amount: 240, applicant: '林志强', status: '审批中', createTime: '2026-08-02 09:30', approvals: [] },
-  { no: 'CZ2026-0003', company: '长乐城投建设有限公司', assetName: '智能停车道闸控制系统', assetNo: 'WC2026-0002', type: '报废', reason: '技术淘汰，设备整体报废', amount: 0, applicant: '陈志明', status: '已驳回', createTime: '2026-07-11 15:20', approvals: ['企业内部三级审批流程'] },
-])
-
+/* ==================== 资产处置单 ==================== */
 const dpFilter = reactive({ company: '', keyword: '', type: '' })
 const dpQuery = reactive({ company: '', keyword: '', type: '' })
 const dpPage = ref(1)
-const dpSize = ref(10)
+const dpSize = ref(15)
 function doDpSearch() {
   Object.assign(dpQuery, dpFilter)
   dpPage.value = 1
@@ -1777,29 +1494,11 @@ function openDisposeForm(row) {
   showDisposeForm.value = true
 }
 function submitDisposeForm() {
-  const f = disposeForm.value
-  const a = assets.value.find(x => x.assetNo === f.assetNo)
-  if (!a) {
-    ElMessage.warning('请选择资产')
-    return
-  }
-  if (!f.reason) {
-    ElMessage.warning('请填写处置原因')
-    return
-  }
-  if (disposeEditRow.value) {
-    Object.assign(disposeEditRow.value, { type: f.type, amount: f.amount, reason: f.reason })
-    ElMessage.success('资产处置已修改')
-  } else {
-    disposalList.value.unshift({ no: `CZ2026-${String(disposalList.value.length + 1).padStart(4, '0')}`, company: a.company, assetName: a.name, assetNo: a.assetNo, type: f.type, reason: f.reason, amount: f.amount, applicant: '当前用户', status: '审批中', createTime: nowTime(), approvals: [] })
-    ElMessage.success('资产处置已新增')
-  }
-  showDisposeForm.value = false
+  if (feedback(store.saveIntangibleDispose(disposeEditRow.value, disposeForm.value))) showDisposeForm.value = false
 }
 function removeDispose(row) {
   ElMessageBox.confirm(`确认删除处置单"${row.no}"？`, '删除确认', { type: 'warning' }).then(() => {
-    disposalList.value.splice(disposalList.value.indexOf(row), 1)
-    ElMessage.success('已删除')
+    feedback(store.removeIntangibleDispose(row.no))
   }).catch(() => {})
 }
 function onDpCommand(cmd, row) {
@@ -1816,10 +1515,11 @@ function viewDispose(row) {
 const showDisposeApproval = ref(false)
 const approvalRow = ref(null)
 const approvalFlow = ref('')
+const approvalDraft = ref([])
 function openApproval(row) {
   approvalRow.value = row
   approvalFlow.value = ''
-  if (!row.approvals) row.approvals = []
+  approvalDraft.value = [...(row.approvals || [])]
   showDisposeApproval.value = true
 }
 function addApproval() {
@@ -1827,26 +1527,20 @@ function addApproval() {
     ElMessage.warning('请选择审批流程')
     return
   }
-  approvalRow.value.approvals.push(approvalFlow.value)
+  approvalDraft.value.push(approvalFlow.value)
   approvalFlow.value = ''
-  ElMessage.success('审批流程已添加')
+  ElMessage.success('审批流程已添加，点击「确定」保存留痕')
 }
 function confirmApproval() {
-  showDisposeApproval.value = false
-  ElMessage.success('处置审批流程设置成功')
+  if (!approvalRow.value) return
+  if (feedback(store.setDisposeApproval(approvalRow.value.no, approvalDraft.value))) showDisposeApproval.value = false
 }
 
-const archiveList = ref([
-  { name: '节水印染装置专利权属档案', assetName: '一种纺织面料节水印染装置', company: '长乐区国有资产投资经营有限公司', type: '权属管理', version: 'V2.1', attach: '权属证明扫描件.pdf', createTime: '2026-03-12 10:00' },
-  { name: '长乐城投服务商标初始化档案', assetName: '"长乐城投"服务商标', company: '长乐区国有资产投资经营有限公司', type: '初始化数据', version: 'V1.0', attach: '商标注册证.pdf', createTime: '2022-03-20 09:00' },
-  { name: '航城片区土地权属初始档案', assetName: '航城片区工业用地（宗地号350112-08）', company: '长乐区国有资产投资经营有限公司', type: '权属初始数据', version: 'V1.2', attach: '不动产权证.pdf', createTime: '2021-06-01 11:00' },
-  { name: '停车场特许经营初始化档案', assetName: '城区公共停车场特许经营权', company: '长乐区国有资产投资经营有限公司', type: '初始化数据', version: 'V1.0', attach: '区政府授权文件.pdf', createTime: '2024-01-15 09:30' },
-  { name: '资产云管理平台软著权属档案', assetName: '资产云管理平台软件著作权', company: '长乐区国有资产投资经营有限公司', type: '权属管理', version: 'V1.1', attach: '软件著作权证书.pdf', createTime: '2025-02-20 14:00' },
-])
+/* ==================== 资产档案 ==================== */
 const arFilter = reactive({ keyword: '', company: '', type: '' })
 const arQuery = reactive({ keyword: '', company: '', type: '' })
 const arPage = ref(1)
-const arSize = ref(10)
+const arSize = ref(15)
 function doArSearch() {
   Object.assign(arQuery, arFilter)
   arPage.value = 1
@@ -1887,16 +1581,9 @@ function downloadMaterial(row) {
   ElMessage.success(`《${row.name}》材料下载成功`)
 }
 
-const typeList = ref([
-  { name: '专利权', status: '启用', remark: '含发明、实用新型、外观设计专利', createTime: '2021-01-05 09:00', updateTime: '2026-02-10 14:00' },
-  { name: '商标权', status: '启用', remark: '注册商标专用权', createTime: '2021-01-05 09:05', updateTime: '2025-11-02 10:20' },
-  { name: '著作权', status: '启用', remark: '含软件著作权与作品著作权', createTime: '2021-01-05 09:10', updateTime: '2025-06-18 16:40' },
-  { name: '土地使用权', status: '启用', remark: '国有出让/划拨土地使用权', createTime: '2021-01-05 09:15', updateTime: '2024-12-01 11:00' },
-  { name: '特许经营权', status: '启用', remark: '政府授权特许经营权益', createTime: '2021-01-05 09:20', updateTime: '2025-03-22 09:50' },
-  { name: '商誉', status: '禁用', remark: '并购形成商誉，暂不新增', createTime: '2021-01-05 09:25', updateTime: '2026-06-30 15:00' },
-])
+/* ==================== 类型管理 ==================== */
 const tyPage = ref(1)
-const tySize = ref(10)
+const tySize = ref(15)
 const pagedTypes = computed(() => typeList.value.slice((tyPage.value - 1) * tySize.value, tyPage.value * tySize.value))
 const showTypeForm = ref(false)
 const typeForm = ref({})
@@ -1907,27 +1594,18 @@ function openTypeForm(row) {
   showTypeForm.value = true
 }
 function submitTypeForm() {
-  if (!typeForm.value.name) {
-    ElMessage.warning('请填写类型名称')
-    return
-  }
-  typeEditRow.value.name = typeForm.value.name
-  typeEditRow.value.remark = typeForm.value.remark
-  typeEditRow.value.updateTime = nowTime()
-  showTypeForm.value = false
-  ElMessage.success('类型已修改')
+  if (!typeEditRow.value) return
+  if (feedback(store.updateIntangibleType(typeEditRow.value.name, typeForm.value))) showTypeForm.value = false
 }
 function toggleType(row) {
-  row.status = row.status === '启用' ? '禁用' : '启用'
-  row.updateTime = nowTime()
-  ElMessage.success(`类型"${row.name}"已${row.status}`)
+  feedback(store.toggleIntangibleType(row.name))
 }
 </script>
 
 <style scoped>
 .cert-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
 }
 .cert-card {
@@ -1936,7 +1614,7 @@ function toggleType(row) {
 .cert-img {
   background: linear-gradient(160deg, #fdf6ec, #faecd8);
   border: 1px solid #e6d7b8;
-  border-radius: 6px;
+  border-radius: var(--r-md);
   padding: 16px 12px;
   text-align: center;
 }
@@ -1956,24 +1634,24 @@ function toggleType(row) {
 }
 .cert-no, .cert-valid {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
 }
 .cert-name {
   font-size: 13px;
-  color: #333;
+  color: var(--t-main);
   margin: 6px 0 2px;
   line-height: 1.4;
 }
 .cert-owner {
   font-size: 12px;
-  color: #666;
+  color: var(--t-sub);
 }
 .cert-qr {
   display: grid;
   grid-template-columns: repeat(13, 4px);
   gap: 0;
   justify-content: center;
-  margin: 10px auto 0;
+  margin: 12px auto 0;
 }
 .cert-qr.big {
   grid-template-columns: repeat(13, 7px);
@@ -1996,12 +1674,12 @@ function toggleType(row) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 .cert-preview {
   background: linear-gradient(160deg, #fdf6ec, #faecd8);
   border: 1px solid #e6d7b8;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   padding: 24px;
   text-align: center;
 }
@@ -2011,33 +1689,33 @@ function toggleType(row) {
 }
 .cert-preview p {
   font-size: 13px;
-  color: #666;
+  color: var(--t-sub);
   margin: 4px 0;
 }
 .qr-box {
   flex: none;
   width: 140px;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
-  padding: 14px 10px;
+  border: 1px solid var(--bd);
+  border-radius: var(--r-md);
+  padding: 12px 8px;
   text-align: center;
-  background: #fafafa;
+  background: var(--bg-page);
 }
 .qr-tip {
   font-size: 12px;
-  color: #999;
-  margin-top: 10px;
+  color: var(--t-weak);
+  margin-top: 12px;
 }
 .thumb {
   width: 40px;
   height: 40px;
-  border: 1px solid #ebeef5;
-  background: #fafafa;
-  border-radius: 3px;
+  border: 1px solid var(--bd);
+  background: var(--bg-page);
+  border-radius: var(--r-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #c0c4cc;
+  color: var(--t-weak);
   font-size: 18px;
   cursor: pointer;
 }

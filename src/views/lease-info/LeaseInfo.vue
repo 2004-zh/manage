@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <el-tabs v-model="mainTab" type="border-card">
+    <el-tabs v-model="mainTab" type="border-card" class="fill">
       <el-tab-pane label="规划信息" name="plan">
         <el-table :data="pagedPlans" border stripe>
           <el-table-column type="expand">
@@ -20,7 +20,7 @@
                   <div class="cell"><div class="label">规划年限</div><div class="value">{{ row.planYears }}</div></div>
                   <div class="cell"><div class="label">规划人</div><div class="value">{{ row.planner }}</div></div>
                   <div class="cell"><div class="label">规划日期</div><div class="value">{{ row.planDate }}</div></div>
-                  <div class="cell"><div class="label">规划内容</div><div class="value hl">{{ row.planContent }}</div></div>
+                  <div class="cell span-2"><div class="label">规划内容</div><div class="value hl">{{ row.planContent }}</div></div>
                 </div>
                 <div class="section-title">资产信息</div>
                 <div class="detail-grid">
@@ -63,7 +63,7 @@
           <el-pagination
             v-model:current-page="planPage"
             v-model:page-size="planPageSize"
-            :page-sizes="[10, 20, 50]"
+            :page-sizes="[15, 30, 50]"
             :total="planRecords.length"
             layout="total, sizes, prev, pager, next, jumper"
           />
@@ -72,29 +72,23 @@
 
       <el-tab-pane label="备案信息" name="record">
         <el-card class="filter-bar" shadow="never">
-          <el-row :gutter="16">
-            <el-col :span="5">
-              <el-input v-model="filters.keyword" placeholder="资产名称/合同编号/承租方" clearable :prefix-icon="Search" />
-            </el-col>
-            <el-col :span="5">
-              <el-select v-model="filters.leaseStatus" placeholder="租赁状态" clearable>
-                <el-option label="在租" value="在租" />
-                <el-option label="已退租" value="已退租" />
-                <el-option label="待起租" value="待起租" />
-              </el-select>
-            </el-col>
-            <el-col :span="5">
-              <el-select v-model="filters.assetType" placeholder="资产类型" clearable>
-                <el-option label="商铺" value="商铺" />
-                <el-option label="写字楼" value="写字楼" />
-                <el-option label="厂房" value="厂房" />
-              </el-select>
-            </el-col>
-            <el-col :span="5">
+          <div class="grid-4">
+            <el-input v-model="filters.keyword" placeholder="资产名称/合同编号/承租方" clearable :prefix-icon="Search" />
+            <el-select v-model="filters.leaseStatus" placeholder="租赁状态" clearable>
+              <el-option label="在租" value="在租" />
+              <el-option label="已退租" value="已退租" />
+              <el-option label="待起租" value="待起租" />
+            </el-select>
+            <el-select v-model="filters.assetType" placeholder="资产类型" clearable>
+              <el-option label="商铺" value="商铺" />
+              <el-option label="写字楼" value="写字楼" />
+              <el-option label="厂房" value="厂房" />
+            </el-select>
+            <div class="filter-actions">
               <el-button type="primary" @click="handleSearch">查询</el-button>
               <el-button @click="resetFilters">重置</el-button>
-            </el-col>
-          </el-row>
+            </div>
+          </div>
         </el-card>
 
         <el-table :data="pagedData" border stripe>
@@ -103,7 +97,7 @@
               <div class="expand-wrap">
                 <div class="section-title">租赁备案明细</div>
                 <div class="detail-grid">
-                  <div class="cell"><div class="label">月租金(元)</div><div class="value">{{ (row.monthlyRent || 0).toLocaleString() }}</div></div>
+                  <div class="cell"><div class="label">月租金(元)</div><div class="value num">{{ (row.monthlyRent || 0).toLocaleString() }}</div></div>
                   <div class="cell"><div class="label">资产类型</div><div class="value">{{ row.assetType || '—' }}</div></div>
                   <div class="cell"><div class="label">起租日</div><div class="value">{{ row.startDate }}</div></div>
                   <div class="cell"><div class="label">到期日</div><div class="value">{{ row.endDate }}</div></div>
@@ -125,10 +119,12 @@
               <el-tag :type="getStatusType(row.leaseStatus)" size="small">{{ row.leaseStatus }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="130" fixed="right">
+          <el-table-column label="操作" width="210" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" link size="small" @click="viewRecord(row)">查看</el-button>
               <el-button type="primary" link size="small" @click="editRecord(row)">编辑</el-button>
+              <el-button type="success" link size="small" v-if="row.leaseStatus === '在租'" @click="renewLease(row)">续租</el-button>
+              <el-button type="danger" link size="small" v-if="row.leaseStatus !== '已退租'" @click="terminateLease(row)">退租</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -177,7 +173,7 @@
           <el-pagination
             v-model:current-page="changePage"
             v-model:page-size="changePageSize"
-            :page-sizes="[10, 20, 50]"
+            :page-sizes="[15, 30, 50]"
             :total="changeRecords.length"
             layout="total, sizes, prev, pager, next, jumper"
           />
@@ -315,6 +311,7 @@
           <el-descriptions-item label="合同编号">{{ currentLeaseRow.contractNo }}</el-descriptions-item>
           <el-descriptions-item label="资产名称">{{ currentLeaseRow.assetName }}</el-descriptions-item>
           <el-descriptions-item label="承租方">{{ currentLeaseRow.tenant }}</el-descriptions-item>
+          <el-descriptions-item label="承租方信用">{{ partyCredit(currentLeaseRow.tenant) }}</el-descriptions-item>
           <el-descriptions-item label="租赁面积(㎡)">{{ currentLeaseRow.leaseArea }}</el-descriptions-item>
           <el-descriptions-item label="月租金(元)">{{ (currentLeaseRow.monthlyRent || 0).toLocaleString() }}</el-descriptions-item>
           <el-descriptions-item label="起租日">{{ currentLeaseRow.startDate }}</el-descriptions-item>
@@ -336,10 +333,21 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
+import { useContractStore } from '../../store/contract'
+import { usePartyStore } from '../../store/party'
 
 const assetStore = useAssetStore()
+const contractStore = useContractStore()
+const partyStore = usePartyStore()
 const mainTab = ref('plan')
 const planners = ['张伟', '李娜', '王强', '刘敏', '陈杰']
+
+function addMonths(dateStr, months) {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  d.setMonth(d.getMonth() + months)
+  return d.toISOString().slice(0, 10)
+}
 
 const planRecords = ref([
   { id: 1, planNo: 'GH2026001', projectName: '吴航街道商业街盘活项目', projectType: '资产产权', planUsage: '商业零售', planYears: '5年', planner: '张伟', planDate: '2026-01-10', planContent: '统一规划为品牌零售业态，引入连锁商家整体运营。', region: '福建省福州市长乐区', projectAddress: '长乐区吴航街道商业街A区', zone: 'A区', assetName: '吴航街道商业街 A-01 商铺', assetNo: 'ZC00001', assetLocation: '吴航街道商业街A区1号', leaseStatus: '在租', status: '已生效' },
@@ -357,7 +365,7 @@ const planRecords = ref([
 ])
 
 const planPage = ref(1)
-const planPageSize = ref(10)
+const planPageSize = ref(15)
 const pagedPlans = computed(() => {
   const start = (planPage.value - 1) * planPageSize.value
   return planRecords.value.slice(start, start + planPageSize.value)
@@ -403,7 +411,7 @@ const changeRecords = ref([
   { id: 7, changeNo: 'BG2026007', projectName: '玉田旧厂房转型规划', changeType: '内容变更', field: '规划内容', before: '普通厂房', after: '文创产业园', applicant: '王强', applyDate: '2026-08-02', status: '已通过', remark: '转型文化创意产业' }
 ])
 const changePage = ref(1)
-const changePageSize = ref(10)
+const changePageSize = ref(15)
 const pagedChanges = computed(() => {
   const start = (changePage.value - 1) * changePageSize.value
   return changeRecords.value.slice(start, start + changePageSize.value)
@@ -425,18 +433,31 @@ const filters = ref({ keyword: '', leaseStatus: '', assetType: '' })
 const defaultForm = { assetName: '', tenant: '', leaseArea: 0, monthlyRent: 0, startDate: '', endDate: '', usage: '', remark: '' }
 const form = ref({ ...defaultForm })
 
-const leaseRecords = ref([
-  { contractNo: 'ZL-2026-001', assetName: '吴航街道商业街 A-01 商铺', tenant: '福州××商业管理有限公司', leaseArea: 320, monthlyRent: 35000, startDate: '2023-05-01', endDate: '2028-04-30', leaseStatus: '在租', assetType: '商铺' },
-  { contractNo: 'ZL-2026-002', assetName: '航城商务楼 3F', tenant: '福建××科技有限公司', leaseArea: 1200, monthlyRent: 130000, startDate: '2025-01-01', endDate: '2027-12-31', leaseStatus: '在租', assetType: '写字楼' },
-  { contractNo: 'ZL-2026-003', assetName: '营前标准厂房 2#', tenant: '长乐××物流有限公司', leaseArea: 3600, monthlyRent: 65000, startDate: '2024-03-01', endDate: '2026-09-30', leaseStatus: '在租', assetType: '厂房' },
-  { contractNo: 'ZL-2026-004', assetName: '首占新区保障房 1# 楼', tenant: '长乐××物业管理有限公司', leaseArea: 1800, monthlyRent: 80000, startDate: '2024-06-01', endDate: '2029-05-31', leaseStatus: '在租', assetType: '商铺' },
-  { contractNo: 'ZL-2026-005', assetName: '吴航农贸市场', tenant: '长乐××市场管理有限公司', leaseArea: 2100, monthlyRent: 56000, startDate: '2024-01-01', endDate: '2028-12-31', leaseStatus: '在租', assetType: '商铺' },
-  { contractNo: 'ZL-2025-006', assetName: '梅花镇综合楼', tenant: '福建××贸易有限公司', leaseArea: 800, monthlyRent: 24000, startDate: '2023-01-01', endDate: '2025-12-31', leaseStatus: '已退租', assetType: '写字楼' },
-  { contractNo: 'ZL-2026-007', assetName: '安东大厦516', tenant: '江苏望风有限公司', leaseArea: 60, monthlyRent: 10000, startDate: '2026-01-01', endDate: '2028-12-31', leaseStatus: '在租', assetType: '写字楼' },
-  { contractNo: 'ZL-2026-008', assetName: '玉田镇旧工业厂房', tenant: '长乐××加工厂', leaseArea: 2400, monthlyRent: 36000, startDate: '2026-10-01', endDate: '2029-09-30', leaseStatus: '待起租', assetType: '厂房' },
-  { contractNo: 'ZL-2025-009', assetName: '鹤上镇创业园', tenant: '福州××电商有限公司', leaseArea: 500, monthlyRent: 15000, startDate: '2024-06-01', endDate: '2026-05-31', leaseStatus: '已退租', assetType: '厂房' },
-  { contractNo: 'ZL-2026-010', assetName: '漳港街道仓储中心', tenant: '福建××供应链有限公司', leaseArea: 4000, monthlyRent: 48000, startDate: '2026-11-01', endDate: '2029-10-31', leaseStatus: '待起租', assetType: '厂房' }
-])
+// 备案信息以合同库可见合同为准，租赁状态由合同生命周期推导，资产类型取自资产库
+function displayLeaseStatus(c) {
+  if (c.status === '退租' || c.status === '已终止') return '已退租'
+  const start = new Date(c.startDate)
+  if (!isNaN(start.getTime()) && start > new Date()) return '待起租'
+  return '在租'
+}
+
+const leaseRecords = computed(() => contractStore.visibleContracts.map(c => {
+  const asset = assetStore.getAssetById(c.assetId)
+  return {
+    contractNo: c.id,
+    assetId: c.assetId,
+    assetName: c.assetName,
+    tenant: c.tenant,
+    leaseArea: c.leaseArea || asset?.area || 0,
+    monthlyRent: Math.round((c.annualRent || 0) * 10000 / 12),
+    startDate: c.startDate,
+    endDate: c.endDate,
+    leaseStatus: displayLeaseStatus(c),
+    assetType: asset?.type || '',
+    usage: asset?.assetUsage || '',
+    remark: c.remark || ''
+  }
+}))
 
 const filteredData = computed(() => {
   return leaseRecords.value.filter(r => {
@@ -474,26 +495,75 @@ function viewRecord(row) {
   leaseDetailVisible.value = true
 }
 
+// 承租方信用评级由客商档案 store 实时推导
+function partyCredit(name) {
+  return name && partyStore.getByName(name) ? partyStore.creditOf(name) : '未建档'
+}
+
 function saveRecord() {
   if (!form.value.assetName || !form.value.tenant || !form.value.startDate || !form.value.endDate) {
     ElMessage.warning('请填写必填项')
     return
   }
-  if (isEdit.value) {
-    const target = leaseRecords.value.find(r => r.contractNo === form.value.contractNo)
-    if (target) Object.assign(target, { ...form.value })
+  const asset = assetStore.visibleAssets.find(a => a.name === form.value.assetName)
+  const annualRent = Math.round((form.value.monthlyRent || 0) * 12 / 10000 * 100) / 100
+  if (isEdit.value && form.value.contractNo) {
+    // 编辑写回合同库
+    contractStore.updateContract(form.value.contractNo, {
+      assetId: asset?.id || form.value.assetId,
+      assetName: form.value.assetName,
+      tenant: form.value.tenant,
+      leaseArea: form.value.leaseArea,
+      startDate: form.value.startDate,
+      endDate: form.value.endDate,
+      annualRent
+    })
+    ElMessage.success('编辑成功')
   } else {
-    const newNo = 'ZL-2026-' + String(leaseRecords.value.length + 1).padStart(3, '0')
-    leaseRecords.value.unshift({
-      contractNo: newNo,
-      ...form.value,
-      leaseStatus: '在租',
-      assetType: form.value.assetType || ''
+    // 新增租赁 = 走合同库签约，自动做客商建档与租赁联动
+    contractStore.signContract({
+      assetId: asset?.id || null,
+      assetName: form.value.assetName,
+      tenant: form.value.tenant,
+      startDate: form.value.startDate,
+      endDate: form.value.endDate,
+      leaseArea: form.value.leaseArea,
+      annualRent,
+      status: '正常',
+      arrears: 0,
+      overdueDays: 0,
+      electronic: false
     })
     page.value = 1
+    ElMessage.success('新增成功')
   }
   dialogVisible.value = false
-  ElMessage.success(isEdit.value ? '编辑成功' : '新增成功')
+}
+
+function renewLease(row) {
+  ElMessageBox.prompt(`对"${row.assetName}"续租，请输入续租月数`, '续租', {
+    inputPattern: /^[1-9]\d{0,2}$/,
+    inputErrorMessage: '请输入 1-999 之间的整数月数',
+    inputValue: '12',
+    type: 'info'
+  }).then(({ value }) => {
+    const months = parseInt(value, 10)
+    const newEnd = addMonths(row.endDate, months)
+    contractStore.updateContract(row.contractNo, { endDate: newEnd, status: '正常', overdueDays: 0 })
+    ElMessage.success(`续租成功，新到期日：${newEnd}`)
+  }).catch(() => {})
+}
+
+function terminateLease(row) {
+  ElMessageBox.prompt(`对"${row.assetName}"办理退租，请输入退租原因`, '退租确认', {
+    inputPlaceholder: '例如：合同到期、承租方提前解约',
+    inputValidator: (v) => (v && v.trim().length >= 2) || '请填写至少 2 个字的退租原因',
+    type: 'warning'
+  }).then(({ value }) => {
+    // 状态置为退租，写回合同库（updateContract 内部记录退租变更留痕）
+    contractStore.updateContract(row.contractNo, { status: '退租', terminateReason: value.trim() })
+    ElMessage.success(`已退租：${value.trim()}`)
+  }).catch(() => {})
 }
 
 function handleSearch() { page.value = 1 }
@@ -514,9 +584,11 @@ function handleExport() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
-.expand-wrap { padding: 8px 24px 16px; }
-.before { color: #999; text-decoration: line-through; }
+.expand-wrap { padding: 8px 16px 4px; }
+.expand-wrap .detail-grid:last-child { margin-bottom: 0; }
+.detail-grid .cell.span-2 { grid-column: span 2; }
+.filter-actions { display: flex; align-items: center; gap: 8px; }
+.before { color: var(--t-weak); text-decoration: line-through; }
 .arrow { margin: 0 8px; color: var(--c-primary); }
-.after { color: #333; font-weight: 600; }
+.after { color: var(--t-main); font-weight: 600; }
 </style>

@@ -66,10 +66,10 @@
       </el-col>
     </el-row>
 
-    <el-dialog v-model="showPreview" title="电子合同预览" width="600px" height="500px">
-      <div style="border: 1px solid #e8e8e8; padding: 40px; min-height: 400px; background: #fafafa; text-align: center">
+    <el-dialog v-model="showPreview" title="电子合同预览" width="600px">
+      <div style="border: 1px solid var(--bd); padding: 24px; min-height: 280px; background: var(--bg-page); text-align: center">
         <p style="font-size: 16px; font-weight: 600; margin-bottom: 20px">房屋租赁合同</p>
-        <p style="color: #666; line-height: 2; text-align: left; text-indent: 2em">
+        <p style="color: var(--t-sub); line-height: 2; text-align: left; text-indent: 2em">
           甲方：城投集团<br/>
           乙方：{{ contract.tenant }}<br/>
           租赁标的：{{ contract.assetName }}<br/>
@@ -77,7 +77,7 @@
           年租金：{{ contract.annualRent }} 万元<br/>
           保证金：{{ contract.deposit }} 万元
         </p>
-        <div style="margin-top: 30px; padding: 10px; border: 2px dashed #f5222d; display: inline-block; color: #f5222d; font-size: 14px">
+        <div style="margin-top: 24px; padding: 10px; border: 2px dashed var(--c-danger); display: inline-block; color: var(--c-danger); font-size: 14px">
           电子签章（演示水印）
         </div>
       </div>

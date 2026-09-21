@@ -8,32 +8,26 @@
       </div>
     </div>
 
-    <el-card class="filter-bar" shadow="never">
-      <el-row :gutter="16">
-        <el-col :span="5">
-          <el-input v-model="filters.keyword" placeholder="文件名称/签章编号" clearable prefix-icon="Search" />
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.signStatus" placeholder="签章状态" clearable>
-            <el-option label="待签署" value="待签署" />
-            <el-option label="已签署" value="已签署" />
-            <el-option label="已拒签" value="已拒签" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.signType" placeholder="签章类型" clearable>
-            <el-option label="合同签章" value="合同签章" />
-            <el-option label="审批签章" value="审批签章" />
-          </el-select>
-        </el-col>
-        <el-col :span="3">
+    <div class="filter-bar">
+      <div class="grid-4">
+        <el-input v-model="filters.keyword" placeholder="文件名称/签章编号" clearable prefix-icon="Search" class="full-width" />
+        <el-select v-model="filters.signStatus" placeholder="签章状态" clearable class="full-width">
+          <el-option label="待签署" value="待签署" />
+          <el-option label="已签署" value="已签署" />
+          <el-option label="已拒签" value="已拒签" />
+        </el-select>
+        <el-select v-model="filters.signType" placeholder="签章类型" clearable class="full-width">
+          <el-option label="合同签章" value="合同签章" />
+          <el-option label="审批签章" value="审批签章" />
+        </el-select>
+        <div class="filter-actions">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
-        </el-col>
-      </el-row>
-    </el-card>
+        </div>
+      </div>
+    </div>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="pagedData" border stripe>
         <el-table-column prop="signNo" label="签章编号" width="130" />
         <el-table-column prop="fileName" label="文件名称" min-width="200" show-overflow-tooltip />
@@ -91,6 +85,16 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-form-item v-if="form.signType === '合同签章'" label="关联合同" required>
+          <el-select v-model="form.contractId" placeholder="选择待签章的合同（签署后写回合同状态）" filterable style="width: 100%" @change="onPickContract">
+            <el-option
+              v-for="c in signableContracts"
+              :key="c.id"
+              :label="`${c.id} - ${c.assetName}（${c.tenant}）`"
+              :value="c.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="签署位置">
@@ -130,6 +134,8 @@
           <el-descriptions-item label="签署状态">
             <el-tag :type="getStatusType(currentRow.status)" size="small">{{ currentRow.status }}</el-tag>
           </el-descriptions-item>
+          <el-descriptions-item v-if="currentRow.signMethod" label="签章方式">{{ currentRow.signMethod }}</el-descriptions-item>
+          <el-descriptions-item v-if="currentRow.signatureTime" label="签署时间">{{ currentRow.signatureTime }}</el-descriptions-item>
           <el-descriptions-item label="备注">{{ currentRow.remark || '—' }}</el-descriptions-item>
         </el-descriptions>
       </template>
@@ -140,20 +146,64 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useContractStore } from '../../store/contract'
+import { useAssetStore } from '../../store/asset'
+import { useAuditStore } from '../../store/audit'
+import { useNotifyStore } from '../../store/notify'
+import { useUserStore } from '../../store/user'
+
+const contractStore = useContractStore()
+const assetStore = useAssetStore()
+const auditStore = useAuditStore()
+const notifyStore = useNotifyStore()
+const userStore = useUserStore()
+
+const orgName = computed(() => userStore.user?.org || '资产管理部')
 
 const page = ref(1)
 const pageSize = 15
-
 const filters = ref({ keyword: '', signStatus: '', signType: '' })
 
-const signData = ref([
-  { id: 1, signNo: 'QZ2026001', fileName: '城投大厦A座1201室租赁合同', fileType: '合同签章', initiator: '城投集团资产管理部', signer: '星辰科技有限公司', initDate: '2026-09-12', status: '待签署', remark: '' },
-  { id: 2, signNo: 'QZ2026002', fileName: '万达广场商铺A101续租协议', fileType: '合同签章', initiator: '城投集团资产管理部', signer: '鑫源餐饮管理公司', initDate: '2026-09-10', status: '已签署', remark: '' },
-  { id: 3, signNo: 'QZ2026003', fileName: '高新技术产业园厂房C1租赁审批单', fileType: '审批签章', initiator: '产投集团运营部', signer: '恒达制造集团', initDate: '2026-09-08', status: '已签署', remark: '' },
-  { id: 4, signNo: 'QZ2026004', fileName: '朝阳农贸市场1号厅退租确认书', fileType: '合同签章', initiator: '城投集团资产管理部', signer: '绿鲜蔬菜批发部', initDate: '2026-09-05', status: '待签署', remark: '需双方签字确认' },
-  { id: 5, signNo: 'QZ2026005', fileName: '滨江商铺B区203资产转让协议', fileType: '合同签章', initiator: '水投集团财务部', signer: '茗茶道茶业', initDate: '2026-09-01', status: '已拒签', remark: '签署方对条款有异议' },
-  { id: 6, signNo: 'QZ2026006', fileName: '领航科技楼5层租赁变更审批', fileType: '审批签章', initiator: '城投集团资产管理部', signer: '云飞数据科技公司', initDate: '2026-08-28', status: '已签署', remark: '' }
-])
+function pad(n) { return String(n).padStart(2, '0') }
+function nowStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+// 合同的签署状态以合同库为准：electronic / signatureTime 是既有的"已签章"标志位
+function signStatusOf(c) {
+  if (c.signStatus === '已拒签' || c.status === '已拒签') return '已拒签'
+  if (c.status === '已签署' || c.electronic || c.signatureTime) return '已签署'
+  return '待签署'
+}
+
+// 每份在册合同即一份合同签章文件，签署动作直接回写合同 store
+const contractDocs = computed(() => contractStore.visibleContracts.map(c => {
+  const asset = assetStore.getAssetById(c.assetId)
+  return {
+    _key: 'HT:' + c.id,
+    contractId: c.id,
+    signNo: c.id.replace('HT-', 'QZ'),
+    fileName: `${c.assetName}租赁合同`,
+    fileType: '合同签章',
+    initiator: asset?.group || orgName.value,
+    signer: c.tenant,
+    initDate: c.startDate,
+    status: signStatusOf(c),
+    assetId: c.assetId,
+    assetName: c.assetName,
+    tenant: c.tenant,
+    rent: c.annualRent || 0,
+    signatureTime: c.signatureTime || '',
+    signMethod: c.signMethod || '',
+    remark: ''
+  }
+}))
+
+// 用户发起的补充 / 审批类签章文件；合同签章类型的会关联一份在册合同以便回写
+const extraDocs = ref([])
+
+const allDocs = computed(() => [...extraDocs.value, ...contractDocs.value])
 
 const getStatusType = (status) => {
   const map = { '待签署': 'warning', '已签署': 'success', '已拒签': 'danger' }
@@ -161,7 +211,7 @@ const getStatusType = (status) => {
 }
 
 const filteredData = computed(() => {
-  return signData.value.filter(item => {
+  return allDocs.value.filter(item => {
     if (filters.value.keyword) {
       const kw = filters.value.keyword
       if (!item.fileName.includes(kw) && !item.signNo.includes(kw)) return false
@@ -177,17 +227,27 @@ const pagedData = computed(() => {
   return filteredData.value.slice(start, start + pageSize)
 })
 
+// 可发起合同签章的在册合同
+const signableContracts = computed(() => contractStore.visibleContracts.filter(c => signStatusOf(c) === '待签署'))
+
 /* ---------- Dialogs ---------- */
 
 const dialogVisible = ref(false)
 const detailVisible = ref(false)
 const currentRow = ref(null)
 
-const defaultForm = { fileName: '', signer: '', signType: '合同签章', signPosition: '', deadline: '', remark: '' }
+const defaultForm = { contractId: '', fileName: '', signer: '', signType: '合同签章', signPosition: '', deadline: '', remark: '' }
 const form = ref({ ...defaultForm })
 
 function handleFileChange(file) {
   form.value.fileName = file.name
+}
+
+function onPickContract(id) {
+  const c = contractStore.getContractById(id)
+  if (!c) return
+  form.value.fileName = `${c.assetName}合同签章文件`
+  form.value.signer = c.tenant
 }
 
 function handleCreate() {
@@ -200,20 +260,33 @@ function handleSubmit() {
     ElMessage.warning('请填写必填项')
     return
   }
-  const no = 'QZ2026' + String(signData.value.length + 1).padStart(3, '0')
-  signData.value.unshift({
-    id: Date.now(),
-    signNo: no,
+  if (form.value.signType === '合同签章' && !form.value.contractId) {
+    ElMessage.warning('合同签章请选择关联合同')
+    return
+  }
+  const c = form.value.contractId ? contractStore.getContractById(form.value.contractId) : null
+  const asset = c ? assetStore.getAssetById(c.assetId) : null
+  extraDocs.value.unshift({
+    _key: 'NEW:' + Date.now(),
+    contractId: c ? c.id : '',
+    signNo: 'QZ' + String(Date.now()).slice(-8),
     fileName: form.value.fileName,
     fileType: form.value.signType,
-    initiator: '城投集团资产管理部',
+    initiator: asset?.group || orgName.value,
     signer: form.value.signer,
     initDate: new Date().toISOString().slice(0, 10),
     status: '待签署',
+    assetId: c ? c.assetId : '',
+    assetName: c ? c.assetName : form.value.fileName,
+    tenant: c ? c.tenant : form.value.signer,
+    rent: c ? (c.annualRent || 0) : 0,
+    signatureTime: '',
+    signMethod: '',
     remark: form.value.remark
   })
   dialogVisible.value = false
-  ElMessage.success('签章发起成功')
+  page.value = 1
+  ElMessage.success('签章已发起')
 }
 
 function handleView(row) {
@@ -222,19 +295,54 @@ function handleView(row) {
 }
 
 function handleSign(row) {
-  ElMessageBox.confirm(`确定对"${row.fileName}"进行签署操作？`, '签署确认', { type: 'info' }).then(() => {
-    row.status = '已签署'
-    ElMessage.success('签署成功')
+  ElMessageBox.confirm(`确认对"${row.fileName}"完成签署并加盖电子印章？`, '签署确认', { type: 'info' }).then(() => {
+    const stamp = nowStr()
+    if (row.contractId) {
+      const before = contractStore.getContractById(row.contractId)
+      const asset = before ? assetStore.getAssetById(before.assetId) : null
+      // 写回合同：状态置为已签署，补电子签章字段；updateContractStatus 内部统一留痕
+      contractStore.updateContractStatus(row.contractId, '已签署', {
+        module: '合同',
+        action: '电子签章',
+        remark: `承租方 ${row.tenant || row.signer} 完成电子签章`,
+        detail: `用章方式 电子签 / 时间 ${stamp}`,
+        fields: { electronic: true, signatureTime: stamp, signMethod: '电子签', baseStatus: before?.status }
+      })
+      notifyStore.sendByTemplate('contract_signed', {
+        contractNo: row.contractId,
+        asset: row.assetName || before?.assetName,
+        tenant: row.tenant || row.signer,
+        rent: before?.annualRent || row.rent || 0
+      }, { target: asset?.group || 'ent', bizType: 'contract', bizId: row.contractId, route: '/ent/contract' })
+      ElMessage.success('签署完成，合同状态与用章记录已写回')
+    } else {
+      row.status = '已签署'
+      row.signatureTime = stamp
+      row.signMethod = '电子签'
+      auditStore.recordEvent({
+        assetId: row.assetId || '',
+        assetName: row.assetName || row.fileName,
+        group: '',
+        module: '合同',
+        action: '电子签章',
+        billNo: row.signNo,
+        remark: `独立签章文件完成电子签章 / 时间 ${stamp}`
+      })
+      notifyStore.sendByTemplate('contract_signed', {
+        contractNo: row.signNo, asset: row.fileName, tenant: row.signer, rent: 0
+      })
+      ElMessage.success('签署完成')
+    }
   }).catch(() => {})
 }
 
 function handleDownload(row) {
-  const content = `签章文件: ${row.fileName}\n签章编号: ${row.signNo}\n签署人: ${row.signer}\n签署状态: ${row.status}\n发起日期: ${row.initDate}`
+  const content = `签章文件: ${row.fileName}\n签章编号: ${row.signNo}\n签署方: ${row.signer}\n签署状态: ${row.status}\n发起日期: ${row.initDate}\n用章方式: ${row.signMethod || '—'}\n签署时间: ${row.signatureTime || '—'}`
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = row.fileName || '签章文件.txt'
+  link.download = `${row.fileName || '签章文件'}.txt`
   link.click()
   URL.revokeObjectURL(url)
   ElMessage.success('文件下载成功')
@@ -248,8 +356,8 @@ function resetFilters() {
 }
 
 function handleExport() {
-  const headers = ['签章编号', '文件名称', '文件类型', '发起方', '签署方', '发起日期', '签署状态']
-  const rows = filteredData.value.map(item => [item.signNo, item.fileName, item.fileType, item.initiator, item.signer, item.initDate, item.status])
+  const headers = ['签章编号', '文件名称', '文件类型', '发起方', '签署方', '发起日期', '签署状态', '用章方式', '签署时间']
+  const rows = filteredData.value.map(item => [item.signNo, item.fileName, item.fileType, item.initiator, item.signer, item.initDate, item.status, item.signMethod || '', item.signatureTime || ''])
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -263,10 +371,8 @@ function handleExport() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.page-header h2 { margin: 0; font-size: 18px; }
-.filter-bar { margin-bottom: 16px; }
-.table-card { margin-bottom: 16px; }
-.pagination-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
+.filter-bar :deep(.el-select),
+.filter-bar :deep(.el-input) { width: 100%; }
+.filter-actions { display: flex; gap: 8px; }
+.pagination-wrap { display: flex; justify-content: flex-end; margin-top: 12px; }
 </style>

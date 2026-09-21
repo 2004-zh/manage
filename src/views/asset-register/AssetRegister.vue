@@ -27,7 +27,7 @@
             <el-option label="维修中" value="维修中" />
           </el-select>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="7">
           <div class="scope-tag">产权公司锁定为「{{ currentCompany }}」，列表仅显示本公司资产</div>
         </el-col>
         <el-col :span="4">
@@ -37,7 +37,7 @@
       </el-row>
     </el-card>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="filteredAssets" border stripe>
         <el-table-column prop="id" label="资产编号" width="100" />
         <el-table-column prop="name" label="资产名称" min-width="200" />
@@ -59,6 +59,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="group" label="所属公司" width="100" />
+        <el-table-column prop="createdAt" label="创建时间" width="150" align="center" sortable :sort-method="byRegisterTimeDesc">
+          <template #default="{ row }">{{ (row.createdAt || '—').slice(0, 16) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="viewAsset(row)">查看</el-button>
@@ -203,6 +206,11 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
+            <el-form-item label="购置时间">
+              <el-date-picker v-model="form.purchaseDate" type="date" placeholder="选择购置日期" format="YYYY-MM-DD" value-format="YYYY-MM-DD" style="width:100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="结构类型">
               <el-select v-model="form.structureType" placeholder="请选择" style="width:100%">
                 <el-option label="钢混" value="钢混" />
@@ -261,6 +269,8 @@
           </el-descriptions-item>
           <el-descriptions-item label="权证状态">{{ currentRow.certStatus }}</el-descriptions-item>
           <el-descriptions-item label="所属公司">{{ currentRow.group }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ currentRow.createdAt || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="购置时间">{{ currentRow.purchaseDate || '—' }}</el-descriptions-item>
         </el-descriptions>
       </template>
     </el-drawer>
@@ -303,7 +313,7 @@ const currentRow = ref(null)
 
 const filters = ref({ keyword: '', assetType: '', status: '' })
 
-const defaultForm = { group: '', name: '', assetCategory: '', type: '', assetUsage: '', assetNature: '', location: '', area: 0, rentArea: 0, unitPrice: 0, bookValue: 0, floor: '', roomNo: '', orientation: '', buildYear: '', structureType: '', decoration: '', sourceType: '' }
+const defaultForm = { group: '', name: '', assetCategory: '', type: '', assetUsage: '', assetNature: '', location: '', area: 0, rentArea: 0, unitPrice: 0, bookValue: 0, floor: '', roomNo: '', orientation: '', buildYear: '', purchaseDate: '', structureType: '', decoration: '', sourceType: '' }
 const form = ref({ ...defaultForm })
 
 const evalTotal = computed(() => {
@@ -311,6 +321,12 @@ const evalTotal = computed(() => {
   const p = Number(form.value.unitPrice) || 0
   return (a * p / 10000).toFixed(2)
 })
+
+// 按登记时间倒序：越晚登记的越靠前。存量种子是同一批次入库（时间戳相同），
+// 并列时按资产编号倒序收口，保证顺序稳定且与"编号越大登记越晚"的直觉一致。
+const seqNo = (a) => Number(String(a.id).replace(/\D/g, '')) || 0
+const byRegisterTimeDesc = (a, b) =>
+  String(b.createdAt || '').localeCompare(String(a.createdAt || '')) || seqNo(b) - seqNo(a)
 
 const filteredAssets = computed(() => {
   return assetStore.visibleAssets.filter(a => {
@@ -322,7 +338,7 @@ const filteredAssets = computed(() => {
     if (filters.value.assetType && a.assetCategory !== filters.value.assetType) return false
     if (filters.value.status && a.status !== filters.value.status) return false
     return true
-  })
+  }).sort(byRegisterTimeDesc)
 })
 
 const getStatusType = (status) => {
@@ -338,7 +354,7 @@ function showRegisterForm() {
 
 function editAsset(row) {
   isEdit.value = true
-  form.value = { ...row, group: currentCompany.value, name: row.name, assetCategory: row.assetCategory, type: row.type, assetUsage: row.assetUsage || '', assetNature: '', location: row.location, area: row.area, rentArea: row.rentArea ?? row.area, unitPrice: row.unitPrice ?? 0, bookValue: row.bookValue ?? 0, floor: '', roomNo: '', orientation: '', buildYear: '', structureType: '', decoration: '', sourceType: row.sourceType || '' }
+  form.value = { ...row, group: currentCompany.value, name: row.name, assetCategory: row.assetCategory, type: row.type, assetUsage: row.assetUsage || '', assetNature: '', location: row.location, area: row.area, rentArea: row.rentArea ?? row.area, unitPrice: row.unitPrice ?? 0, bookValue: row.bookValue ?? 0, floor: '', roomNo: '', orientation: '', buildYear: '', purchaseDate: row.purchaseDate || '', structureType: '', decoration: '', sourceType: row.sourceType || '' }
   dialogVisible.value = true
 }
 
@@ -421,7 +437,6 @@ function handleExport() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
 .asset-form .el-divider { margin: 20px 0 16px; }
 .pagination-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
 .scope-tag { line-height: 32px; font-size: 13px; color: var(--el-text-color-regular); }

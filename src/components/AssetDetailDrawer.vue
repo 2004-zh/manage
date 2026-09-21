@@ -205,14 +205,14 @@
         </el-tab-pane>
 
         <el-tab-pane label="权属流转" name="transfer">
-          <el-table :data="detailData.ownershipTransfer" stripe size="small">
+          <el-table :data="ownershipTransferRecords" stripe size="small">
             <el-table-column prop="fromOwner" label="转出方" />
             <el-table-column prop="toOwner" label="转入方" />
             <el-table-column prop="transferDate" label="流转日期" />
             <el-table-column prop="method" label="流转方式" />
             <el-table-column prop="approvalNo" label="批准文号" />
           </el-table>
-          <el-empty v-if="!detailData.ownershipTransfer.length" description="暂无流转记录" :image-size="60" />
+          <el-empty v-if="!ownershipTransferRecords.length" description="暂无流转记录" :image-size="60" />
         </el-tab-pane>
 
         <el-tab-pane label="资产调拨" name="transfer2">
@@ -258,11 +258,19 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import QRCode from 'qrcode'
-import { assetDetailData, costRecords, evaluationRecords, assetArchives, urgeRecords } from '../data/mock'
+import { useAssetStore } from '../store/asset'
 import { useContractStore } from '../store/contract'
 import { useChangeLogStore } from '../store/changeLog'
+import { useAuditStore } from '../store/audit'
+import { useCredentialStore } from '../store/credential'
+import { useFinanceStore } from '../store/finance'
 
+const assetStore = useAssetStore()
 const contractStore = useContractStore()
+const changeLogStore = useChangeLogStore()
+const auditStore = useAuditStore()
+const credentialStore = useCredentialStore()
+const financeStore = useFinanceStore()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -305,7 +313,7 @@ const info = computed(() => {
     manager: a.manager || '—',
     address: a.location || a.address || '—',
     createdAt: a.createdAt || '—',
-    purchaseDate: a.purchaseDate || a.createdAt || '—',
+    purchaseDate: a.purchaseDate || '—',
     bookValue: a.bookValue ?? '—',
     usedArea: a.usedArea ?? a.area ?? '—',
     area: a.area ?? '—',
@@ -321,54 +329,282 @@ const info = computed(() => {
   }
 })
 
+// ===== 逐资产派生数据：一律来自 store，不再读 data/mock 的写死字典 =====
+const assetId = computed(() => {
+  const a = props.asset || {}
+  return a.id || a.assetId || a.code || a.assetNo || ''
+})
+
+// 抽屉开着的时候台账可能已被改过，按 id 回读 store 拿最新形态
+const assetRecord = computed(() =>
+  (assetId.value ? assetStore.getAssetById(assetId.value) : null) || props.asset || null
+)
+
+const assetContracts = computed(() =>
+  assetId.value ? contractStore.visibleContracts.filter(c => c.assetId === assetId.value) : []
+)
+
+const assetFees = computed(() => {
+  if (!assetId.value) return []
+  const ids = new Set(assetContracts.value.map(c => c.id))
+  return contractStore.visibleFees.filter(f => ids.has(f.contractId) || f.assetId === assetId.value)
+})
+
+// 成本：台账账面原值（一笔取得成本）+ 财务费用单里挂在该资产名下的运行成本
+const costRows = computed(() => {
+  const a = assetRecord.value
+  if (!a) return []
+  const rows = []
+  if (a.bookValue != null || a.purchaseDate || a.createdAt) {
+    rows.push({
+      id: `${assetId.value}-cost-base`,
+      assetId: assetId.value,
+      assetName: a.name || a.assetName || '',
+      costType: a.acquisitionMethod === '自建' || a.sourceType === '自建' ? '建设成本' : '购置成本',
+      amount: a.bookValue ?? '—',
+      date: a.purchaseDate || a.createdAt || '—',
+      remark: `账面原值 · 取得方式 ${a.acquisitionMethod || a.sourceType || '—'}`
+    })
+  }
+  const name = a.name || a.assetName
+  if (name) {
+    financeStore.expenses.filter(e => e.assetName === name).forEach(e => rows.push({
+      id: `${assetId.value}-cost-${e.expenseNo}`,
+      assetId: assetId.value,
+      assetName: name,
+      costType: e.expenseType,
+      amount: e.amount,
+      date: e.occurDate || '—',
+      remark: e.supplier || ''
+    }))
+  }
+  return rows
+})
+
+// 评估：台账自带 evaluations 时以台账为准；否则取财务侧租金差价分析沉淀的评估值
+const evaluationRows = computed(() => {
+  const a = assetRecord.value
+  if (!a || !assetId.value) return []
+  if (Array.isArray(a.evaluations) && a.evaluations.length) {
+    return a.evaluations.map((e, i) => ({
+      id: `${assetId.value}-ev-${i}`,
+      assetId: assetId.value,
+      assetName: a.name || '',
+      org: e.org || '—',
+      date: e.date || '—',
+      value: e.value ?? '—',
+      method: e.method || '—',
+      reportNo: e.reportNo || '—'
+    }))
+  }
+  return financeStore.rentMarginRows
+    .filter(r => r.assetId === assetId.value && r.evalValue)
+    .map(r => ({
+      id: `${assetId.value}-ev-${r.evalReportNo || r.contractId}`,
+      assetId: assetId.value,
+      assetName: r.assetName || a.name || '',
+      org: '—',
+      date: '—',
+      value: r.evalValue,
+      method: '收益法（评估值反推市场租金）',
+      reportNo: r.evalReportNo || '—'
+    }))
+})
+
+// 附件档案：业务留痕（每个动作一份单据）+ 证件层证件 + 电子合同签章
+const archiveRows = computed(() => {
+  if (!assetId.value) return []
+  const rows = auditStore.getByAsset(assetId.value).map(r => ({
+    id: `arch-${r.id}`,
+    archiveType: `${r.module}·${r.action}`,
+    createTime: (r.time || '').slice(0, 10) || '—',
+    files: r.billNo ? [`${r.billNo}.pdf`] : []
+  }))
+  credentialStore.getByAsset(assetId.value).forEach(c => rows.push({
+    id: `arch-${c.id}`,
+    archiveType: `${c.type}档案`,
+    createTime: c.issueDate || '—',
+    files: c.certNo ? [`${c.certNo}.pdf`] : []
+  }))
+  assetContracts.value.filter(c => c.electronic).forEach(c => rows.push({
+    id: `arch-${c.id}`,
+    archiveType: '电子合同档案',
+    createTime: c.startDate || '—',
+    files: [`${c.id} 电子签章记录.pdf`]
+  }))
+  return rows
+})
+
+// 催缴：合同欠费即待催缴事项，催缴动作与时间在收费/催缴页产生后由留痕补全
+const urgeRows = computed(() => assetContracts.value
+  .filter(c => (c.arrears || 0) > 0)
+  .map(c => ({
+    id: `urge-${c.id}`,
+    assetId: assetId.value,
+    time: '—',
+    method: '欠费待催缴',
+    content: `合同 ${c.id}（${c.tenant}）欠费 ${c.arrears} 万元${c.overdueDays ? `，逾期 ${c.overdueDays} 天` : ''}`,
+    operator: '资产管理员',
+    result: '待催缴'
+  })))
+
+// 巡查/盘点：变更留痕里的巡查类动作，没有则空表
+const inspectionRows = computed(() => {
+  if (!assetId.value) return []
+  return changeLogStore.entriesOfAsset(assetId.value)
+    .filter(e => /巡查|盘点|检查|清查/.test(`${e.module || ''}${e.type || ''}`))
+    .map(e => ({
+      inspector: e.operator || '—',
+      inspectDate: e.date || '—',
+      result: /正常|无差异|一致/.test(String(e.after || '')) ? '正常' : '有差异',
+      remark: `${e.type}：${e.before} → ${e.after}`
+    }))
+})
+
+// 维修：财务费用单中该资产的维修支出，视为一次已完成的维修事项
+const repairRows = computed(() => {
+  const name = assetRecord.value?.name || assetRecord.value?.assetName
+  if (!name) return []
+  return financeStore.expenses
+    .filter(e => e.assetName === name && /维修/.test(String(e.expenseType || '')))
+    .map(e => ({
+      reporter: '—',
+      reportDate: e.occurDate || '—',
+      issue: `${e.expenseType}（${e.supplier || '—'}）`,
+      status: '已完成',
+      completeDate: e.occurDate || '—',
+      cost: e.amount ?? '—'
+    }))
+})
+
+// 备案：证件层登记的程序证件 + 已领到的不动产权证
+const filingRows = computed(() => {
+  const a = assetRecord.value
+  if (!a || !assetId.value) return []
+  const rows = credentialStore.getByAsset(assetId.value).map(c => ({
+    filingType: c.type,
+    filingDate: c.issueDate || '—',
+    authority: c.issuer || '—',
+    status: c.status || '有效'
+  }))
+  if (a.certDetail) {
+    rows.unshift({ filingType: '不动产权属登记', filingDate: '—', authority: '长乐区不动产登记中心', status: '已登记' })
+  }
+  return rows
+})
+
 const detailData = computed(() => {
   const empty = { receiveInfo: [], paymentHistory: [], inspectionHistory: [], urgeHistory: [], repairHistory: [], selfUseRecords: [], filingRecords: [], ownershipTransfer: [] }
-  if (!props.asset) return empty
-  const aid = props.asset.id || props.asset.assetId || props.asset.code || props.asset.assetNo
+  const a = assetRecord.value
+  const aid = assetId.value
+  if (!a || !aid) return empty
+  const receiveDate = a.purchaseDate || a.createdAt || ''
   return {
-    receiveInfo: assetDetailData.receiveInfo.filter(r => r.assetId === aid),
-    paymentHistory: assetDetailData.paymentHistory.filter(r => r.assetId === aid),
-    inspectionHistory: assetDetailData.inspectionHistory.filter(r => r.assetId === aid),
-    urgeHistory: urgeRecords.filter(r => r.assetId === aid),
-    repairHistory: assetDetailData.repairHistory.filter(r => r.assetId === aid),
-    selfUseRecords: assetDetailData.selfUseRecords.filter(r => r.assetId === aid),
-    filingRecords: assetDetailData.filingRecords.filter(r => r.assetId === aid),
-    ownershipTransfer: assetDetailData.ownershipTransfer.filter(r => r.assetId === aid)
+    // 接收信息：台账的取得方式 + 入账原值即一条入库接收记录
+    receiveInfo: (receiveDate || a.sourceType || a.acquisitionMethod) ? [{
+      receiver: a.manager || a.manageDept || '—',
+      receiveDate: receiveDate || '—',
+      source: [a.sourceType, a.acquisitionMethod].filter(Boolean).join(' · ') || '—',
+      remark: a.bookValue != null ? `入账原值 ${a.bookValue} 万元` : ''
+    }] : [],
+    // 缴费记录：合同应收实收台账的逐笔收缴流水
+    paymentHistory: assetFees.value.flatMap(f => (f.payments || []).map((p, i) => {
+      const voucherNo = financeStore.voucherOf('租金收入', f.contractId)
+      return {
+        id: `${f.contractId}-${i}`,
+        assetId: aid,
+        period: String(p.date || '').slice(0, 7) || '—',
+        amount: p.amount,
+        payDate: p.date || '—',
+        status: '已缴',
+        method: voucherNo ? `凭证 ${voucherNo}` : '—'
+      }
+    })),
+    inspectionHistory: inspectionRows.value,
+    urgeHistory: urgeRows.value,
+    repairHistory: repairRows.value,
+    // 自用占用：台账状态为自用即一条占用记录
+    selfUseRecords: a.status === '自用' ? [{
+      department: a.manageDept || a.group || '—',
+      startDate: a.createdAt || a.purchaseDate || '—',
+      endDate: null,
+      purpose: a.assetUsage || a.type || '—',
+      approver: a.manager || '—'
+    }] : [],
+    filingRecords: filingRows.value,
+    // 权属流转：划拨/划转取得的资产补一条基线，运行期流转仍由业务留痕优先展示
+    ownershipTransfer: /划拨|划转|调入|接收/.test(`${a.acquisitionMethod || ''}${a.sourceType || ''}`) ? [{
+      fromOwner: a.sourceType || '—',
+      toOwner: a.group || '—',
+      transferDate: a.purchaseDate || '—',
+      method: a.acquisitionMethod || '—',
+      approvalNo: '—'
+    }] : []
   }
 })
 
-const changeHistory = computed(() => {
+// 统一从 audit 业务留痕按 assetId 取数，再按动作分流到各页签
+const assetAuditRecords = computed(() => {
   if (!props.asset) return []
-  const aid = props.asset.id || props.asset.assetId || props.asset.code
+  const aid = props.asset.id || props.asset.assetId || props.asset.code || props.asset.assetNo
   if (!aid) return []
-  return useChangeLogStore().entriesOfAsset(aid)
+  return auditStore.getByAsset(aid).map(r => ({
+    date: (r.time || '').slice(0, 10),
+    time: r.time,
+    type: r.fieldLabel ? `${r.module}·${r.action}（${r.fieldLabel}）` : `${r.module}·${r.action}`,
+    before: r.before,
+    after: r.after,
+    operator: r.operator,
+    remark: r.remark,
+    action: r.action || '',
+    module: r.module || ''
+  }))
 })
 
-const transferRecords = computed(() => [])
-const exitRecords = computed(() => [])
+function isTransfer(r) { return r.action.includes('调拨') }
+function isOwnership(r) { return /权属|流转|划转|挂入|移出/.test(r.action) }
+function isExit(r) { return /处置|退出|删除|报废/.test(r.action) }
 
+const changeHistory = computed(() =>
+  assetAuditRecords.value.filter(r => !isTransfer(r) && !isOwnership(r) && !isExit(r))
+)
+
+// 权属流转：优先展示留痕，留痕为空时回退到种子流转记录
+const ownershipTransferRecords = computed(() => {
+  const fromAudit = assetAuditRecords.value.filter(isOwnership).map(r => ({
+    fromOwner: '—', toOwner: r.after, transferDate: r.date, method: r.action, approvalNo: r.remark || '—'
+  }))
+  if (fromAudit.length) return fromAudit
+  return detailData.value.ownershipTransfer
+})
+
+const transferRecords = computed(() =>
+  assetAuditRecords.value.filter(isTransfer).map(r => ({
+    date: r.date, fromDept: r.before, toDept: r.after, reason: r.remark || r.type, approver: r.operator
+  }))
+)
+
+const exitRecords = computed(() =>
+  assetAuditRecords.value.filter(isExit).map(r => ({
+    date: r.date, type: r.action, reason: r.remark || r.type, disposalValue: '—', approver: r.operator
+  }))
+)
+
+// 页签取数入口保持原函数名，模板不动，数据全部换成 store 派生
 function getAssetCosts() {
-  if (!props.asset) return []
-  const aid = props.asset.id || props.asset.assetId || props.asset.code
-  return costRecords.filter(r => r.assetId === aid)
+  return costRows.value
 }
 
 function getAssetEvaluations() {
-  if (!props.asset) return []
-  const aid = props.asset.id || props.asset.assetId || props.asset.code
-  return evaluationRecords.filter(r => r.assetId === aid)
+  return evaluationRows.value
 }
 
 function getAssetContracts() {
-  if (!props.asset) return []
-  const aid = props.asset.id || props.asset.assetId || props.asset.code
-  return contractStore.visibleContracts.filter(r => r.assetId === aid)
+  return assetContracts.value
 }
 
 function getAssetArchives() {
-  if (!props.asset) return []
-  const aid = props.asset.id || props.asset.assetId || props.asset.code || props.asset.assetNo
-  return assetArchives.filter(r => r.assetNo === aid)
+  return archiveRows.value
 }
 
 function statusTagType(status) {

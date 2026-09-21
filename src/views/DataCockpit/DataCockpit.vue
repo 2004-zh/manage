@@ -11,11 +11,11 @@
         </div>
         <div class="hero-metrics">
           <div class="hero-metric">
-            <div class="hero-num">128.6<span>亿元</span></div>
+            <div class="hero-num">{{ heroValue }}<span>亿元</span></div>
             <div class="hero-label">资产总价值</div>
           </div>
           <div class="hero-metric">
-            <div class="hero-num">3,862<span>宗</span></div>
+            <div class="hero-num">{{ fmt(totalAssetCount) }}<span>宗</span></div>
             <div class="hero-label">资产总宗数</div>
           </div>
         </div>
@@ -39,10 +39,10 @@
         <div class="warn-half">
           <div class="half-head">
             <span class="section-title">待办任务</span>
-            <span class="half-count">6</span>
+            <span class="half-count">{{ todoTasks.length }}</span>
           </div>
           <div v-for="t in todoTasks" :key="t.no" class="mini-row">
-            <el-icon color="#1890ff"><Document /></el-icon>
+            <el-icon color="#1668DC"><Document /></el-icon>
             <span class="mini-text">{{ t.title }}</span>
             <span class="mini-no">{{ t.no }}</span>
           </div>
@@ -51,7 +51,7 @@
         <div class="warn-half">
           <div class="half-head">
             <span class="section-title">风险预警</span>
-            <span class="half-count danger">9</span>
+            <span class="half-count danger">{{ riskWarnings.length }}</span>
           </div>
           <div v-for="r in riskWarnings" :key="r.no" class="mini-row">
             <el-tag size="small" :type="r.tagType">{{ r.tag }}</el-tag>
@@ -62,8 +62,8 @@
       </div>
     </el-card>
 
-    <el-row :gutter="12">
-      <el-col :span="12">
+    <div class="chart-row chart-row-1-1">
+      <div>
         <div class="section-title">资产信息</div>
         <div class="stat-strip tile-strip">
           <div class="stat-item" v-for="t in assetInfoTiles" :key="t.label">
@@ -71,8 +71,8 @@
             <div class="stat-label">{{ t.label }}</div>
           </div>
         </div>
-      </el-col>
-      <el-col :span="12">
+      </div>
+      <div>
         <div class="section-title">权属抵押</div>
         <div class="stat-strip tile-strip">
           <div class="stat-item" v-for="t in mortgageTiles" :key="t.label">
@@ -80,118 +80,74 @@
             <div class="stat-label">{{ t.label }}</div>
           </div>
         </div>
-      </el-col>
-    </el-row>
+      </div>
+    </div>
 
-    <el-row :gutter="12">
-      <el-col :span="8">
-        <el-card shadow="never" class="panel-card chart-panel">
-          <div class="section-title">资产权属</div>
-          <div class="donut-flex">
-            <div class="donut" :style="ownershipDonutStyle">
-              <div class="donut-hole">
-                <b>3,862</b>
-                <span>总宗数</span>
-              </div>
-            </div>
-            <div class="pct-list">
-              <div v-for="o in ownershipData" :key="o.name" class="pct-item">
-                <span class="dot" :style="{ background: o.color }"></span>
-                <span class="pct-name">{{ o.name }}</span>
-                <el-progress :percentage="o.percent" :stroke-width="8" :color="o.color" :show-text="false" class="pct-bar" />
-                <span class="pct-val">{{ o.percent }}%</span>
-              </div>
+    <div class="grid-3">
+      <el-card shadow="never" class="panel-card chart-panel">
+        <div class="section-title">资产权属</div>
+        <div class="donut-flex">
+          <div class="donut" :style="ownershipDonutStyle">
+            <div class="donut-hole">
+              <b>{{ fmt(totalAssetCount) }}</b>
+              <span>总宗数</span>
             </div>
           </div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="never" class="panel-card chart-panel">
-          <div class="section-title">资产类型</div>
-          <div class="funnel-list">
-            <div v-for="f in funnelData" :key="f.name" class="funnel-row">
-              <div class="funnel-bar" :style="{ width: f.percent + '%', background: f.color }">
-                <span>{{ f.name }}</span>
-                <span>{{ f.count }}</span>
-              </div>
+          <div class="pct-list">
+            <div v-for="o in ownershipData" :key="o.name" class="pct-item">
+              <span class="dot" :style="{ background: o.color }"></span>
+              <span class="pct-name">{{ o.name }}</span>
+              <el-progress :percentage="o.percent" :stroke-width="8" :color="o.color" :show-text="false" class="pct-bar" />
+              <span class="pct-val">{{ o.percent }}%</span>
             </div>
           </div>
-          <div class="long-legend">
-            <span v-for="f in funnelData" :key="'lg' + f.name" class="legend-item">
-              <i :style="{ background: f.color }"></i>{{ f.name }} {{ f.count }}宗
-            </span>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="never" class="panel-card chart-panel">
-          <div class="section-title">资产数量与面积</div>
-          <div class="stack-list">
-            <div v-for="s in streetData" :key="s.name" class="stack-row">
-              <span class="stack-name">{{ s.name }}</span>
-              <div class="stack-track">
-                <div class="seg seg-count" :style="{ width: (s.count / stackMax) * 100 + '%' }"></div>
-                <div class="seg seg-area" :style="{ width: (s.area / stackMax) * 100 + '%' }"></div>
-              </div>
-              <span class="stack-val">{{ s.count }}宗 · {{ s.area }}㎡</span>
+        </div>
+      </el-card>
+      <el-card shadow="never" class="panel-card chart-panel">
+        <div class="section-title">资产类型</div>
+        <div class="funnel-list">
+          <div v-for="f in funnelData" :key="f.name" class="funnel-row">
+            <div class="funnel-bar" :style="{ width: f.percent + '%', background: f.color }">
+              <span>{{ f.name }}</span>
+              <span>{{ f.count }}</span>
             </div>
           </div>
-          <div class="long-legend">
-            <span class="legend-item"><i style="background: #1890ff"></i>数量(宗)</span>
-            <span class="legend-item"><i style="background: #faad14"></i>面积(㎡)</span>
+        </div>
+        <div class="long-legend">
+          <span v-for="f in funnelData" :key="'lg' + f.name" class="legend-item">
+            <i :style="{ background: f.color }"></i>{{ f.name }} {{ f.count }}宗
+          </span>
+        </div>
+      </el-card>
+      <el-card shadow="never" class="panel-card chart-panel">
+        <div class="section-title">资产数量与面积</div>
+        <div class="stack-list">
+          <div v-for="s in streetData" :key="s.name" class="stack-row">
+            <span class="stack-name">{{ s.name }}</span>
+            <div class="stack-track">
+              <div class="seg seg-count" :style="{ width: (s.count / stackMax) * 100 + '%' }"></div>
+              <div class="seg seg-area" :style="{ width: (s.area / stackMax) * 100 + '%' }"></div>
+            </div>
+            <span class="stack-val">{{ s.count }}宗 · {{ s.area }}㎡</span>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </div>
+        <div class="long-legend">
+          <span class="legend-item"><i style="background: #1668DC"></i>数量(宗)</span>
+          <span class="legend-item"><i style="background: #E8912A"></i>面积(㎡)</span>
+        </div>
+      </el-card>
+    </div>
 
-    <el-row :gutter="12">
-      <el-col :span="12">
-        <el-card shadow="never" class="panel-card chart-panel">
-          <div class="section-title">租赁情况</div>
-          <div class="lease-grid">
-            <div v-for="l in leaseTiles" :key="l.label" class="lease-tile">
-              <div class="lease-value" :style="{ color: l.color }">{{ l.value }}<span>{{ l.unit }}</span></div>
-              <div class="lease-label">{{ l.label }}</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never" class="panel-card chart-panel">
-          <div class="section-title">租赁类型占比</div>
-          <div class="pie-flex">
-            <div class="pie-sm" :style="leaseTypePieStyle"></div>
-            <div class="pct-list">
-              <div v-for="l in leaseTypeData" :key="l.name" class="pct-item">
-                <span class="dot" :style="{ background: l.color }"></span>
-                <span class="pct-name">{{ l.name }}</span>
-                <span class="pct-val">{{ l.percent }}%</span>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never" class="panel-card chart-panel">
-          <div class="section-title">租赁权属占比</div>
-          <div class="pie-flex">
-            <div class="donut donut-sm" :style="leaseRightDonutStyle">
-              <div class="donut-hole">
-                <b class="hl">92.3%</b>
-                <span>盘活率</span>
-              </div>
-            </div>
-            <div class="pct-list">
-              <div v-for="l in leaseRightData" :key="l.name" class="pct-item">
-                <span class="dot" :style="{ background: l.color }"></span>
-                <span class="pct-name">{{ l.name }}</span>
-                <span class="pct-val">{{ l.percent }}%</span>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <el-card shadow="never" class="panel-card">
+      <div class="section-title">租赁情况</div>
+      <div class="lease-grid">
+        <div v-for="l in leaseTiles" :key="l.label" class="lease-tile">
+          <div class="lease-value" :style="{ color: l.color }">{{ l.value }}<span>{{ l.unit }}</span></div>
+          <div class="lease-label">{{ l.label }}</div>
+        </div>
+      </div>
+    </el-card>
+    <!-- 已移除「租赁类型占比」「租赁权属占比」饼图：合同/资产台账未记录租赁方式(整租/分租/合租)与权属性质(国有/集体/私有)字段，无法由 store 派生 -->
 
     <el-card shadow="never" class="panel-card">
       <div class="section-title">资产创收排行</div>
@@ -221,59 +177,51 @@
         </div>
       </template>
 
-      <el-row :gutter="20" class="stat-row">
-        <el-col :span="6">
+      <div class="dash-body">
+        <div class="grid-4">
           <el-card shadow="hover" class="stat-card">
-            <div class="stat-icon" style="background: #e6f7ff">
-              <el-icon :size="32" color="#1890ff"><OfficeBuilding /></el-icon>
+            <div class="stat-icon" style="background: #E8F2FF">
+              <el-icon :size="32" color="#1668DC"><OfficeBuilding /></el-icon>
             </div>
             <div class="stat-content">
-              <div class="stat-value">1,286</div>
+              <div class="stat-value">{{ fmt(totalAssetCount) }}</div>
               <div class="stat-label">资产总数</div>
               <div class="stat-trend up">↑ 12% 较上月</div>
             </div>
           </el-card>
-        </el-col>
-        <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-icon" style="background: #f6ffed">
               <el-icon :size="32" color="#52c41a"><TrendCharts /></el-icon>
             </div>
             <div class="stat-content">
-              <div class="stat-value">98.5%</div>
+              <div class="stat-value">{{ rentalRate }}%</div>
               <div class="stat-label">出租率</div>
               <div class="stat-trend up">↑ 2.3% 较上月</div>
             </div>
           </el-card>
-        </el-col>
-        <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-icon" style="background: #fff7e6">
               <el-icon :size="32" color="#fa8c16"><Money /></el-icon>
             </div>
             <div class="stat-content">
-              <div class="stat-value">¥2,580万</div>
+              <div class="stat-value">¥{{ fmt(yearRevenueWan) }}万</div>
               <div class="stat-label">年度收益</div>
               <div class="stat-trend up">↑ 8.5% 较去年</div>
             </div>
           </el-card>
-        </el-col>
-        <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-icon" style="background: #fff1f0">
               <el-icon :size="32" color="#f5222d"><Warning /></el-icon>
             </div>
             <div class="stat-content">
-              <div class="stat-value">12</div>
+              <div class="stat-value">{{ kpiWarningCount }}</div>
               <div class="stat-label">待处理预警</div>
               <div class="stat-trend down">↓ 3 较昨日</div>
             </div>
           </el-card>
-        </el-col>
-      </el-row>
+        </div>
 
-      <el-row :gutter="20" style="margin-top: 20px">
-        <el-col :span="12">
+        <div class="chart-row chart-row-1-1">
           <el-card>
             <template #header>
               <div class="chart-header">
@@ -306,8 +254,6 @@
               </div>
             </div>
           </el-card>
-        </el-col>
-        <el-col :span="12">
           <el-card>
             <template #header>
               <div class="chart-header">
@@ -323,14 +269,14 @@
                 <svg class="line-chart-svg" viewBox="0 0 400 220" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#1890ff" stop-opacity="0.3" />
-                      <stop offset="100%" stop-color="#1890ff" stop-opacity="0.02" />
+                      <stop offset="0%" stop-color="#1668DC" stop-opacity="0.3" />
+                      <stop offset="100%" stop-color="#1668DC" stop-opacity="0.02" />
                     </linearGradient>
                   </defs>
-                  <line v-for="i in 4" :key="'g'+i" :x1="40" :x2="390" :y1="i * 40 + 10" :y2="i * 40 + 10" stroke="#f0f0f0" stroke-width="1" />
-                  <polyline :points="linePoints" fill="none" stroke="#1890ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+                  <line v-for="i in 4" :key="'g'+i" :x1="40" :x2="390" :y1="i * 40 + 10" :y2="i * 40 + 10" stroke="#E2E8F0" stroke-width="1" />
+                  <polyline :points="linePoints" fill="none" stroke="#1668DC" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
                   <polygon :points="areaPoints" fill="url(#areaGrad)" />
-                  <circle v-for="(pt, i) in chartPoints" :key="i" :cx="pt.x" :cy="pt.y" r="4" fill="#fff" stroke="#1890ff" stroke-width="2" />
+                  <circle v-for="(pt, i) in chartPoints" :key="i" :cx="pt.x" :cy="pt.y" r="4" fill="#fff" stroke="#1668DC" stroke-width="2" />
                 </svg>
                 <div class="line-x-labels">
                   <span v-for="item in monthlyRevenue" :key="item.month">{{ item.month }}</span>
@@ -339,7 +285,7 @@
               <div v-else>
                 <div class="trend-chart">
                   <div v-for="item in monthlyRevenue" :key="item.month" class="trend-item">
-                    <div class="trend-bar" :style="{ height: item.value / 300 * 100 + '%' }"></div>
+                    <div class="trend-bar" :style="{ height: item.value / revMax * 100 + '%' }"></div>
                     <div class="trend-label">{{ item.month }}</div>
                     <div class="trend-value">{{ item.value }}万</div>
                   </div>
@@ -347,33 +293,33 @@
               </div>
             </div>
           </el-card>
-        </el-col>
-      </el-row>
+        </div>
 
-      <el-card style="margin-top: 20px">
-        <template #header>
-          <div class="chart-header">
-            <span>智能预警</span>
-            <el-button link type="primary" @click="handleViewAll">查看全部</el-button>
-          </div>
-        </template>
-        <el-table :data="warnings" style="width: 100%">
-          <el-table-column prop="level" label="预警级别" width="100">
-            <template #default="{ row }">
-              <el-tag :type="row.level === '高' ? 'danger' : row.level === '中' ? 'warning' : 'info'" size="small">{{ row.level }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="type" label="预警类型" width="120" />
-          <el-table-column prop="content" label="预警内容" />
-          <el-table-column prop="asset" label="关联资产" width="150" />
-          <el-table-column prop="time" label="时间" width="120" />
-          <el-table-column label="操作" width="100" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="handleProcess(row)">处理</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
+        <el-card shadow="never">
+          <template #header>
+            <div class="chart-header">
+              <span>智能预警</span>
+              <el-button link type="primary" @click="handleViewAll">查看全部</el-button>
+            </div>
+          </template>
+          <el-table :data="warnings" style="width: 100%">
+            <el-table-column prop="level" label="预警级别" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.level === '高' ? 'danger' : row.level === '中' ? 'warning' : 'info'" size="small">{{ row.level }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="type" label="预警类型" width="120" />
+            <el-table-column prop="content" label="预警内容" />
+            <el-table-column prop="asset" label="关联资产" width="150" />
+            <el-table-column prop="time" label="时间" width="120" />
+            <el-table-column label="操作" width="100" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="handleProcess(row)">处理</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </div>
     </el-card>
 
     <el-dialog v-model="warningDetailVisible" title="预警处理" width="600px">
@@ -407,8 +353,19 @@ import {
   OfficeBuilding, TrendCharts, Money, Warning,
   House, MapLocation, Shop, Goods, Van, Coin, Document
 } from '@element-plus/icons-vue'
+import { useUserStore } from '../../store/user'
+import { useAssetStore } from '../../store/asset'
+import { useContractStore } from '../../store/contract'
+import { useWarningStore } from '../../store/warning'
+import { useSuperviseStore } from '../../store/supervise'
 
 const router = useRouter()
+const user = useUserStore()
+const assetStore = useAssetStore()
+const contractStore = useContractStore()
+const warningStore = useWarningStore()
+const superviseStore = useSuperviseStore()
+
 const dateRange = ref([])
 const chartType1 = ref('bar')
 const chartType2 = ref('line')
@@ -416,98 +373,144 @@ const warningDetailVisible = ref(false)
 const currentWarning = ref(null)
 const processRemark = ref('')
 
-const assetCategories = [
-  { name: '房产类', count: '1,286', value: '562,300', icon: House, color: '#1890ff', bg: '#e6f7ff' },
-  { name: '土地类', count: '642', value: '398,500', icon: MapLocation, color: '#52c41a', bg: '#f6ffed' },
-  { name: '经营类房屋店铺', count: '856', value: '215,800', icon: Shop, color: '#fa8c16', bg: '#fff7e6' },
-  { name: '农贸市场', count: '128', value: '46,200', icon: Goods, color: '#722ed1', bg: '#f9f0ff' },
-  { name: '运输设备', count: '356', value: '12,600', icon: Van, color: '#13c2c2', bg: '#e6fffb' },
-  { name: '矿产', count: '94', value: '45,100', icon: Coin, color: '#eb2f96', bg: '#fff0f6' }
-]
+const PALETTE = ['#1668DC', '#13C2C2', '#C8963E', '#722ED1', '#52C41A', '#FA8C16', '#F5222D', '#2F54EB']
+const org = computed(() => user.user?.org || '')
+const fmt = n => (Number(n) || 0).toLocaleString()
+const r1 = n => Math.round((Number(n) || 0) * 10) / 10
 
-const todoTasks = [
-  { title: '闲置资产盘活方案待报送', no: 'DB-2026-009' },
-  { title: '未办证资产推进材料待提交', no: 'DB-2026-014' }
-]
+// ===== 资产基础口径（企业端一律走 visibleAssets，已按 user.org 过滤）=====
+const assets = computed(() => assetStore.visibleAssets || [])
+const isIdle = a => a.status === '闲置' || a.status === '空置'
+const isLeased = a => a.status === '已出租' || a.status === '部分出租'
+const totalAssetCount = computed(() => assets.value.length)
+const rentedCount = computed(() => assets.value.filter(isLeased).length)
+const inUseCount = computed(() => assets.value.filter(a => isLeased(a) || a.status === '自用').length)
+const idleCount = computed(() => assets.value.filter(isIdle).length)
+const idleArea = computed(() => assets.value.filter(isIdle).reduce((s, a) => s + (Number(a.area) || 0), 0))
+const totalBookValue = computed(() => assets.value.reduce((s, a) => s + (Number(a.bookValue) || 0), 0))
+const rentalRate = computed(() => totalAssetCount.value ? r1(rentedCount.value / totalAssetCount.value * 100) : 0)
+const utilizationRate = computed(() => totalAssetCount.value ? r1(inUseCount.value / totalAssetCount.value * 100) : 0)
+const idleRate = computed(() => totalAssetCount.value ? r1(idleCount.value / totalAssetCount.value * 100) : 0)
 
-const riskWarnings = [
-  { tag: '报事报修', tagType: 'danger', title: '农贸市场2号屋面漏水报修超时', no: 'BX-2026-1187' },
-  { tag: '项目巡查', tagType: 'warning', title: '滨江改造项目巡查发现安全隐患', no: 'XC-2026-0356' },
-  { tag: '固定资产', tagType: 'info', title: '办公设备一批已达报废年限', no: 'GZ-2026-0345' }
-]
+// ===== 资产总量头图：总价值(亿元) + 六大分类 =====
+const heroValue = computed(() => (totalBookValue.value / 10000).toFixed(1))
+const heroIconMap = { '房产类': House, '土地类': MapLocation, '经营类房屋店铺': Shop, '农贸市场': Goods, '运输设备': Van, '矿产资源类': Coin }
+const heroColorMap = {
+  '房产类': ['#1668DC', '#E8F2FF'], '土地类': ['#52c41a', '#f6ffed'], '经营类房屋店铺': ['#fa8c16', '#fff7e6'],
+  '农贸市场': ['#722ed1', '#f9f0ff'], '运输设备': ['#13c2c2', '#e6fffb'], '矿产资源类': ['#2F54EB', '#fff0f6']
+}
+const assetCategories = computed(() => ['房产类', '土地类', '经营类房屋店铺', '农贸市场', '运输设备', '矿产资源类'].map((name, i) => {
+  const rows = assets.value.filter(a => a.assetCategory === name)
+  const color = heroColorMap[name] || [PALETTE[i % PALETTE.length], '#F5F7FA']
+  return {
+    name,
+    count: fmt(rows.length),
+    value: fmt(rows.reduce((s, a) => s + (Number(a.bookValue) || 0), 0)),
+    icon: heroIconMap[name] || OfficeBuilding,
+    color: color[0],
+    bg: color[1]
+  }
+}))
 
-const assetInfoTiles = [
-  { label: '资产总数', value: '3,862', unit: '宗' },
-  { label: '运营总数', value: '2,946', unit: '宗' },
-  { label: '资产闲置率', value: '12.6', unit: '%' },
-  { label: '闲置面积', value: '8.6', unit: '万㎡' }
-]
+// ===== 待办 / 风险：预警任务 + 督办单（均按本公司口径）=====
+const OPEN_TASK = t => t.status !== '已完成' && t.status !== '已审核'
+const todoTasks = computed(() => warningStore.tasksOfOrg(org.value).filter(OPEN_TASK).slice(0, 6)
+  .map(t => ({ no: t.id, title: t.name })))
+const OPEN_ORDER = ['待处理', '待确认', '已驳回', '已逾期']
+const orderTagType = s => s === '已逾期' ? 'danger' : s === '待确认' ? 'warning' : s === '已驳回' ? 'danger' : 'info'
+const riskWarnings = computed(() => superviseStore.getOrdersByCompany(org.value)
+  .filter(o => OPEN_ORDER.includes(o.status)).slice(0, 6)
+  .map(o => ({ tag: o.type, tagType: orderTagType(o.status), title: o.reason || o.subject || o.type, no: o.id })))
 
-const mortgageTiles = [
-  { label: '权证总数', value: '2,394', unit: '本' },
-  { label: '权证获取比', value: '62', unit: '%' },
-  { label: '抵押总数', value: '186', unit: '宗' },
-  { label: '抵押总额', value: '21.8', unit: '亿元' }
-]
+// ===== 资产信息 / 权属抵押 瓦片 =====
+const certCount = computed(() => assets.value.filter(a => a.certStatus === '已办证').length)
+const assetInfoTiles = computed(() => [
+  { label: '资产总数', value: fmt(totalAssetCount.value), unit: '宗' },
+  { label: '运营总数', value: fmt(inUseCount.value), unit: '宗' },
+  { label: '资产闲置率', value: idleRate.value, unit: '%' },
+  { label: '闲置面积', value: (idleArea.value / 10000).toFixed(1), unit: '万㎡' }
+])
+// 抵押数据无对应 store（allowed 集内不含抵押 store），权证两项由台账派生，抵押两项移除。
+const mortgageTiles = computed(() => [
+  { label: '权证总数', value: fmt(certCount.value), unit: '本' },
+  { label: '办证率', value: totalAssetCount.value ? r1(certCount.value / totalAssetCount.value * 100) : 0, unit: '%' }
+])
 
-const ownershipData = [
-  { name: '有证', percent: 62, color: '#1890ff' },
-  { name: '无证', percent: 26, color: '#faad14' },
-  { name: '办理中', percent: 12, color: '#52c41a' }
-]
+// ===== 资产权属（有证 / 办理中 / 无证）=====
+const ownershipData = computed(() => {
+  const total = totalAssetCount.value || 1
+  const hasCert = assets.value.filter(a => a.certStatus === '已办证').length
+  const processing = assets.value.filter(a => a.certStatus && a.certStatus.includes('办理中')).length
+  const none = totalAssetCount.value - hasCert - processing
+  const pct = n => Math.round(n / total * 100)
+  return [
+    { name: '有证', percent: pct(hasCert), color: '#1668DC' },
+    { name: '办理中', percent: pct(processing), color: '#52c41a' },
+    { name: '无证', percent: pct(none), color: '#E8912A' }
+  ]
+})
 
-const funnelData = [
-  { name: '住宅用房', count: 860, percent: 100, color: '#1890ff' },
-  { name: '商业用房', count: 720, percent: 86, color: '#36cfc9' },
-  { name: '办公用房', count: 560, percent: 72, color: '#52c41a' },
-  { name: '工业厂房', count: 480, percent: 62, color: '#faad14' },
-  { name: '仓储用房', count: 380, percent: 52, color: '#fa8c16' },
-  { name: '车位', count: 320, percent: 43, color: '#722ed1' },
-  { name: '土地', count: 280, percent: 35, color: '#eb2f96' },
-  { name: '其他', count: 262, percent: 28, color: '#8c8c8c' }
-]
+// ===== 资产类型漏斗（按 assetUsage 分布，宽度相对最大值）=====
+const funnelData = computed(() => {
+  const map = new Map()
+  assets.value.forEach(a => {
+    const k = a.assetUsage || a.type || '其他'
+    map.set(k, (map.get(k) || 0) + 1)
+  })
+  const rows = [...map.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 8)
+  const max = rows.length ? rows[0].count : 1
+  return rows.map((r, i) => ({ ...r, percent: Math.max(28, Math.round(r.count / max * 100)), color: PALETTE[i % PALETTE.length] }))
+})
 
-const streetData = [
-  { name: '吴航街道', count: 860, area: 780 },
-  { name: '航城街道', count: 720, area: 860 },
-  { name: '营前街道', count: 560, area: 480 },
-  { name: '首占镇', count: 480, area: 560 },
-  { name: '玉田镇', count: 380, area: 320 },
-  { name: '古槐镇', count: 320, area: 410 }
-]
+// ===== 资产数量与面积（按所在区域）=====
+const streetData = computed(() => {
+  const map = new Map()
+  assets.value.forEach(a => {
+    const k = a.location || '其他'
+    const cur = map.get(k) || { count: 0, area: 0 }
+    cur.count += 1
+    cur.area += Number(a.area) || 0
+    map.set(k, cur)
+  })
+  return [...map.entries()].map(([name, v]) => ({ name, count: v.count, area: Math.round(v.area) }))
+    .sort((a, b) => (b.count + b.area) - (a.count + a.area)).slice(0, 8)
+})
+const stackMax = computed(() => Math.max(1, ...streetData.value.map(s => s.count + s.area)))
 
-const stackMax = computed(() => Math.max(...streetData.map(s => s.count + s.area)))
+// ===== 租赁情况瓦片 =====
+const activeContracts = computed(() => (contractStore.visibleContracts || []).filter(c => c.status !== '已终止' && c.status !== '退租'))
+const leasedArea = computed(() => activeContracts.value.reduce((s, c) => s + (Number(c.leaseArea) || 0), 0))
+const yearReceivable = computed(() => (contractStore.visibleFees || []).reduce((s, f) => s + (Number(f.yearReceivable) || 0), 0))
+const yearActual = computed(() => (contractStore.visibleFees || []).reduce((s, f) => s + (Number(f.yearActual) || 0), 0))
+const arrearsTotal = computed(() => (contractStore.visibleFees || []).reduce((s, f) => s + (Number(f.arrears) || 0), 0))
+const collectRate = computed(() => yearReceivable.value ? r1(yearActual.value / yearReceivable.value * 100) : 0)
+const leaseTiles = computed(() => [
+  { label: '租赁总数', value: fmt(rentedCount.value), unit: '宗', color: '#1668DC' },
+  { label: '租赁总面积', value: (leasedArea.value / 10000).toFixed(1), unit: '万㎡', color: '#722ed1' },
+  { label: '合同总数', value: fmt((contractStore.visibleContracts || []).length), unit: '份', color: '#13c2c2' },
+  { label: '盘活率', value: utilizationRate.value, unit: '%', color: '#52c41a' },
+  { label: '租金收缴', value: collectRate.value, unit: '%', color: '#52c41a' },
+  { label: '当前欠缴', value: arrearsTotal.value.toFixed(1), unit: '万元', color: '#f5222d' }
+])
+// 说明：租赁「类型」(整租/分租/合租) 与租赁「权属性质」(国有/集体/私有) 台账均无对应字段，
+// 无法由 store 派生，故移除对应饼图（见模板注释）。
 
-const leaseTiles = [
-  { label: '租赁总数', value: '1,286', unit: '宗', color: '#1890ff' },
-  { label: '租赁总面积', value: '42.6', unit: '万㎡', color: '#722ed1' },
-  { label: '合同总数', value: '1,532', unit: '份', color: '#13c2c2' },
-  { label: '资产维修', value: '86', unit: '单', color: '#fa8c16' },
-  { label: '租金收缴', value: '96.8', unit: '%', color: '#52c41a' },
-  { label: '当前欠缴', value: '328.5', unit: '万元', color: '#f5222d' }
-]
-
-const leaseTypeData = [
-  { name: '整租', percent: 45, color: '#1890ff' },
-  { name: '分租', percent: 30, color: '#52c41a' },
-  { name: '合租', percent: 15, color: '#faad14' },
-  { name: '其他', percent: 10, color: '#8c8c8c' }
-]
-
-const leaseRightData = [
-  { name: '国有', percent: 55, color: '#1890ff' },
-  { name: '集体', percent: 25, color: '#36cfc9' },
-  { name: '私有', percent: 20, color: '#faad14' }
-]
-
-const revenueRank = [
-  { company: '长乐区国有资产投资有限公司', project: '万达广场商业裙楼', rate: 98, leaseCount: 286, leaseAmount: '8,650.2' },
-  { company: '长乐城市运营集团有限公司', project: '滨江金融港写字楼', rate: 95, leaseCount: 214, leaseAmount: '7,320.8' },
-  { company: '长乐文旅发展有限公司', project: '南山文化创意园', rate: 91, leaseCount: 168, leaseAmount: '5,480.5' },
-  { company: '长乐城乡建发有限公司', project: '营前农贸市场综合体', rate: 88, leaseCount: 152, leaseAmount: '4,260.3' },
-  { company: '长乐交通建设投资有限公司', project: '首占物流仓储基地', rate: 82, leaseCount: 96, leaseAmount: '3,180.6' },
-  { company: '长乐工业园区管委会', project: '古槐标准厂房片区', rate: 76, leaseCount: 84, leaseAmount: '2,540.9' }
-]
+// ===== 资产创收排行（本公司合同按资产归集）=====
+const revenueRank = computed(() => {
+  const map = new Map()
+  activeContracts.value.forEach(c => {
+    const cur = map.get(c.assetName) || { project: c.assetName, leaseCount: 0, leaseAmount: 0 }
+    cur.leaseCount += 1
+    cur.leaseAmount += Number(c.annualRent) || 0
+    map.set(c.assetName, cur)
+  })
+  return [...map.values()].map(r => {
+    const asset = assets.value.find(a => a.name === r.project)
+    const area = asset ? (Number(asset.area) || 0) : 0
+    const la = activeContracts.value.filter(c => c.assetName === r.project).reduce((s, c) => s + (Number(c.leaseArea) || 0), 0)
+    return { company: org.value, project: r.project, rate: area ? Math.min(100, Math.round(la / area * 100)) : 100, leaseCount: r.leaseCount, leaseAmount: r.leaseAmount.toFixed(1) }
+  }).sort((a, b) => parseFloat(b.leaseAmount) - parseFloat(a.leaseAmount)).slice(0, 6)
+})
 
 function makeConic(data) {
   let cum = 0
@@ -519,62 +522,45 @@ function makeConic(data) {
   return { background: `conic-gradient(${parts.join(', ')})` }
 }
 
-const ownershipDonutStyle = computed(() => makeConic(ownershipData))
-const leaseTypePieStyle = computed(() => makeConic(leaseTypeData))
-const leaseRightDonutStyle = computed(() => makeConic(leaseRightData))
+const ownershipDonutStyle = computed(() => makeConic(ownershipData.value))
 
-const assetTypeData = ref([
-  { name: '保障房', count: 500, percent: 38.9, color: '#1890ff' },
-  { name: '商铺', count: 300, percent: 23.3, color: '#52c41a' },
-  { name: '写字楼', count: 200, percent: 15.6, color: '#fa8c16' },
-  { name: '厂房', count: 186, percent: 14.5, color: '#722ed1' },
-  { name: '农贸市场', count: 100, percent: 7.7, color: '#13c2c2' }
-])
-
-const monthlyRevenue = ref([
-  { month: '1月', value: 180 },
-  { month: '2月', value: 195 },
-  { month: '3月', value: 210 },
-  { month: '4月', value: 205 },
-  { month: '5月', value: 220 },
-  { month: '6月', value: 235 },
-  { month: '7月', value: 228 },
-  { month: '8月', value: 242 },
-  { month: '9月', value: 258 }
-])
-
-const warnings = ref([
-  { level: '高', type: '合同到期', content: 'XX商铺A座201合同将于7天后到期，请及时处理续租或清退', asset: '商铺A座201', time: '2026-09-15' },
-  { level: '高', type: '欠费预警', content: 'XX写字楼B栋301租金已逾期15天，累计欠费¥45,000', asset: '写字楼B栋301', time: '2026-09-14' },
-  { level: '中', type: '维修工单', content: 'XX厂房C区2号报修工单已超过48小时未处理', asset: '厂房C区2号', time: '2026-09-13' },
-  { level: '中', type: '安全巡检', content: 'XX保障房3号楼消防设施巡检逾期，请尽快安排', asset: '保障房3号楼', time: '2026-09-12' },
-  { level: '低', type: '证照到期', content: 'XX农贸市场产权证将于3个月后到期，请提前准备续期材料', asset: '农贸市场1号', time: '2026-09-10' }
-])
-
-const pieChartStyle = computed(() => {
-  let gradient = 'conic-gradient('
-  let cumulative = 0
-  for (const item of assetTypeData.value) {
-    gradient += `${item.color} ${cumulative}% ${cumulative + item.percent}%`
-    cumulative += item.percent
-    if (cumulative < 100) gradient += ', '
-  }
-  gradient += ')'
-  return { background: gradient }
+// ===== 资产类型分布（按 type，饼图/柱图共用）=====
+const assetTypeData = computed(() => {
+  const map = new Map()
+  assets.value.forEach(a => { const k = a.type || '其他'; map.set(k, (map.get(k) || 0) + 1) })
+  const total = totalAssetCount.value || 1
+  return [...map.entries()].map(([name, count]) => ({ name, count, percent: Math.round(count / total * 1000) / 10 }))
+    .sort((a, b) => b.count - a.count).slice(0, 6)
+    .map((d, i) => ({ ...d, color: PALETTE[i % PALETTE.length] }))
 })
+
+// ===== 近 12 个月实收趋势（逐笔收缴流水按月归集）=====
+const monthlyRevenue = computed(() => {
+  const now = new Date()
+  const buckets = []
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    buckets.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, month: `${d.getMonth() + 1}月`, value: 0 })
+  }
+  const index = new Map(buckets.map(b => [b.key, b]))
+  ;(contractStore.visibleFees || []).forEach(f => {
+    (f.payments || []).forEach(p => {
+      const b = index.get(String(p.date || '').slice(0, 7))
+      if (b) b.value = Math.round((b.value + (Number(p.amount) || 0)) * 10) / 10
+    })
+  })
+  return buckets
+})
+const revMax = computed(() => Math.max(1, ...monthlyRevenue.value.map(m => m.value)))
+
+const pieChartStyle = computed(() => makeConic(assetTypeData.value))
 
 const chartPoints = computed(() => {
   const data = monthlyRevenue.value
-  const maxVal = 300
-  const startX = 50
-  const endX = 380
-  const topY = 20
-  const bottomY = 190
-  const step = (endX - startX) / (data.length - 1)
-  return data.map((item, i) => ({
-    x: startX + i * step,
-    y: bottomY - (item.value / maxVal) * (bottomY - topY)
-  }))
+  const maxVal = revMax.value
+  const startX = 50, endX = 380, topY = 20, bottomY = 190
+  const step = data.length > 1 ? (endX - startX) / (data.length - 1) : 0
+  return data.map((item, i) => ({ x: startX + i * step, y: bottomY - (item.value / maxVal) * (bottomY - topY) }))
 })
 
 const linePoints = computed(() => chartPoints.value.map(p => `${p.x},${p.y}`).join(' '))
@@ -584,6 +570,15 @@ const areaPoints = computed(() => {
   if (!pts.length) return ''
   return `${pts[0].x},190 ${linePoints.value} ${pts[pts.length - 1].x},190`
 })
+
+// ===== 智能预警：本公司预警任务（可处理，处理后数量联动）=====
+const taskLevel = t => t.priority === '高' ? '高' : t.priority === '中' ? '中' : '低'
+const warnings = computed(() => warningStore.tasksOfOrg(org.value).filter(OPEN_TASK).slice(0, 8).map(t => ({
+  id: t.id, level: taskLevel(t), type: t.type, content: t.name, asset: t.asset, time: t.deadline
+})))
+
+const kpiWarningCount = computed(() => warningStore.tasksOfOrg(org.value).filter(OPEN_TASK).length)
+const yearRevenueWan = computed(() => Math.round(yearReceivable.value))
 
 const handleViewAll = () => {
   router.push('/inspection-maintenance')
@@ -595,26 +590,22 @@ const handleProcess = (row) => {
 }
 
 const handleProcessSubmit = () => {
-  if (currentWarning.value) {
-    currentWarning.value.status = '已处理'
+  if (currentWarning.value && currentWarning.value.id) {
+    warningStore.updateTaskStatus(currentWarning.value.id, '已完成', { remark: processRemark.value })
   }
   warningDetailVisible.value = false
+  processRemark.value = ''
   ElMessage.success('预警已处理')
 }
 </script>
 
 <style scoped>
-.page-container {
-  height: 100%;
-}
-
 .hero-panel {
   display: flex;
-  gap: 12px;
-  background: #fff;
-  border-radius: 6px;
-  padding: 14px;
-  margin-bottom: 12px;
+  gap: 16px;
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  padding: 16px;
 }
 
 .hero-total {
@@ -673,14 +664,14 @@ const handleProcessSubmit = () => {
 .cat-card {
   flex: none;
   width: 190px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--bd);
   border-radius: 6px;
   padding: 10px 12px;
   transition: box-shadow 0.2s;
 }
 
 .cat-card:hover {
-  box-shadow: 0 2px 12px rgba(24, 144, 255, 0.15);
+  box-shadow: 0 2px 12px rgba(22, 104, 220, 0.15);
 }
 
 .cat-top {
@@ -711,7 +702,7 @@ const handleProcessSubmit = () => {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   margin-top: 4px;
 }
 
@@ -721,12 +712,11 @@ const handleProcessSubmit = () => {
 }
 
 .panel-card {
-  margin-bottom: 12px;
-  border-radius: 6px;
+  border-radius: var(--r-md);
 }
 
 .panel-card :deep(.el-card__body) {
-  padding: 14px 16px;
+  padding: 16px 20px;
 }
 
 .chart-panel {
@@ -774,7 +764,7 @@ const handleProcessSubmit = () => {
   align-items: center;
   gap: 8px;
   padding: 7px 0;
-  border-bottom: 1px dashed #f0f0f0;
+  border-bottom: 1px dashed var(--bd);
   font-size: 13px;
 }
 
@@ -791,13 +781,13 @@ const handleProcessSubmit = () => {
 }
 
 .mini-no {
-  color: #999;
+  color: var(--t-weak);
   font-size: 12px;
   flex: none;
 }
 
 .tile-strip {
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--bd);
   border-radius: 6px;
 }
 
@@ -844,7 +834,7 @@ const handleProcessSubmit = () => {
 
 .donut-hole span {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   margin-top: 2px;
 }
 
@@ -878,7 +868,7 @@ const handleProcessSubmit = () => {
 }
 
 .pct-name {
-  color: #666;
+  color: var(--t-weak);
   flex: none;
   width: 44px;
 }
@@ -920,7 +910,7 @@ const handleProcessSubmit = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
-  border-top: 1px dashed #f0f0f0;
+  border-top: 1px dashed var(--bd);
   padding-top: 8px;
 }
 
@@ -929,7 +919,7 @@ const handleProcessSubmit = () => {
   align-items: center;
   gap: 5px;
   font-size: 12px;
-  color: #666;
+  color: var(--t-weak);
 }
 
 .legend-item i {
@@ -954,13 +944,13 @@ const handleProcessSubmit = () => {
   flex: none;
   width: 62px;
   font-size: 12px;
-  color: #666;
+  color: var(--t-weak);
 }
 
 .stack-track {
   flex: 1;
   height: 14px;
-  background: #f5f5f5;
+  background: #F5F7FA;
   border-radius: 3px;
   display: flex;
   overflow: hidden;
@@ -975,13 +965,13 @@ const handleProcessSubmit = () => {
 }
 
 .seg-area {
-  background: #faad14;
+  background: #E8912A;
 }
 
 .stack-val {
   flex: none;
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   white-space: nowrap;
 }
 
@@ -994,7 +984,7 @@ const handleProcessSubmit = () => {
 
 .lease-tile {
   background: #fafcff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--bd);
   border-radius: 6px;
   padding: 12px;
   text-align: center;
@@ -1008,13 +998,13 @@ const handleProcessSubmit = () => {
 .lease-value span {
   font-size: 12px;
   font-weight: 400;
-  color: #999;
+  color: var(--t-weak);
   margin-left: 2px;
 }
 
 .lease-label {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   margin-top: 4px;
 }
 
@@ -1028,7 +1018,7 @@ const handleProcessSubmit = () => {
   font-size: 12px;
   font-weight: 700;
   color: #fff;
-  background: #bfbfbf;
+  background: #909399;
 }
 
 .rank-badge.rank-1 {
@@ -1051,8 +1041,11 @@ const handleProcessSubmit = () => {
   font-weight: bold;
 }
 
-.stat-row {
-  margin-bottom: 0;
+/* 数据驾驶舱内部纵向节奏：交给 flex + gap，替代 el-row 之间的 margin-top:20 */
+.dash-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .stat-card {
@@ -1078,13 +1071,13 @@ const handleProcessSubmit = () => {
 .stat-card .stat-value {
   font-size: 24px;
   font-weight: bold;
-  color: #262626;
+  color: var(--t-main);
   margin-bottom: 4px;
 }
 
 .stat-card .stat-label {
   font-size: 14px;
-  color: #8c8c8c;
+  color: var(--t-weak);
   margin-bottom: 4px;
 }
 
@@ -1118,7 +1111,7 @@ const handleProcessSubmit = () => {
 
 .chart-bar-label {
   font-size: 14px;
-  color: #595959;
+  color: var(--t-sub);
   margin-bottom: 8px;
 }
 
@@ -1137,7 +1130,7 @@ const handleProcessSubmit = () => {
 
 .chart-bar-value {
   font-size: 13px;
-  color: #8c8c8c;
+  color: var(--t-weak);
   white-space: nowrap;
 }
 
@@ -1147,7 +1140,7 @@ const handleProcessSubmit = () => {
   justify-content: space-around;
   height: 250px;
   padding: 20px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--bd);
 }
 
 .trend-item {
@@ -1168,13 +1161,13 @@ const handleProcessSubmit = () => {
 
 .trend-label {
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--t-weak);
   margin-top: 8px;
 }
 
 .trend-value {
   font-size: 12px;
-  color: #595959;
+  color: var(--t-sub);
   margin-top: 4px;
 }
 
@@ -1215,12 +1208,12 @@ const handleProcessSubmit = () => {
 }
 
 .pie-legend-label {
-  color: #595959;
+  color: var(--t-sub);
   min-width: 56px;
 }
 
 .pie-legend-value {
-  color: #8c8c8c;
+  color: var(--t-weak);
 }
 
 .line-chart-container {
@@ -1237,6 +1230,6 @@ const handleProcessSubmit = () => {
   justify-content: space-between;
   padding: 8px 40px 0;
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--t-weak);
 }
 </style>

@@ -37,7 +37,7 @@
       </el-row>
     </el-card>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <el-table :data="filteredMortgages" border stripe>
         <el-table-column prop="id" label="抵押编号" width="130" />
         <el-table-column prop="assetName" label="资产名称" min-width="180" />
@@ -46,7 +46,7 @@
         <el-table-column prop="mortgagor" label="抵押公司/人" width="150" />
         <el-table-column prop="contractNo" label="抵押合同编号" width="140" />
         <el-table-column prop="amount" label="抵押金额(万元)" width="120" align="right">
-          <template #default="{ row }">{{ row.amount ? Number(row.amount).toFixed(2) : '-' }}</template>
+          <template #default="{ row }"><span class="num">{{ row.amount ? Number(row.amount).toFixed(2) : '-' }}</span></template>
         </el-table-column>
         <el-table-column prop="bank" label="抵押银行" width="150" />
         <el-table-column prop="period" label="抵押期限(月)" width="110" align="right" />
@@ -388,30 +388,10 @@ function handleExport() {
 </script>
 
 <style scoped>
-.page-container {
-  padding: 20px;
-}
-.scope-tag { line-height: 32px; font-size: 13px; color: var(--el-text-color-regular); }
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.page-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-.filter-bar {
-  margin-bottom: 16px;
-}
-.table-card {
-  margin-bottom: 16px;
-}
+.scope-tag { line-height: 32px; font-size: 13px; color: var(--t-sub); }
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 </style>

@@ -32,32 +32,24 @@
       </div>
     </div>
 
-    <el-row :gutter="16" style="margin-bottom:16px">
-      <el-col :span="6">
-        <el-card shadow="never" class="kpi-card">
-          <div class="kpi-value">{{ records.length }}</div>
-          <div class="kpi-label">处置总数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never" class="kpi-card" style="border-left:3px solid #E6A23C">
-          <div class="kpi-value">{{ records.filter(r => r.status === '待审批').length }}</div>
-          <div class="kpi-label">待审批</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never" class="kpi-card" style="border-left:3px solid #67C23A">
-          <div class="kpi-value">{{ records.filter(r => r.status === '已完成').length }}</div>
-          <div class="kpi-label">已完成</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never" class="kpi-card">
-          <div class="kpi-value">{{ totalValue }}<span style="font-size:14px;font-weight:normal">万</span></div>
-          <div class="kpi-label">处置总金额</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="grid-4">
+      <el-card shadow="never" class="kpi-card">
+        <div class="kpi-value">{{ records.length }}</div>
+        <div class="kpi-label">处置总数</div>
+      </el-card>
+      <el-card shadow="never" class="kpi-card" style="border-left:3px solid var(--c-warning)">
+        <div class="kpi-value">{{ records.filter(r => r.status === '待审批').length }}</div>
+        <div class="kpi-label">待审批</div>
+      </el-card>
+      <el-card shadow="never" class="kpi-card" style="border-left:3px solid var(--c-success)">
+        <div class="kpi-value">{{ records.filter(r => r.status === '已完成').length }}</div>
+        <div class="kpi-label">已完成</div>
+      </el-card>
+      <el-card shadow="never" class="kpi-card">
+        <div class="kpi-value">{{ totalValue }}<span style="font-size:14px;font-weight:normal">万</span></div>
+        <div class="kpi-label">处置总金额</div>
+      </el-card>
+    </div>
 
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane label="处置申请" name="list">
@@ -104,7 +96,7 @@
             <el-table-column type="expand">
               <template #default="{ row }">
                 <div style="padding:8px 24px">
-                  <div class="detail-grid" style="margin-bottom:10px">
+                  <div class="detail-grid" style="margin-bottom:12px">
                     <div class="cell"><div class="label">项目类型</div><div class="value">{{ row.projectType }}</div></div>
                     <div class="cell"><div class="label">所属公司</div><div class="value">{{ row.company }}</div></div>
                     <div class="cell"><div class="label">账面价值</div><div class="value">{{ row.bookValue }} 万元</div></div>
@@ -134,7 +126,7 @@
             <el-table-column prop="disposeValue" label="处置金额(万)" width="110" align="right" />
             <el-table-column label="审批进度" width="80" align="center">
               <template #default="{ row }">
-                <span style="color:#1890ff">{{ row.approvalLevel }}/{{ row.totalLevels }}</span>
+                <span style="color:var(--c-primary)">{{ row.approvalLevel }}/{{ row.totalLevels }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="85">
@@ -289,7 +281,7 @@
           <el-upload action="#" :auto-upload="false" :limit="5">
             <el-button size="small" type="primary">上传附件</el-button>
             <template #tip>
-              <div style="color:#999;font-size:12px">支持上传评估报告、技术鉴定等材料，最多5个文件</div>
+              <div style="color:var(--t-weak);font-size:12px">支持上传评估报告、技术鉴定等材料，最多5个文件</div>
             </template>
           </el-upload>
         </el-form-item>
@@ -342,19 +334,19 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="处置人">
               <el-select v-model="disposeForm.disposePerson" placeholder="请选择处置人" style="width:100%">
                 <el-option v-for="p in personOptions" :key="p" :label="p" :value="p" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="金额(万元)">
               <el-input-number v-model="disposeForm.disposeValue" :min="0" :step="10" :precision="2" style="width:100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="处置日期">
               <el-date-picker v-model="disposeForm.disposeDate" type="date" placeholder="请选择处置日期" format="YYYY-MM-DD" value-format="YYYY-MM-DD" style="width:100%" />
             </el-form-item>
@@ -403,7 +395,7 @@
             :type="log.result === '通过' ? 'success' : log.result === '驳回' ? 'danger' : 'primary'"
           >
             <strong>{{ log.approver }}</strong>（{{ log.levelName }}）{{ log.result }}
-            <p v-if="log.comment" style="color:#666;margin:4px 0 0">{{ log.comment }}</p>
+            <p v-if="log.comment" style="color:var(--t-sub);margin:4px 0 0">{{ log.comment }}</p>
           </el-timeline-item>
         </el-timeline>
       </template>
@@ -466,10 +458,21 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Filter, Plus, MoreFilled } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useUserStore } from '../../store/user'
+import { useControlStore } from '../../store/control'
 
 const assetStore = useAssetStore()
 const userStore = useUserStore()
+const controlStore = useControlStore()
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
+
+function assertDisposalAllowed(assetId) {
+  const { ok, reasons } = controlStore.canDispose(assetId)
+  if (ok) return true
+  ElMessageBox.alert(reasons.map(r => `· ${r}`).join('<br/>'), '该资产不可处置', {
+    type: 'warning', dangerouslyUseHTMLString: true
+  })
+  return false
+}
 
 const activeTab = ref('list')
 const methodFilter = ref('')
@@ -484,11 +487,11 @@ const currentRecord = ref(null)
 const currentFlowRecord = ref(null)
 
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(15)
 const pendingPage = ref(1)
-const pendingPageSize = ref(10)
+const pendingPageSize = ref(15)
 const historyPage = ref(1)
-const historyPageSize = ref(10)
+const historyPageSize = ref(15)
 
 const companyOptions = computed(() => [userStore.user?.org || '城投集团'])
 const personOptions = ['张三', '李四', '王五', '赵六', '当前用户']
@@ -795,6 +798,7 @@ function handleCreate() {
     ElMessage.warning('请填写完整信息')
     return
   }
+  if (!assertDisposalAllowed(createForm.value.assetId)) return
   const asset = assetOptions.value.find(a => a.id === createForm.value.assetId)
   const { total } = getApprovalLevels(createForm.value.disposeValue)
   const steps = buildApprovalSteps(createForm.value.disposeValue)
@@ -865,6 +869,7 @@ function submitDisposeSave() {
     ElMessage.warning('请填写完整信息')
     return
   }
+  if (!disposeEditRow.value && !assertDisposalAllowed(f.assetId)) return
   const now = new Date().toLocaleString('zh-CN')
   const asset = assetOptions.value.find(a => a.id === f.assetId)
   if (disposeEditRow.value) {

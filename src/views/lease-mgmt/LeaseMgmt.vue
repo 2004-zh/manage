@@ -10,7 +10,7 @@
       </div>
     </div>
 
-    <el-tabs v-model="mainTab" type="border-card">
+    <el-tabs v-model="mainTab" type="border-card" class="fill">
       <el-tab-pane label="租赁管理" name="lease">
         <el-tabs v-model="categoryTab" type="card" class="category-tabs" @tab-change="assetPage = 1">
           <el-tab-pane v-for="c in categories" :key="c" :label="c" :name="c" />
@@ -91,10 +91,35 @@
                       <el-tag :type="leaseTagType(c.leaseStatus)" size="small">{{ c.leaseStatus }}</el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="120">
+                  <el-table-column label="出租/自用/可用" width="170" align="right">
+                    <template #default="{ row: c }">
+                      <span style="color:#67c23a">{{ (c.leasedArea || 0).toLocaleString() }}</span>
+                      <span style="color:#c0c4cc"> / </span>
+                      <span style="color:#409eff">{{ (c.usedArea || 0).toLocaleString() }}</span>
+                      <span style="color:#c0c4cc"> / </span>
+                      <span style="color:#e6a23c">{{ ((c.usableArea || 0) - (c.leasedArea || 0) - (c.usedArea || 0)).toLocaleString() }}</span>
+                      <span style="color:#909399;font-size:12px"> ㎡</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="200">
                     <template #default="{ row: c }">
                       <el-button type="primary" link size="small" @click="viewAsset(c)">详情</el-button>
-                      <el-button type="primary" link size="small" @click="addLeaseFrom(c)">添加租赁</el-button>
+                      <el-dropdown
+                        v-if="rowAvailableArea(c) > 0"
+                        style="margin-left:8px;vertical-align:middle"
+                        @command="cmd => handleAssetMore(cmd, c)"
+                      >
+                        <el-button type="primary" link size="small">更多<el-icon style="margin-left:2px"><ArrowDown /></el-icon></el-button>
+                        <template #dropdown>
+                          <el-dropdown-menu>
+                            <el-dropdown-item command="use">+自用</el-dropdown-item>
+                            <el-dropdown-item command="occupy">+占用</el-dropdown-item>
+                            <el-dropdown-item command="lease">添加租赁</el-dropdown-item>
+                            <el-dropdown-item command="rent">跳招商发布</el-dropdown-item>
+                          </el-dropdown-menu>
+                        </template>
+                      </el-dropdown>
+                      <span v-else style="margin-left:8px;color:#f56c6c;font-size:12px">已租满</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -117,6 +142,16 @@
           <el-table-column prop="assetNo" label="资产编号" width="120" />
           <el-table-column prop="company" label="所属公司" width="140" show-overflow-tooltip />
           <el-table-column prop="address" label="资产地址" width="170" show-overflow-tooltip />
+          <el-table-column label="出租/自用/可用" width="180" align="right">
+            <template #default="{ row }">
+              <span class="area-rented num">{{ (row.leasedArea || 0).toLocaleString() }}</span>
+              <span class="area-sep"> / </span>
+              <span class="area-self num">{{ (row.usedArea || 0).toLocaleString() }}</span>
+              <span class="area-sep"> / </span>
+              <span class="area-free num">{{ rowAvailableArea(row).toLocaleString() }}</span>
+              <span class="area-unit"> ㎡</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="assetStatus" label="资产状态" width="95" align="center">
             <template #default="{ row }">
               <el-tag :type="assetStatusType(row.assetStatus)" size="small">{{ row.assetStatus }}</el-tag>
@@ -127,20 +162,26 @@
               <el-tag :type="leaseTagType(row.leaseStatus)" size="small">{{ row.leaseStatus }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150" fixed="right">
+          <el-table-column label="操作" width="200" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" link size="small" @click="viewAsset(row)">详情</el-button>
-              <el-dropdown style="margin-left:8px;vertical-align:middle" @command="cmd => handleAssetMore(cmd, row)">
+              <el-dropdown
+                v-if="(!row.children || !row.children.length) && rowAvailableArea(row) > 0"
+                style="margin-left:8px;vertical-align:middle"
+                @command="cmd => handleAssetMore(cmd, row)"
+              >
                 <el-button type="primary" link size="small">更多<el-icon style="margin-left:2px"><ArrowDown /></el-icon></el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item command="use">+自用</el-dropdown-item>
                     <el-dropdown-item command="occupy">+占用</el-dropdown-item>
                     <el-dropdown-item command="lease">添加租赁</el-dropdown-item>
-                    <el-dropdown-item command="rent">添加招租</el-dropdown-item>
+                    <el-dropdown-item command="rent">跳招商发布</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
+              <span v-else-if="row.children && row.children.length" class="hint-split">已拆分，请在子单元操作</span>
+              <span v-else class="hint-full">已租满，无可操作面积</span>
             </template>
           </el-table-column>
         </el-table>
@@ -148,7 +189,7 @@
           <el-pagination
             v-model:current-page="assetPage"
             v-model:page-size="assetPageSize"
-            :page-sizes="[10, 20, 50]"
+            :page-sizes="[15, 30, 50]"
             :total="filteredAssets.length"
             layout="total, sizes, prev, pager, next, jumper"
           />
@@ -161,14 +202,20 @@
             <el-col :span="5">
               <el-input v-model="filters.keyword" placeholder="资产名称/合同编号" clearable :prefix-icon="Search" />
             </el-col>
-            <el-col :span="4">
+            <el-col :span="5">
               <el-select v-model="filters.leaseStatus" placeholder="租赁状态" clearable>
                 <el-option label="在租" value="在租" />
                 <el-option label="已退租" value="已退租" />
                 <el-option label="即将到期" value="即将到期" />
+                <el-option label="待起租" value="待起租" />
               </el-select>
             </el-col>
-            <el-col :span="4">
+            <el-col :span="5">
+              <el-select v-model="filters.project" placeholder="所属项目" clearable>
+                <el-option v-for="p in projectOptions" :key="p" :label="p" :value="p" />
+              </el-select>
+            </el-col>
+            <el-col :span="5">
               <el-select v-model="filters.assetType" placeholder="资产类型" clearable>
                 <el-option label="商铺" value="商铺" />
                 <el-option label="写字楼" value="写字楼" />
@@ -177,7 +224,7 @@
                 <el-option label="农贸市场" value="农贸市场" />
               </el-select>
             </el-col>
-            <el-col :span="3">
+            <el-col :span="4">
               <el-button type="primary" @click="handleSearch">查询</el-button>
               <el-button @click="resetFilters">重置</el-button>
             </el-col>
@@ -188,6 +235,7 @@
           <el-table-column prop="contractNo" label="合同编号" width="130" />
           <el-table-column prop="assetName" label="资产名称" min-width="200" show-overflow-tooltip />
           <el-table-column prop="tenant" label="承租方" width="140" />
+          <el-table-column prop="project" label="所属项目" width="150" show-overflow-tooltip />
           <el-table-column prop="area" label="面积(㎡)" width="100" align="right" />
           <el-table-column prop="monthlyRent" label="月租金(元)" width="120" align="right">
             <template #default="{ row }">{{ row.monthlyRent.toLocaleString() }}</template>
@@ -199,11 +247,12 @@
               <el-tag :type="getStatusType(row.status)" size="small">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="160" fixed="right">
+          <el-table-column label="操作" width="200" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
+              <el-button type="success" link size="small" @click="handleStartLease(row)" v-if="row.status === '待起租'">起租</el-button>
               <el-button type="primary" link size="small" @click="handleRenew(row)" v-if="row.status === '在租' || row.status === '即将到期'">续租</el-button>
-              <el-button type="danger" link size="small" @click="handleTerminate(row)" v-if="row.status === '在租' || row.status === '即将到期'">退租</el-button>
+              <el-button type="danger" link size="small" @click="handleTerminate(row)" v-if="row.status !== '已退租'">退租</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -224,18 +273,18 @@
             <el-col :span="5">
               <el-input v-model="occFilters.person" placeholder="责任人" clearable :prefix-icon="Search" />
             </el-col>
-            <el-col :span="4">
+            <el-col :span="5">
               <el-select v-model="occFilters.company" placeholder="公司" clearable>
                 <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
               </el-select>
             </el-col>
-            <el-col :span="4">
+            <el-col :span="5">
               <el-select v-model="occFilters.status" placeholder="状态" clearable>
                 <el-option label="正常" value="正常" />
                 <el-option label="已过期" value="已过期" />
               </el-select>
             </el-col>
-            <el-col :span="4">
+            <el-col :span="5">
               <el-select v-model="occFilters.type" placeholder="类型" clearable>
                 <el-option label="自用" value="自用" />
                 <el-option label="占用" value="占用" />
@@ -339,7 +388,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item v-if="useForm.useStatus === '部分' + useMode" :label="useMode + '面积(㎡)'">
-          <el-input-number v-model="useForm.useArea" :min="0" :max="useAsset ? useAsset.usableArea : 0" :step="10" :precision="2" style="width: 200px" />
+          <el-input-number v-model="useForm.useArea" :min="0" :max="useAsset ? rowAvailableArea(useAsset) : 0" :step="10" :precision="2" style="width: 200px" />
         </el-form-item>
         <el-form-item :label="useMode + '编号'">
           <el-input v-model="useForm.useNo" :placeholder="'请输入' + useMode + '编号'" maxlength="20" show-word-limit style="width: 320px" />
@@ -410,51 +459,41 @@
     </el-dialog>
 
     <el-dialog v-model="addDialogVisible" title="新增租赁" width="650px" destroy-on-close>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 12px"
+        title="适用场景：已有确定租户、直接议定租金时走此入口即时签约。"
+        description="若需公开发布招租信息、走报名/竞价/摇号流程，请前往『资产运营 → 招商发布』；招商成交后再回到本页『新增租赁』落定合同。"
+      />
       <el-form :model="addForm" label-width="100px">
+        <el-form-item label="租赁资产" required>
+          <el-select v-model="addForm.assetId" placeholder="选择闲置或部分出租的现有资产" style="width: 100%" filterable @change="handleAddAssetPick">
+            <el-option
+              v-for="a in leaseAssetOptions"
+              :key="a.id"
+              :label="`${a.name}（可租 ${a.area.toLocaleString()} / ${a.totalArea.toLocaleString()} ㎡${a.status === '部分出租' ? '，部分出租' : ''}）`"
+              :value="a.id"
+            />
+          </el-select>
+          <div class="area-hint" v-if="!addForm.assetId">从资产库中选择现有资产；签约后自动联动资产租赁状态与工作台、盘活面板统计</div>
+        </el-form-item>
         <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="资产种类" required>
-              <el-select v-model="addForm.category" placeholder="请选择种类" style="width: 100%">
-                <el-option v-for="c in categories" :key="c" :label="c" :value="c" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="资产类型" required>
-              <el-select v-model="addForm.assetType" placeholder="请选择类型" style="width: 100%">
-                <el-option label="商铺" value="商铺" />
-                <el-option label="写字楼" value="写字楼" />
-                <el-option label="厂房" value="厂房" />
-                <el-option label="保障房" value="保障房" />
-                <el-option label="农贸市场" value="农贸市场" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="资产名称" required>
-              <el-input v-model="addForm.assetName" placeholder="请输入资产名称" />
-            </el-form-item>
-          </el-col>
           <el-col :span="12">
             <el-form-item label="承租方" required>
               <el-input v-model="addForm.tenant" placeholder="请输入承租方" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="面积(㎡)">
-              <el-input-number v-model="addForm.area" :min="0" :precision="2" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="月租金(元)">
-              <el-input-number v-model="addForm.monthlyRent" :min="0" :precision="2" style="width: 100%" />
+            <el-form-item label="租赁面积(㎡)" required>
+              <el-input-number v-model="addForm.area" :min="0" :max="pickedAddArea" :precision="2" :step="100" style="width: 100%" :disabled="!addForm.assetId" />
             </el-form-item>
           </el-col>
         </el-row>
+        <el-form-item label="月租金(元)" required>
+          <el-input-number v-model="addForm.monthlyRent" :min="0" :precision="2" :step="100" style="width: 100%" />
+        </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="起租日" required>
@@ -482,6 +521,18 @@
           <el-descriptions-item label="资产名称">{{ splitAsset.name }}</el-descriptions-item>
           <el-descriptions-item label="资产编号">{{ splitAsset.assetNo }}</el-descriptions-item>
           <el-descriptions-item label="可使用面积">{{ splitAsset.usableArea }} ㎡</el-descriptions-item>
+          <el-descriptions-item label="已出租面积（不可拆）">
+            <span style="color:#67c23a">{{ splitAsset.leasedArea || 0 }} ㎡</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="已自用/占用面积（不可拆）">
+            <span style="color:#409eff">{{ splitAsset.usedArea || 0 }} ㎡</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="可拆分面积">
+            <span style="color:#e6a23c;font-weight:600">{{ splitAvailableArea }} ㎡</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="租赁状态">
+            <el-tag size="small" :type="leaseTagType(splitAsset.leaseStatus)">{{ splitAsset.leaseStatus }}</el-tag>
+          </el-descriptions-item>
         </el-descriptions>
       </div>
       <el-form :model="splitForm" label-width="100px" style="margin-top: 16px">
@@ -522,7 +573,7 @@
         </el-table-column>
       </el-table>
       <div style="text-align: right; margin-top: 8px; font-size: 13px; color: var(--t-weak)">
-        拆分总面积：{{ splitForm.units.reduce((s, u) => s + u.area, 0).toFixed(2) }} ㎡ / 可使用 {{ splitAsset?.usableArea }} ㎡
+        拆分总面积：{{ splitForm.units.reduce((s, u) => s + u.area, 0).toFixed(2) }} ㎡ / 可拆分 {{ splitAvailableArea }} ㎡（已出租 {{ splitAsset?.leasedArea || 0 }} ㎡、自用/占用 {{ splitAsset?.usedArea || 0 }} ㎡ 保留不动）
       </div>
       <template #footer>
         <el-button @click="splitDialogVisible = false">取消</el-button>
@@ -538,9 +589,15 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Filter, Search, ArrowDown } from '@element-plus/icons-vue'
 import { useUserStore } from '../../store/user'
+import { useContractStore } from '../../store/contract'
+import { useProjectStore } from '../../store/project'
+import { useAssetStore } from '../../store/asset'
 
 const router = useRouter()
 const userStore = useUserStore()
+const contractStore = useContractStore()
+const projectStore = useProjectStore()
+const assetStore = useAssetStore()
 // 本页是演示数据，行内 company 随机分到四家；企业端只放行本公司行
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
 const mineOnly = (rows) => userStore.isEnt ? rows.filter(r => r.company === currentCompany.value) : rows
@@ -581,6 +638,10 @@ function buildAssets() {
       const area = 200 + ((n * 137) % 4800)
       const assetStatus = ['已使用', '未使用', '闲置'][n % 3]
       const leaseStatus = ['已出租', '部分出租', '未出租'][(n + 1) % 3]
+      const usableArea = Math.round(area * (0.6 + ((n % 4) * 0.1)))
+      const leasedArea = leaseStatus === '已出租' ? usableArea
+        : leaseStatus === '部分出租' ? Math.round(usableArea * 0.4)
+        : 0
       const shortName = nameTemplates[cat]
       list.push({
         id: n,
@@ -593,7 +654,9 @@ function buildAssets() {
         name: `${d.slice(-3)}${shortName}${String(i + 1).padStart(2, '0')}`,
         address: `${d}${shortName}${String(i + 1).padStart(2, '0')}号`,
         area,
-        usableArea: Math.round(area * (0.6 + ((n % 4) * 0.1))),
+        usableArea,
+        leasedArea,
+        usedArea: 0,
         assetStatus,
         leaseStatus,
         partialLease: n % 2 === 0 ? '支持' : '不支持',
@@ -620,7 +683,7 @@ const ownershipFilter = ref('不限')
 const assetKeyword = ref('')
 const showFilter = ref(true)
 const assetPage = ref(1)
-const assetPageSize = ref(10)
+const assetPageSize = ref(15)
 const assetSelection = ref([])
 
 const filteredAssets = computed(() => {
@@ -697,7 +760,10 @@ function handleComboLease() {
 function handleSplitLease() {
   if (assetSelection.value.length !== 1) { ElMessage.warning('请勾选一项需要拆分租赁的资产'); return }
   const row = assetSelection.value[0]
-  if (row.assetStatus === '已使用') { ElMessage.warning('该资产已被使用，无法拆分'); return }
+  if (row.children && row.children.length) { ElMessage.warning('该资产已拆分，请在子单元上直接操作或先删除现有子单元'); return }
+  if (row.leaseStatus === '已出租') { ElMessage.warning('该资产已完全出租，无空余面积可拆分'); return }
+  const available = rowAvailableArea(row)
+  if (available <= 0) { ElMessage.warning('该资产无空余面积可拆分'); return }
   splitAsset.value = row
   splitForm.value = {
     splitCount: 2,
@@ -711,12 +777,17 @@ function handleSplitLease() {
 const splitDialogVisible = ref(false)
 const splitAsset = ref(null)
 const splitForm = ref({ splitCount: 2, splitMode: '均分', units: [] })
+const splitAvailableArea = computed(() => {
+  const a = splitAsset.value
+  if (!a) return 0
+  return Math.max(0, (a.usableArea || 0) - (a.leasedArea || 0) - (a.usedArea || 0))
+})
 
 function generateSplitUnits() {
   const asset = splitAsset.value
   if (!asset) return
   const count = splitForm.value.splitCount
-  const totalArea = asset.usableArea
+  const totalArea = splitAvailableArea.value
   const units = []
   for (let i = 0; i < count; i++) {
     const area = splitForm.value.splitMode === '均分'
@@ -739,10 +810,13 @@ function confirmSplitLease() {
   const asset = splitAsset.value
   const units = splitForm.value.units
   if (!units.length) { ElMessage.warning('请至少生成一个拆分单元'); return }
+  const available = splitAvailableArea.value
   const totalSplitArea = units.reduce((s, u) => s + u.area, 0)
-  if (totalSplitArea > asset.usableArea + 0.01) {
-    ElMessage.warning('拆分总面积不能超过可使用面积'); return
+  if (totalSplitArea > available + 0.01) {
+    ElMessage.warning(`拆分总面积不能超过可拆分面积 ${available} ㎡`); return
   }
+  const leasedArea = asset.leasedArea || 0
+  const usedArea = asset.usedArea || 0
   const newChildren = units.map((u, i) => ({
     ...asset,
     id: Date.now() + i,
@@ -750,21 +824,28 @@ function confirmSplitLease() {
     name: u.name,
     area: u.area,
     usableArea: u.area,
+    leasedArea: 0,
+    usedArea: 0,
+    parentAssetNo: asset.assetNo,
     assetStatus: '未使用',
     leaseStatus: u.leaseStatus,
     partialLease: '不支持',
-    isLeased: '否',
+    isLeased: u.leaseStatus === '未出租' ? '否' : '是',
     floor: `${asset.floor} ${String.fromCharCode(65 + i)}单元`,
     children: []
   }))
   asset.children = newChildren
-  asset.assetStatus = '已使用'
-  asset.leaseStatus = '部分出租'
+  asset.leasedAreaBase = leasedArea
+  asset.usedAreaBase = usedArea
+  asset.usableArea = leasedArea + usedArea + totalSplitArea
+  asset.leasedArea = leasedArea
+  asset.usedArea = usedArea
+  asset.leaseStatus = leasedArea > 0 ? '部分出租' : '未出租'
+  asset.isLeased = leasedArea > 0 ? '是' : '否'
   asset.partialLease = '支持'
-  asset.isLeased = '是'
   assetSelection.value = []
   splitDialogVisible.value = false
-  ElMessage.success(`已将"${asset.name}"拆分为 ${units.length} 个子单元`)
+  ElMessage.success(`已将"${asset.name}"的空余 ${totalSplitArea} ㎡ 拆分为 ${units.length} 个子单元`)
 }
 
 const assetDetailVisible = ref(false)
@@ -776,47 +857,146 @@ const useMode = ref('自用')
 const useAsset = ref(null)
 const useForm = ref({ useStatus: '全部自用', useArea: 0, useNo: '', responsible: '', remark: '', period: null })
 function openUseDialog(row, mode) {
+  if (row.children && row.children.length) {
+    ElMessage.warning('该资产已拆分为子单元，请在子单元上执行' + mode)
+    return
+  }
+  const available = rowAvailableArea(row)
+  if (available <= 0) {
+    ElMessage.warning('该资产已无空余面积可' + mode)
+    return
+  }
   useMode.value = mode
   useAsset.value = row
-  useForm.value = { useStatus: '全部' + mode, useArea: 0, useNo: '', responsible: '', remark: '', period: null }
+  useForm.value = { useStatus: '全部' + mode, useArea: available, useNo: '', responsible: '', remark: '', period: null }
   useDialogVisible.value = true
 }
+// 拆分后父行的可租面积 = 已拆分但子单元未租出的部分；未拆分时 = usableArea - leasedArea - usedArea
+function rowOccupiedArea(row) {
+  return (row.leasedArea || 0) + (row.usedArea || 0)
+}
+function rowAvailableArea(row) {
+  if (!row) return 0
+  const cap = row.usableArea || 0
+  if (row.parentAssetNo) return Math.max(0, cap - rowOccupiedArea(row))
+  if (row.children && row.children.length) {
+    return row.children.reduce((s, c) => s + rowAvailableArea(c), 0)
+  }
+  return Math.max(0, cap - rowOccupiedArea(row))
+}
+function refreshRowStatus(row) {
+  const cap = row.usableArea || 0
+  const leased = row.leasedArea || 0
+  const used = row.usedArea || 0
+  row.leaseStatus = leased === 0 ? '未出租' : (leased >= cap ? '已出租' : '部分出租')
+  row.isLeased = leased > 0 ? '是' : '否'
+  if (leased + used > 0 && row.assetStatus === '未使用') row.assetStatus = '已使用'
+}
+// 状态回算：父行 leasedArea/usedArea = 各自 base + Σ 子单元同名字段
+function refreshParentLeasedArea(parent) {
+  const leasedBase = parent.leasedAreaBase || 0
+  const usedBase = parent.usedAreaBase || 0
+  parent.leasedArea = leasedBase + (parent.children || []).reduce((s, c) => s + (c.leasedArea || 0), 0)
+  parent.usedArea = usedBase + (parent.children || []).reduce((s, c) => s + (c.usedArea || 0), 0)
+  refreshRowStatus(parent)
+}
+// 面积扣减通用入口：kind = 'lease' 走出租，'use' 走自用/占用
+function applyAreaDelta(row, delta, kind) {
+  if (!row || delta <= 0) return false
+  const field = kind === 'use' ? 'usedArea' : 'leasedArea'
+  const baseField = kind === 'use' ? 'usedAreaBase' : 'leasedAreaBase'
+  if (row.parentAssetNo) {
+    const room = (row.usableArea || 0) - rowOccupiedArea(row)
+    const actual = Math.min(room, delta)
+    if (actual <= 0) return false
+    row[field] = (row[field] || 0) + actual
+    refreshRowStatus(row)
+    const parent = assetData.value.find(a => a.assetNo === row.parentAssetNo)
+    if (parent) refreshParentLeasedArea(parent)
+    return true
+  }
+  if (row.children && row.children.length) {
+    ElMessage.warning('该资产已拆分，请在子单元上操作')
+    return false
+  }
+  const room = (row.usableArea || 0) - rowOccupiedArea(row)
+  const actual = Math.min(room, delta)
+  if (actual <= 0) return false
+  row[field] = (row[field] || 0) + actual
+  row[baseField] = (row[baseField] || 0) + actual
+  refreshRowStatus(row)
+  return true
+}
+function applyLeaseAreaToRow(row, delta) { return applyAreaDelta(row, delta, 'lease') }
+function applyUseAreaToRow(row, delta) { return applyAreaDelta(row, delta, 'use') }
 function formatNow() {
   const d = new Date()
   const p = (n) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
+function todayStr() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
 function submitUse() {
   if (!useForm.value.responsible) { ElMessage.warning('请选择责任人'); return }
   if (!useForm.value.period) { ElMessage.warning('请选择时间段'); return }
+  const target = useAsset.value
+  const available = rowAvailableArea(target)
   if (useForm.value.useStatus === '部分' + useMode.value && (!useForm.value.useArea || useForm.value.useArea <= 0)) {
     ElMessage.warning('请填写有效的' + useMode.value + '面积')
     return
   }
-  const area = useForm.value.useStatus === '部分' + useMode.value ? useForm.value.useArea : useAsset.value.usableArea
+  const area = useForm.value.useStatus === '部分' + useMode.value ? useForm.value.useArea : available
+  if (area <= 0) { ElMessage.warning('可用面积为 0，无法' + useMode.value); return }
+  if (area > available + 0.01) { ElMessage.warning(useMode.value + '面积不能超过可用面积 ' + available + ' ㎡'); return }
   occData.value.unshift({
     id: Date.now(),
     no: `ZY2026${String(occData.value.length + 1).padStart(4, '0')}`,
-    company: useAsset.value.company,
+    company: target.company,
     person: useForm.value.responsible,
     period: `${useForm.value.period[0]} 至 ${useForm.value.period[1]}（${area} ㎡）`,
     type: useMode.value,
-    remark: useForm.value.remark || useAsset.value.name,
+    remark: useForm.value.remark || target.name,
     status: '正常',
     createTime: formatNow(),
     voidTime: ''
   })
+  applyUseAreaToRow(target, area)
   useDialogVisible.value = false
   ElMessage.success(useMode.value === '自用' ? '新增自用成功' : '新增占用成功')
 }
 
+const addFormTarget = ref(null)
 function addLeaseFrom(row) {
-  addForm.value = { category: row.category || categoryTab.value, assetType: '', assetName: row.name, tenant: '', area: row.usableArea, monthlyRent: 0, startDate: '', endDate: '', remark: '' }
+  if (row.children && row.children.length) {
+    ElMessage.warning('该资产已拆分为子单元，请在子单元上添加租赁')
+    return
+  }
+  const available = rowAvailableArea(row)
+  if (available <= 0) { ElMessage.warning('该资产已无空余面积可出租'); return }
+  addFormTarget.value = row
+  // 行内入口：尝试按名称在真实资产库匹配并预选，保证合同挂到真实资产上；匹配不到则让用户在弹窗内选择
+  const match = assetStore.assets.find(a => a.name === row.name || a.name.includes(row.name) || row.name.includes(a.name))
+  addForm.value = {
+    assetId: match?.id || '',
+    assetName: match?.name || '',
+    tenant: '',
+    area: match ? contractStore.getLeaseSummary(match).availableArea : 0,
+    monthlyRent: 0,
+    startDate: todayStr(),
+    endDate: '',
+    remark: ''
+  }
   addDialogVisible.value = true
 }
 function addRentFrom(row) {
   ElMessage.success(`已选择"${row.name}"，正在前往招商发布`)
-  router.push('/ent/investment-publish')
+  router.push({
+    path: '/ent/investment-publish',
+    query: { assetName: row.name, assetNo: row.assetNo, from: 'lease-mgmt' }
+  })
 }
 function handleAssetMore(cmd, row) {
   if (cmd === 'use') openUseDialog(row, '自用')
@@ -864,23 +1044,45 @@ function voidOcc(row) {
 
 const page = ref(1)
 const pageSize = ref(15)
-const filters = ref({ keyword: '', leaseStatus: '', assetType: '' })
+const filters = ref({ keyword: '', leaseStatus: '', assetType: '', project: '' })
 
-const leaseData = ref([
-  { id: 1, contractNo: 'ZL2026001', assetName: '城投大厦A座1201室', tenant: '星辰科技有限公司', assetType: '写字楼', area: 280, monthlyRent: 56000, startDate: '2025-01-01', endDate: '2027-12-31', status: '在租' },
-  { id: 2, contractNo: 'ZL2026002', assetName: '阳光花园1号楼101室', tenant: '张三', assetType: '保障房', area: 65, monthlyRent: 2500, startDate: '2025-03-01', endDate: '2028-02-28', status: '在租' },
-  { id: 3, contractNo: 'ZL2026003', assetName: '万达广场商铺A101', tenant: '鑫源餐饮管理公司', assetType: '商铺', area: 120, monthlyRent: 25000, startDate: '2024-06-01', endDate: '2026-09-20', status: '即将到期' },
-  { id: 4, contractNo: 'ZL2026004', assetName: '万达广场商铺A102', tenant: '优品零售店', assetType: '商铺', area: 95, monthlyRent: 20000, startDate: '2024-08-01', endDate: '2027-07-31', status: '在租' },
-  { id: 5, contractNo: 'ZL2026005', assetName: '高新技术产业园厂房C1', tenant: '恒达制造集团', assetType: '厂房', area: 2000, monthlyRent: 80000, startDate: '2024-03-01', endDate: '2029-02-28', status: '在租' },
-  { id: 6, contractNo: 'ZL2026006', assetName: '朝阳农贸市场1号厅', tenant: '绿鲜蔬菜批发部', assetType: '农贸市场', area: 500, monthlyRent: 35000, startDate: '2024-07-01', endDate: '2026-06-30', status: '即将到期' },
-  { id: 7, contractNo: 'ZL2026007', assetName: '国贸写字楼B座801', tenant: '睿智咨询公司', assetType: '写字楼', area: 180, monthlyRent: 36000, startDate: '2024-05-01', endDate: '2025-08-30', status: '已退租' },
-  { id: 8, contractNo: 'ZL2026008', assetName: '滨江商铺B区203', tenant: '茗茶道茶业', assetType: '商铺', area: 75, monthlyRent: 12000, startDate: '2025-06-01', endDate: '2028-05-31', status: '在租' },
-  { id: 9, contractNo: 'ZL2026009', assetName: '领航科技楼5层', tenant: '云飞数据科技公司', assetType: '写字楼', area: 350, monthlyRent: 42000, startDate: '2025-09-01', endDate: '2028-08-31', status: '在租' },
-  { id: 10, contractNo: 'ZL2026010', assetName: '东区保障房3号楼202', tenant: '李梅', assetType: '保障房', area: 72, monthlyRent: 1800, startDate: '2024-01-01', endDate: '2025-06-30', status: '已退租' }
-])
+// 项目筛选项来自项目 store（企业端已按集团过滤），不再写死
+const projectOptions = computed(() => projectStore.visibleProjects.map(p => p.name))
+
+// 合同行统一读合同库可见合同，项目 / 资产类型经项目·资产 store 解析
+function contractLeaseStatus(c) {
+  if (c.status === '退租' || c.status === '已终止') return '已退租'
+  if (c.status === '临期') return '即将到期'
+  const start = new Date(c.startDate)
+  if (!isNaN(start.getTime()) && start > new Date()) return '待起租'
+  return '在租'
+}
+function projectOf(contract) {
+  const asset = assetStore.getAssetById(contract.assetId)
+  const pid = asset?.projectId || contract.projectId
+  const project = pid ? projectStore.getProjectById(pid) : null
+  return project?.name || asset?.projectName || '—'
+}
+
+const leaseData = computed(() => contractStore.visibleContracts.map(c => {
+  const asset = assetStore.getAssetById(c.assetId)
+  return {
+    id: c.id,
+    contractNo: c.id,
+    assetName: c.assetName,
+    tenant: c.tenant,
+    assetType: asset?.type || asset?.assetType || '',
+    project: projectOf(c),
+    area: c.leaseArea || asset?.area || 0,
+    monthlyRent: Math.round((c.annualRent || 0) * 10000 / 12),
+    startDate: c.startDate,
+    endDate: c.endDate,
+    status: contractLeaseStatus(c)
+  }
+}))
 
 const getStatusType = (status) => {
-  const map = { '在租': 'success', '已退租': 'info', '即将到期': 'warning' }
+  const map = { '在租': 'success', '已退租': 'info', '即将到期': 'warning', '待起租': 'warning' }
   return map[status] || 'info'
 }
 
@@ -888,10 +1090,11 @@ const filteredData = computed(() => {
   return leaseData.value.filter(item => {
     if (filters.value.keyword) {
       const kw = filters.value.keyword
-      if (!item.assetName.includes(kw) && !item.contractNo.includes(kw)) return false
+      if (!item.assetName.includes(kw) && !item.contractNo.includes(kw) && !item.tenant.includes(kw)) return false
     }
     if (filters.value.leaseStatus && item.status !== filters.value.leaseStatus) return false
     if (filters.value.assetType && item.assetType !== filters.value.assetType) return false
+    if (filters.value.project && item.project !== filters.value.project) return false
     return true
   })
 })
@@ -926,36 +1129,70 @@ function handleView(row) {
 }
 
 const addDialogVisible = ref(false)
-const addForm = ref({ category: '', assetType: '', assetName: '', tenant: '', area: 0, monthlyRent: 0, startDate: '', endDate: '', remark: '' })
+const addForm = ref({ assetId: '', assetName: '', tenant: '', area: 0, monthlyRent: 0, startDate: '', endDate: '', remark: '' })
+
+// 可出租资产：从真实资产库取，按剩余可租面积过滤；企业端 visibleAssets 已按登录公司隔离
+const leaseAssetOptions = computed(() =>
+  assetStore.visibleAssets
+    .map(a => ({
+      id: a.id,
+      name: a.name,
+      status: a.status,
+      totalArea: a.area || 0,
+      area: contractStore.getLeaseSummary(a).availableArea
+    }))
+    .filter(a => a.area > 0 && a.status !== '自用')
+)
+const pickedAddArea = computed(() => leaseAssetOptions.value.find(a => a.id === addForm.value.assetId)?.area ?? 0)
+
+function handleAddAssetPick(id) {
+  const opt = leaseAssetOptions.value.find(a => a.id === id)
+  if (!opt) return
+  addForm.value.assetName = opt.name
+  addForm.value.area = opt.area
+}
+
 function handleAdd() {
-  addForm.value = { category: categoryTab.value, assetType: '', assetName: '', tenant: '', area: 0, monthlyRent: 0, startDate: '', endDate: '', remark: '' }
+  addFormTarget.value = null
+  addForm.value = { assetId: '', assetName: '', tenant: '', area: 0, monthlyRent: 0, startDate: todayStr(), endDate: '', remark: '' }
   addDialogVisible.value = true
 }
 function handleAddSubmit() {
-  if (!addForm.value.category) { ElMessage.warning('请选择资产种类'); return }
-  if (!addForm.value.assetType) { ElMessage.warning('请选择资产类型'); return }
-  if (!addForm.value.assetName || !addForm.value.tenant || !addForm.value.startDate || !addForm.value.endDate) {
+  if (!addForm.value.assetId) { ElMessage.warning('请选择租赁资产'); return }
+  if (!addForm.value.tenant || !addForm.value.startDate || !addForm.value.endDate) {
     ElMessage.warning('请填写必填项')
     return
   }
-  const no = 'ZL2026' + String(leaseData.value.length + 1).padStart(3, '0')
-  leaseData.value.unshift({
-    id: Date.now(),
-    contractNo: no,
-    assetName: addForm.value.assetName,
+  if (!addForm.value.area || addForm.value.area <= 0) { ElMessage.warning('请填写租赁面积'); return }
+  if (!addForm.value.monthlyRent || addForm.value.monthlyRent <= 0) { ElMessage.warning('请填写月租金'); return }
+  if (new Date(addForm.value.endDate) <= new Date(addForm.value.startDate)) { ElMessage.warning('到期日必须晚于起租日'); return }
+  // 直接挂到所选真实资产上，保证合同 → 资产 → 项目/集团链贯通，签约后自动联动租赁状态与盘活流水
+  const asset = assetStore.getAssetById(addForm.value.assetId)
+  if (!asset) { ElMessage.warning('未找到所选资产，请重新选择'); return }
+  const available = contractStore.getLeaseSummary(asset).availableArea
+  if (addForm.value.area > available + 0.01) {
+    ElMessage.warning(`租赁面积不能超过该资产可租面积 ${available} ㎡`); return
+  }
+  const annualRent = Math.round(addForm.value.monthlyRent * 12 / 10000 * 100) / 100
+  contractStore.signContract({
+    assetId: asset.id,
+    assetName: asset.name,
     tenant: addForm.value.tenant,
-    assetType: addForm.value.assetType,
-    category: addForm.value.category,
-    area: addForm.value.area,
-    monthlyRent: addForm.value.monthlyRent,
     startDate: addForm.value.startDate,
     endDate: addForm.value.endDate,
-    status: '在租'
+    leaseArea: addForm.value.area,
+    annualRent,
+    status: '正常',
+    arrears: 0,
+    overdueDays: 0,
+    electronic: false
   })
+  if (addFormTarget.value) applyLeaseAreaToRow(addFormTarget.value, addForm.value.area)
   addDialogVisible.value = false
+  addFormTarget.value = null
   mainTab.value = 'contract'
   page.value = 1
-  ElMessage.success('新增租赁成功，已跳转到租赁合同查看')
+  ElMessage.success('新增租赁成功，合同已写入合同库并联动资产与盘活统计')
 }
 
 function addMonths(dateStr, months) {
@@ -973,9 +1210,10 @@ function handleRenew(row) {
     type: 'info'
   }).then(({ value }) => {
     const months = parseInt(value, 10)
-    row.endDate = addMonths(row.endDate, months)
-    row.status = '在租'
-    ElMessage.success(`续租成功，已延长 ${months} 个月，新到期日：${row.endDate}`)
+    const newEnd = addMonths(row.endDate, months)
+    // 通过合同库写入口更新对应合同记录，列表由 visibleContracts 计算属性自动刷新
+    contractStore.updateContract(row.contractNo, { endDate: newEnd, status: '正常', overdueDays: 0 })
+    ElMessage.success(`续租成功，已延长 ${months} 个月，新到期日：${newEnd}`)
   }).catch(() => {})
 }
 function handleTerminate(row) {
@@ -984,10 +1222,18 @@ function handleTerminate(row) {
     inputValidator: (v) => (v && v.trim().length >= 2) || '请填写至少 2 个字的退租原因',
     type: 'warning'
   }).then(({ value }) => {
-    row.status = '已退租'
-    row.terminateReason = value.trim()
-    ElMessage.success(`已退租：${value.trim()}`)
+    const reason = value.trim()
+    contractStore.updateContract(row.contractNo, { status: '退租', terminateReason: reason })
+    ElMessage.success(`已退租：${reason}`)
   }).catch(() => {})
+}
+function handleStartLease(row) {
+  ElMessageBox.confirm(`确认让合同"${row.contractNo}"立即起租？起租后合同进入在租状态，可继续续租或退租。`, '起租确认', { type: 'info' })
+    .then(() => {
+      contractStore.updateContract(row.contractNo, { startDate: todayStr(), status: '正常' })
+      contractStore.syncAssetLeaseState(row.id, { action: '起租联动', billNo: row.contractNo })
+      ElMessage.success('已起租，合同进入在租状态')
+    }).catch(() => {})
 }
 function validateRentedSelection(action) {
   const invalid = assetSelection.value.filter(r => r.leaseStatus !== '已出租' && r.leaseStatus !== '部分出租')
@@ -1043,7 +1289,7 @@ function handleTerminateBatch() {
 }
 function handleSearch() { page.value = 1 }
 function resetFilters() {
-  filters.value = { keyword: '', leaseStatus: '', assetType: '' }
+  filters.value = { keyword: '', leaseStatus: '', assetType: '', project: '' }
   page.value = 1
 }
 function handleExport() {
@@ -1062,15 +1308,21 @@ function handleExport() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.page-header h2 { margin: 0; font-size: 18px; }
-.filter-bar { margin-bottom: 16px; }
 .category-tabs { margin-bottom: 12px; }
-.table-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.table-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .selected-hint { font-size: 13px; color: var(--c-primary); }
-.quick-filter { background: #fafcff; border: 1px solid #f0f0f0; border-radius: 4px; padding: 10px 12px 4px; margin-bottom: 12px; }
-.expand-wrap { padding: 8px 24px 16px; }
-.child-table { margin-left: 8px; background: #fafcff; }
-.child-table :deep(.el-table__row) { background: #fafcff; }
+.quick-filter { background: var(--bg-th); border: 1px solid var(--bd); border-radius: var(--r-sm); padding: 12px 12px 4px; margin-bottom: 12px; }
+.expand-wrap { width: 100%; padding: 8px 8px 4px; }
+:deep(.el-table__expanded-cell) { padding: 8px 12px; }
+.area-hint { font-size: 12px; color: var(--t-weak); line-height: 1.6; margin-top: 4px; }
+.child-table { width: 100%; background: var(--bg-th); }
+.child-table :deep(.el-table__row) { background: var(--bg-th); }
+/* 面积三色语义（出租=已租绿 / 自用=自用蓝 / 可用=闲置橙） */
+.area-rented { color: var(--st-rented); }
+.area-self { color: var(--st-self); }
+.area-free { color: var(--c-warning); }
+.area-sep { color: var(--t-weak); }
+.area-unit { color: var(--t-weak); font-size: 12px; }
+.hint-full { margin-left: 8px; color: var(--c-danger); font-size: 12px; }
+.hint-split { margin-left: 8px; color: var(--t-weak); font-size: 12px; }
 </style>

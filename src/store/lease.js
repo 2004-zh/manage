@@ -101,6 +101,10 @@ export const useLeaseStore = defineStore('lease', () => {
     })
     registrants.value = byNotice(registrants.value)
     bids.value = byNotice(bids.value)
+
+    // 自愈：修复前已签约的招租结果不会回写招租流水，导致「全部记录」一直停在「招租中」。
+    // 每次加载按已签约结果补一次上行，markResultDealt 幂等，已成交记录不会被重复改动。
+    results.value.filter(r => r.status === '已签约' || r.contractId).forEach(markResultDealt)
   }
   alignToLedger()
 
@@ -215,6 +219,39 @@ export const useLeaseStore = defineStore('lease', () => {
     return true
   }
 
+  /**
+   * 招租结果签约后的状态上行：把「全部记录」里对应的招租流水从「招租中」翻成「已成交」，
+   * 并把招商发布记录标记为已成交，避免出现「已签约、招商列表还挂着招租中」的断链。
+   * result 携带 noticeNo + assetId + dealPrice；招租流水没有 noticeNo，故按 assetId 匹配。
+   */
+  function markResultDealt(result) {
+    if (!result) return
+    const dealPrice = result.dealPrice ?? null
+
+    const rec = rentRecords.value.find(r =>
+      r.status === '招租中' && (
+        (result.assetId && r.assetId === result.assetId) ||
+        (r.assetName && r.assetName === result.assetName)
+      )
+    )
+    if (rec) {
+      rec.status = '已成交'
+      if (dealPrice != null) rec.dealPrice = dealPrice
+    }
+
+    const release = releases.value.find(r =>
+      (result.noticeNo && r.noticeNo === result.noticeNo) ||
+      (result.assetId && r.assetId === result.assetId)
+    )
+    if (release) {
+      release.dealt = true
+      release.enabled = false
+    }
+
+    const notice = notices.value.find(n => n.noticeNo === result.noticeNo)
+    if (notice && notice.status === '报名中') notice.status = '已截止'
+  }
+
   return {
     // 旧浏览器里已持久化的招商数据 company 还是错标的，恢复后必须再对齐一次台账
     onHydrated: alignToLedger,
@@ -231,6 +268,7 @@ export const useLeaseStore = defineStore('lease', () => {
     visibleResults,
     visibleRentRecords,
     publishRent,
-    removeRelease
+    removeRelease,
+    markResultDealt
   }
 })

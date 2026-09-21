@@ -5,32 +5,24 @@
       <span class="page-subtitle">参股企业 · 股东结构 · 变更审批</span>
     </div>
 
-    <el-row :gutter="16" style="margin-bottom:16px">
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#1890ff">{{ companies.length }}</div>
-          <div class="kpi-label">参股企业(家)</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#52c41a">{{ totalInvest }}<span class="kpi-unit">万元</span></div>
-          <div class="kpi-label">投资总额</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#fa8c16">{{ totalEquity }}<span class="kpi-unit">万元</span></div>
-          <div class="kpi-label">权益账面价值</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="kpi-value" style="color:#722ed1">{{ totalDividend }}<span class="kpi-unit">万元</span></div>
-          <div class="kpi-label">本年分红</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="grid-4">
+      <el-card shadow="hover">
+        <div class="kpi-value" style="color:var(--c-primary)">{{ companies.length }}</div>
+        <div class="kpi-label">参股企业(家)</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value" style="color:var(--c-success)">{{ totalInvest }}<span class="kpi-unit">万元</span></div>
+        <div class="kpi-label">投资总额</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value" style="color:var(--c-warning)">{{ totalEquity }}<span class="kpi-unit">万元</span></div>
+        <div class="kpi-label">权益账面价值</div>
+      </el-card>
+      <el-card shadow="hover">
+        <div class="kpi-value" style="color:#722ed1">{{ totalDividend }}<span class="kpi-unit">万元</span></div>
+        <div class="kpi-label">本年分红</div>
+      </el-card>
+    </div>
 
     <el-card shadow="never">
       <template #header>
@@ -42,8 +34,8 @@
       <el-table :data="companies" border stripe row-key="id">
         <el-table-column type="expand">
           <template #default="{ row }">
-            <div style="padding:8px 40px">
-              <div class="detail-grid" style="margin-bottom:10px">
+            <div style="padding:8px 24px">
+              <div class="detail-grid" style="margin-bottom:12px">
                 <div class="cell"><div class="label">所属行业</div><div class="value">{{ row.industry }}</div></div>
                 <div class="cell"><div class="label">法定代表人</div><div class="value">{{ row.legalPerson }}</div></div>
                 <div class="cell"><div class="label">注册资本</div><div class="value">{{ row.regCapital.toLocaleString() }} 万元</div></div>
@@ -94,8 +86,7 @@
       </el-table>
     </el-card>
 
-    <el-row :gutter="16" style="margin-top:16px">
-      <el-col :span="12">
+    <div class="chart-row chart-row-1-1">
         <el-card shadow="never">
           <template #header><span>变更记录</span></template>
           <el-table :data="changeRecords" border stripe size="small">
@@ -118,8 +109,6 @@
             </el-table-column>
           </el-table>
         </el-card>
-      </el-col>
-      <el-col :span="12">
         <el-card shadow="never">
           <template #header><span>质押 / 冻结记录</span></template>
           <el-table :data="pledgeRecords" border stripe size="small">
@@ -142,15 +131,14 @@
             <el-table-column label="操作" width="60" align="center" fixed="right">
               <template #default="{ row }">
                 <el-button v-if="row.status === '生效中'" type="success" link size="small" @click="releasePledge(row)">解除</el-button>
-                <span v-else style="color:#999;font-size:12px">已解除</span>
+                <span v-else style="color:var(--t-weak);font-size:12px">已解除</span>
               </template>
             </el-table-column>
           </el-table>
         </el-card>
-      </el-col>
-    </el-row>
+    </div>
 
-    <el-card shadow="never" style="margin-top:16px">
+    <el-card shadow="never">
       <template #header>
         <div class="card-head">
           <span>股权年度维护</span>
@@ -182,7 +170,7 @@
               </el-table-column>
               <el-table-column prop="netProfit" label="净利润(万元)" width="130" align="right">
                 <template #default="{ row }">
-                  <span :style="{ color: row.netProfit >= 0 ? '#52c41a' : '#f56c6c' }">{{ row.netProfit.toLocaleString() }}</span>
+                  <span :style="{ color: row.netProfit >= 0 ? 'var(--c-success)' : 'var(--c-danger)' }">{{ row.netProfit.toLocaleString() }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="totalAssets" label="资产总额(万元)" width="140" align="right">
@@ -318,7 +306,7 @@
               <el-table-column prop="year" label="核销年度" width="90" align="center" />
               <el-table-column prop="amount" label="核销金额(万元)" width="130" align="right">
                 <template #default="{ row }">
-                  <span style="color:#f56c6c">-{{ row.amount.toLocaleString() }}</span>
+                  <span style="color:var(--c-danger)">-{{ row.amount.toLocaleString() }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="reason" label="核销原因" min-width="180" show-overflow-tooltip />
@@ -333,7 +321,7 @@
       <el-empty v-else description="请选择参股企业查看年度维护档案" :image-size="70" />
     </el-card>
 
-    <el-card shadow="never" style="margin-top:16px">
+    <el-card shadow="never">
       <el-tabs v-model="eqTab">
         <el-tab-pane label="股权登记" name="reg">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
@@ -378,7 +366,7 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination v-model:current-page="regPage" v-model:page-size="regSize" :total="filteredRegs.length" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="regPage = 1" />
+            <el-pagination v-model:current-page="regPage" v-model:page-size="regSize" :total="filteredRegs.length" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="regPage = 1" />
           </div>
         </el-tab-pane>
 
@@ -403,7 +391,7 @@
             <el-table-column prop="equity" label="股权名称" width="170" show-overflow-tooltip />
             <el-table-column prop="title" label="核销标题" min-width="170" show-overflow-tooltip />
             <el-table-column prop="amount" label="核销金额(万元)" width="120" align="right">
-              <template #default="{ row }"><span style="color:#f56c6c">-{{ row.amount.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span style="color:var(--c-danger)">-{{ row.amount.toLocaleString() }}</span></template>
             </el-table-column>
             <el-table-column label="附件" width="70" align="center">
               <template #default="{ row }"><div class="thumb" :title="row.attach"><el-icon><Picture /></el-icon></div></template>
@@ -419,7 +407,7 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination v-model:current-page="woPage" v-model:page-size="woSize" :total="filteredWos.length" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="woPage = 1" />
+            <el-pagination v-model:current-page="woPage" v-model:page-size="woSize" :total="filteredWos.length" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @size-change="woPage = 1" />
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -805,7 +793,7 @@
           <div class="cell"><div class="label">经营范围</div><div class="value">{{ currentReg.scope }}</div></div>
         </div>
         <div class="section-title">股权占比</div>
-        <el-table :data="currentReg.shareholders" border size="small" style="margin-bottom:14px">
+        <el-table :data="currentReg.shareholders" border size="small" style="margin-bottom:12px">
           <el-table-column prop="name" label="股东名称" min-width="240" />
           <el-table-column prop="ratio" label="股权占比(%)" width="120" align="right">
             <template #default="{ row }">{{ row.ratio }}%</template>
@@ -858,7 +846,7 @@
                 <template #default="{ row }">{{ row.revenue.toLocaleString() }}</template>
               </el-table-column>
               <el-table-column prop="netProfit" label="净利润(万元)" width="130" align="right">
-                <template #default="{ row }"><span :style="{ color: row.netProfit >= 0 ? '#52c41a' : '#f56c6c' }">{{ row.netProfit.toLocaleString() }}</span></template>
+                <template #default="{ row }"><span :style="{ color: row.netProfit >= 0 ? 'var(--c-success)' : 'var(--c-danger)' }">{{ row.netProfit.toLocaleString() }}</span></template>
               </el-table-column>
               <el-table-column prop="totalAssets" label="资产总额(万元)" width="140" align="right">
                 <template #default="{ row }">{{ row.totalAssets.toLocaleString() }}</template>
@@ -893,7 +881,7 @@
             <el-table :data="innerRows('wo', regWriteoffs)" border size="small">
               <el-table-column prop="title" label="核销标题" min-width="170" />
               <el-table-column prop="amount" label="核销金额(万元)" width="130" align="right">
-                <template #default="{ row }"><span style="color:#f56c6c">-{{ row.amount.toLocaleString() }}</span></template>
+                <template #default="{ row }"><span style="color:var(--c-danger)">-{{ row.amount.toLocaleString() }}</span></template>
               </el-table-column>
               <el-table-column prop="status" label="状态" width="90" align="center">
                 <template #default="{ row }"><el-tag size="small" :type="row.status === '已通过' ? 'success' : 'danger'">{{ row.status }}</el-tag></template>
@@ -925,7 +913,7 @@
             <div v-for="(s, i) in currentApproval.after" :key="i" class="cmp-line after">{{ s.name }}：{{ s.ratio }}% | 认缴 {{ s.subscribed }} 万元 | 实缴 {{ s.paid }} 万元</div>
           </div>
         </div>
-        <div class="detail-grid" style="margin-top:14px">
+        <div class="detail-grid" style="margin-top:12px">
           <div class="cell"><div class="label">变更标题</div><div class="value">{{ currentApproval.title }}</div></div>
           <div class="cell"><div class="label">变更类型</div><div class="value">{{ currentApproval.type }}</div></div>
           <div class="cell"><div class="label">审批状态</div><div class="value"><el-tag size="small" :type="currentApproval.status === '已通过' ? 'success' : currentApproval.status === '审批中' ? 'warning' : 'danger'">{{ currentApproval.status }}</el-tag></div></div>
@@ -949,10 +937,10 @@
           <div class="cmp-col">
             <div class="cmp-head">核销后</div>
             <div v-for="(s, i) in currentWo.after" :key="i" class="cmp-line after">{{ s.name }}：{{ s.ratio }}% | 认缴 {{ s.subscribed }} 万元 | 实缴 {{ s.paid }} 万元</div>
-            <div v-if="!currentWo.after.length" class="cmp-line" style="color:#999">该股东股权已全部核销</div>
+            <div v-if="!currentWo.after.length" class="cmp-line" style="color:var(--t-weak)">该股东股权已全部核销</div>
           </div>
         </div>
-        <div class="detail-grid" style="margin-top:14px">
+        <div class="detail-grid" style="margin-top:12px">
           <div class="cell"><div class="label">股权名称</div><div class="value">{{ currentWo.equity }}</div></div>
           <div class="cell"><div class="label">核销标题</div><div class="value">{{ currentWo.title }}</div></div>
           <div class="cell"><div class="label">核销金额</div><div class="value hl">{{ currentWo.amount }} 万元</div></div>
@@ -970,7 +958,7 @@
             <div style="font-size:13px">审核时间：{{ s.time }}</div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
               <div class="thumb" :title="s.attach"><el-icon><Picture /></el-icon></div>
-              <span style="font-size:12px;color:#666">{{ s.attach }}</span>
+              <span style="font-size:12px;color:var(--t-sub)">{{ s.attach }}</span>
               <el-button type="primary" link size="small" :icon="Download" @click="downloadAttach(s.attach)">下载</el-button>
             </div>
           </el-timeline-item>
@@ -1010,8 +998,29 @@
 
 <script setup>
 import { ref, computed, reactive } from 'vue'
+import { storeToRefs } from 'pinia'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Download, Picture, MoreFilled } from '@element-plus/icons-vue'
+import { useSpecialAssetStore, EQ_MAINTAIN_KEYS, EQ_MAINTAIN_LABELS } from '../../store/specialAsset'
+
+const store = useSpecialAssetStore()
+const {
+  equityCompanies: companies,
+  equityChangeRecords: changeRecords,
+  equityPledges: pledgeRecords,
+  equityWriteoffs: woList,
+  equityRegList: regList,
+  totalInvest,
+  totalEquity,
+  totalDividend,
+} = storeToRefs(store)
+
+/** store 统一返回 { ok, msg }：校验与留痕都在 store 内完成 */
+function feedback(res) {
+  if (!res) return false
+  ElMessage({ type: res.ok ? 'success' : 'error', message: res.msg })
+  return res.ok
+}
 
 const showCompanyDrawer = ref(false)
 const showCompanyDialog = ref(false)
@@ -1022,142 +1031,9 @@ const showPledgeDialog = ref(false)
 const currentCompany = ref(null)
 const currentChange = ref(null)
 
-const companies = ref([
-  {
-    id: 1, name: '长乐城投建设有限公司', creditCode: '91350112MA32XXXX8F', legalPerson: '郑建国', industry: '城市建设', regCapital: 20000, investAmount: 12000, holdRatio: 60, equityValue: 13200, investDate: '2020-06-18', dividend: 480, status: '正常',
-    shareholders: [
-      { name: '长乐区国有资产投资经营有限公司', amount: 12000, ratio: 60, way: '货币', paidDate: '2020-06-18' },
-      { name: '福建省城市建设发展基金', amount: 5000, ratio: 25, way: '货币', paidDate: '2020-08-01' },
-      { name: '长乐区交通建设投资集团', amount: 3000, ratio: 15, way: '实物', paidDate: '2021-01-15' },
-    ],
-    reports: [
-      { year: '2025', revenue: 68200, netProfit: 4180, totalAssets: 152000, totalLiabilities: 86500, auditor: '福建华兴会计师事务所', opinion: '标准无保留' },
-      { year: '2024', revenue: 61500, netProfit: 3560, totalAssets: 141800, totalLiabilities: 82300, auditor: '福建华兴会计师事务所', opinion: '标准无保留' },
-    ],
-    executives: [
-      { name: '郑建国', position: '董事长', appointer: '长乐区国有资产投资经营有限公司', ours: true, startDate: '2020-06-18', endDate: '', phone: '13905912001' },
-      { name: '王芳', position: '财务负责人', appointer: '长乐区国有资产投资经营有限公司', ours: true, startDate: '2021-03-01', endDate: '', phone: '13905912002' },
-      { name: '李国强', position: '总经理', appointer: '福建省城市建设发展基金', ours: false, startDate: '2022-05-10', endDate: '', phone: '13905912003' },
-    ],
-    workNotes: [
-      { date: '2026-08-20', recorder: '赵磊', subject: '跟进滨海新城道路 PPP 项目回款', progress: '区财政已拨付第三期可行性缺口补助 4200 万元，剩余 1800 万元待年底结算', nextStep: '9 月底前完成结算资料报送' },
-    ],
-    meetings: [
-      { name: '2026年第一次董事会', time: '2026-03-18 09:30', place: '城投集团 8 楼会议室', attendees: '郑建国、王芳、李国强、陈志明', topic: '审议 2025 年度财务决算与 2026 年度投资计划', resolution: '通过 2025 年度决算报告；批准 2026 年度投资计划 3.2 亿元，其中股权投资不超过 5000 万元' },
-    ],
-    writeOffs: [],
-    approvalSteps: []
-  },
-  {
-    id: 2, name: '长乐区鑫源物业服务有限公司', creditCode: '91350112MAXXXX3Q2N', legalPerson: '陈明', industry: '物业管理', regCapital: 500, investAmount: 175, holdRatio: 35, equityValue: 210, investDate: '2022-09-10', dividend: 42, status: '正常',
-    shareholders: [
-      { name: '长乐区国有资产投资经营有限公司', amount: 175, ratio: 35, way: '货币', paidDate: '2022-09-10' },
-      { name: '陈明', amount: 200, ratio: 40, way: '货币', paidDate: '2022-09-05' },
-      { name: '福州榕城社区服务集团', amount: 125, ratio: 25, way: '货币', paidDate: '2022-09-20' },
-    ],
-    reports: [
-      { year: '2025', revenue: 3860, netProfit: 268, totalAssets: 2450, totalLiabilities: 1180, auditor: '福州明信会计师事务所', opinion: '标准无保留' },
-    ],
-    executives: [
-      { name: '陈明', position: '总经理', appointer: '自然人股东', ours: false, startDate: '2022-09-05', endDate: '', phone: '13905913001' },
-      { name: '刘敏', position: '监事', appointer: '长乐区国有资产投资经营有限公司', ours: true, startDate: '2022-10-08', endDate: '', phone: '13905913002' },
-    ],
-    workNotes: [
-      { date: '2026-07-15', recorder: '刘敏', subject: '核查保障房小区物业费收缴情况', progress: '首占新区保障房片区收缴率 82%，低于公司平均 91%，已督促张贴催缴公告', nextStep: '8 月底复查收缴率，未达标提请股东会审议' },
-    ],
-    meetings: [
-      { name: '2025年度股东会', time: '2026-04-22 14:00', place: '鑫源物业会议室', attendees: '陈明、刘敏、榕城社区服务集团代表', topic: '审议 2025 年度利润分配方案', resolution: '按持股比例分配利润 120 万元，其中国资方 42 万元；提取盈余公积 30 万元' },
-    ],
-    writeOffs: [],
-    approvalSteps: []
-  },
-  {
-    id: 3, name: '福建海峡新能源科技有限公司', creditCode: '91350100MAXXXX7T5D', legalPerson: '王海涛', industry: '新能源', regCapital: 5000, investAmount: 1000, holdRatio: 20, equityValue: 1150, investDate: '2024-03-28', dividend: 30, status: '变更中',
-    shareholders: [
-      { name: '王海涛', amount: 2500, ratio: 50, way: '货币+技术', paidDate: '2023-12-01' },
-      { name: '长乐区国有资产投资经营有限公司', amount: 1000, ratio: 20, way: '货币', paidDate: '2024-03-28' },
-      { name: '平潭综合实验区投资集团', amount: 1500, ratio: 30, way: '货币', paidDate: '2024-01-10' },
-    ],
-    reports: [
-      { year: '2025', revenue: 12600, netProfit: -380, totalAssets: 18900, totalLiabilities: 12400, auditor: '厦门天健会计师事务所', opinion: '带强调事项段' },
-      { year: '2024', revenue: 9800, netProfit: 420, totalAssets: 15200, totalLiabilities: 8600, auditor: '厦门天健会计师事务所', opinion: '标准无保留' },
-    ],
-    executives: [
-      { name: '王海涛', position: '董事长', appointer: '自然人股东', ours: false, startDate: '2023-12-01', endDate: '', phone: '13905914001' },
-      { name: '赵磊', position: '董事', appointer: '长乐区国有资产投资经营有限公司', ours: true, startDate: '2024-04-15', endDate: '', phone: '13905914002' },
-    ],
-    workNotes: [
-      { date: '2026-09-05', recorder: '赵磊', subject: '增资扩股事项跟进', progress: '投委会已通过追加投资 500 万元议案，等待区国资办备案', nextStep: '备案完成后办理工商变更并回写持股信息' },
-      { date: '2026-06-12', recorder: '赵磊', subject: '核查光伏组件产线经营情况', progress: '2025 年受组件价格下行影响亏损 380 万元，2026 年上半年已扭亏为盈 120 万元', nextStep: '关注应收账款回收，必要时计提减值' },
-    ],
-    meetings: [
-      { name: '2026年第二次董事会', time: '2026-08-28 15:00', place: '海峡新能源 3 楼会议室', attendees: '王海涛、赵磊、平潭投资集团代表', topic: '审议光伏组件产线扩建及增资扩股方案', resolution: '同意按股比增资 500 万元用于二期产线，国资方持股比例调整为 23.08%，报区国资办备案' },
-    ],
-    writeOffs: [],
-    approvalSteps: [
-      { name: '提交申请', handler: '经办人：赵磊', time: '2026-09-01 10:00', status: '已完成' },
-      { name: '投资决策委员会', handler: '投委会', time: '2026-09-08 15:30', status: '已完成' },
-      { name: '国资委备案', handler: '区国资办', time: '', status: '进行中' },
-    ]
-  },
-  {
-    id: 4, name: '长乐文旅发展有限公司', creditCode: '91350112MAXXXX9K3P', legalPerson: '林芳', industry: '文化旅游', regCapital: 3000, investAmount: 900, holdRatio: 30, equityValue: 860, investDate: '2023-05-16', dividend: 0, status: '正常',
-    shareholders: [
-      { name: '长乐区国有资产投资经营有限公司', amount: 900, ratio: 30, way: '货币', paidDate: '2023-05-16' },
-      { name: '福建滨海旅游投资集团', amount: 2100, ratio: 70, way: '货币', paidDate: '2023-05-10' },
-    ],
-    reports: [
-      { year: '2025', revenue: 2140, netProfit: -620, totalAssets: 5800, totalLiabilities: 3900, auditor: '福州明信会计师事务所', opinion: '保留意见' },
-    ],
-    executives: [
-      { name: '林芳', position: '董事长', appointer: '福建滨海旅游投资集团', ours: false, startDate: '2023-05-16', endDate: '', phone: '13905915001' },
-      { name: '周琳', position: '财务负责人', appointer: '长乐区国有资产投资经营有限公司', ours: true, startDate: '2023-08-01', endDate: '', phone: '13905915002' },
-    ],
-    workNotes: [
-      { date: '2026-05-20', recorder: '周琳', subject: '文旅项目一期减值测试', progress: '滨海营地项目客流量低于可研预期 45%，2025 年亏损 620 万元，已计提长期股权投资减值准备 40 万元', nextStep: '提请股东会审议二期暂缓投资' },
-    ],
-    meetings: [
-      { name: '2025年度股东会', time: '2026-05-28 10:00', place: '文旅公司会议室', attendees: '林芳、周琳、滨海旅游投资集团代表', topic: '审议 2025 年度决算与二期投资计划', resolution: '确认 2025 年度亏损 620 万元，不进行利润分配；二期投资暂缓，待客流恢复后重新评估' },
-    ],
-    writeOffs: [
-      { year: '2025', amount: 40, reason: '滨海营地项目一期持续亏损，按减值测试结果核销长期股权投资', source: '减值准备', approver: '区国资办 林主任', approveTime: '2025-12-28 16:20' },
-    ],
-    approvalSteps: []
-  },
-])
-
-const changeRecords = ref([
-  { company: '福建海峡新能源科技有限公司', type: '增资扩股', before: '出资 1000 万元（20%）', after: '出资 1500 万元（23.08%）', reason: '标的公司扩建光伏组件产线，按股比追加投资', applyDate: '2026-09-01', status: '审批中',
-    steps: [
-      { name: '提交申请', handler: '经办人：赵磊', time: '2026-09-01 10:00', status: '已完成' },
-      { name: '投资决策委员会', handler: '投委会', time: '2026-09-08 15:30', status: '已完成' },
-      { name: '国资委备案', handler: '区国资办', time: '', status: '进行中' },
-    ] },
-  { company: '长乐城投建设有限公司', type: '股权转让', before: '持股 60%', after: '持股 51%', reason: '引入省城投战略投资者，划转 9% 股权', applyDate: '2025-11-20', status: '已生效',
-    steps: [
-      { name: '提交申请', handler: '经办人：王芳', time: '2025-11-20 09:00', status: '已完成' },
-      { name: '投资决策委员会', handler: '投委会', time: '2025-12-02 14:00', status: '已完成' },
-      { name: '国资委备案', handler: '区国资办', time: '2025-12-20 16:00', status: '已完成' },
-    ] },
-  { company: '长乐文旅发展有限公司', type: '减资', before: '出资 1200 万元（40%）', after: '出资 900 万元（30%）', reason: '文旅项目一期收缩，按章程减资', applyDate: '2025-06-15', status: '已驳回',
-    steps: [
-      { name: '提交申请', handler: '经办人：王芳', time: '2025-06-15 11:00', status: '已完成' },
-      { name: '投资决策委员会', handler: '投委会', time: '2025-07-01 10:30', status: '已完成' },
-    ] },
-])
-
-const pledgeRecords = ref([
-  { company: '长乐城投建设有限公司', type: '质押', ratio: 15, counterparty: '工商银行长乐支行', startDate: '2025-03-10', status: '生效中' },
-  { company: '长乐区鑫源物业服务有限公司', type: '质押', ratio: 35, counterparty: '兴业银行福州分行', startDate: '2024-05-20', status: '已解除' },
-])
-
-const totalInvest = computed(() => companies.value.reduce((s, c) => s + c.investAmount, 0).toFixed(0))
-const totalEquity = computed(() => companies.value.reduce((s, c) => s + c.equityValue, 0).toFixed(0))
-const totalDividend = computed(() => companies.value.reduce((s, c) => s + c.dividend, 0).toFixed(0))
-
 const maintainCompanyId = ref(1)
 const maintainTab = ref('report')
-const maintainCompany = computed(() => companies.value.find(c => c.id === maintainCompanyId.value) || null)
+const maintainCompany = computed(() => store.findCompany(maintainCompanyId.value))
 
 const sortedReports = computed(() => [...(maintainCompany.value?.reports || [])].sort((a, b) => Number(b.year) - Number(a.year)))
 const latestReport = computed(() => sortedReports.value[0] || null)
@@ -1184,10 +1060,8 @@ const reportYearOptions = computed(() => {
 })
 
 const maintainDialog = ref({ visible: false, type: 'report', index: -1, data: {} })
-const maintainTitles = { report: '年度财务报告', exec: '高管信息', work: '工作纪要', meeting: '会议纪要', writeoff: '股权核销登记' }
-const maintainKeys = { report: 'reports', exec: 'executives', work: 'workNotes', meeting: 'meetings', writeoff: 'writeOffs' }
 const maintainDialogTitle = computed(() =>
-  `${maintainDialog.value.index > -1 ? '编辑' : '新增'}${maintainTitles[maintainDialog.value.type]}`
+  `${maintainDialog.value.index > -1 ? '编辑' : '新增'}${EQ_MAINTAIN_LABELS[maintainDialog.value.type]}`
 )
 
 function blankMaintain(type) {
@@ -1200,7 +1074,7 @@ function blankMaintain(type) {
 }
 
 function openMaintain(type, index = -1) {
-  const list = maintainCompany.value?.[maintainKeys[type]] || []
+  const list = maintainCompany.value?.[EQ_MAINTAIN_KEYS[type]] || []
   maintainDialog.value = {
     visible: true,
     type,
@@ -1225,7 +1099,10 @@ function nowStamp() {
 
 function saveMaintain() {
   const c = maintainCompany.value
-  if (!c) return
+  if (!c) {
+    ElMessage.warning('请先选择参股企业')
+    return
+  }
   const { type, index, data } = maintainDialog.value
   for (const [key, label] of maintainRequired[type]) {
     if (data[key] === '' || data[key] === null || data[key] === undefined) {
@@ -1233,56 +1110,28 @@ function saveMaintain() {
       return
     }
   }
-  const list = c[maintainKeys[type]]
-
   if (type === 'writeoff') {
-    if (data.amount > c.equityValue) {
-      ElMessage.error(`核销金额 ${data.amount} 万元超出当前权益价值 ${c.equityValue.toLocaleString()} 万元`)
-      return
-    }
     ElMessageBox.confirm(
       `确认核销"${c.name}"股权 ${data.amount} 万元？核销后权益价值由 ${c.equityValue.toLocaleString()} 万元降为 ${(c.equityValue - data.amount).toLocaleString()} 万元。`,
       '股权核销确认',
       { type: 'warning' }
     ).then(() => {
-      list.push({ ...data, approveTime: nowStamp() })
-      c.equityValue = Math.round((c.equityValue - data.amount) * 100) / 100
-      maintainDialog.value.visible = false
-      ElMessage.success(`核销已登记，${c.name} 权益价值调整为 ${c.equityValue.toLocaleString()} 万元`)
+      if (feedback(store.saveMaintain(c.id, type, data, index))) maintainDialog.value.visible = false
     }).catch(() => {})
     return
   }
-
-  if (type === 'report') {
-    const dup = list.findIndex(r => r.year === data.year)
-    if (dup > -1 && dup !== index) {
-      ElMessage.error(`${data.year} 年度财务报告已存在，请直接编辑该条记录`)
-      return
-    }
-    if (data.totalLiabilities > data.totalAssets) {
-      ElMessage.error('负债总额不应超过资产总额')
-      return
-    }
-  }
-
-  if (index > -1) {
-    list[index] = { ...list[index], ...data }
-    ElMessage.success(`${maintainTitles[type]}已更新`)
-  } else {
-    list.unshift({ ...data })
-    ElMessage.success(`${maintainTitles[type]}已新增`)
-  }
-  maintainDialog.value.visible = false
+  if (feedback(store.saveMaintain(c.id, type, data, index))) maintainDialog.value.visible = false
 }
 
 function removeMaintain(type, index) {
   const c = maintainCompany.value
-  const list = c[maintainKeys[type]]
+  if (!c) return
+  const list = c[EQ_MAINTAIN_KEYS[type]] || []
   const row = list[index]
+  if (!row) return
   const label = type === 'report' ? `${row.year} 年度财务报告` : row.name || row.subject || row.date
-  ElMessageBox.confirm(`确认删除${maintainTitles[type]}"${label}"？`, '删除确认', { type: 'warning' }).then(() => {
-    list.splice(index, 1)
-    ElMessage.success('已删除')
+  ElMessageBox.confirm(`确认删除${EQ_MAINTAIN_LABELS[type]}"${label}"？`, '删除确认', { type: 'warning' }).then(() => {
+    feedback(store.removeMaintain(c.id, type, index))
   }).catch(() => {})
 }
 
@@ -1322,6 +1171,7 @@ function onCompanyCommand(cmd, row) {
   else if (cmd === 'pledge') pledgeEquity(row)
 }
 
+/* ==================== 参股企业登记 ==================== */
 const companyForm = ref({})
 function openCompanyDialog() {
   companyForm.value = { name: '', creditCode: '', legalPerson: '', industry: '城市建设', regCapital: 0, investAmount: 0, investDate: '' }
@@ -1329,26 +1179,10 @@ function openCompanyDialog() {
 }
 
 function saveCompany() {
-  const f = companyForm.value
-  if (!f.name || !f.creditCode || !f.regCapital || !f.investAmount) {
-    ElMessage.warning('请填写完整的企业信息')
-    return
-  }
-  companies.value.push({
-    id: companies.value.reduce((m, c) => Math.max(m, c.id), 0) + 1,
-    name: f.name, creditCode: f.creditCode, legalPerson: f.legalPerson || '—', industry: f.industry,
-    regCapital: f.regCapital, investAmount: f.investAmount,
-    holdRatio: f.regCapital ? +((f.investAmount / f.regCapital) * 100).toFixed(2) : 0,
-    equityValue: f.investAmount, investDate: f.investDate || new Date().toISOString().slice(0, 10),
-    dividend: 0, status: '正常',
-    shareholders: [{ name: '长乐区国有资产投资经营有限公司', amount: f.investAmount, ratio: f.regCapital ? +((f.investAmount / f.regCapital) * 100).toFixed(2) : 0, way: '货币', paidDate: f.investDate || new Date().toISOString().slice(0, 10) }],
-    reports: [], executives: [], workNotes: [], meetings: [], writeOffs: [],
-    approvalSteps: []
-  })
-  showCompanyDialog.value = false
-  ElMessage.success('参股企业已登记')
+  if (feedback(store.saveCompany(companyForm.value))) showCompanyDialog.value = false
 }
 
+/* ==================== 股权变更 ==================== */
 const changeForm = ref({})
 function openChange(row) {
   currentCompany.value = row
@@ -1358,30 +1192,8 @@ function openChange(row) {
 
 function submitChange() {
   const c = currentCompany.value
-  const f = changeForm.value
-  if (!f.reason) {
-    ElMessage.warning('请填写变更原因')
-    return
-  }
-  const newReg = c.regCapital + (f.afterAmount - c.investAmount)
-  const newRatio = newReg > 0 ? +((f.afterAmount / newReg) * 100).toFixed(2) : 0
-  changeRecords.value.unshift({
-    company: c.name, type: f.type,
-    before: `出资 ${c.investAmount} 万元（${c.holdRatio}%）`,
-    after: `出资 ${f.afterAmount} 万元（${newRatio}%）`,
-    reason: f.reason,
-    applyDate: new Date().toISOString().slice(0, 10),
-    status: '审批中',
-    steps: [
-      { name: '提交申请', handler: '经办人：王芳', time: nowStamp(), status: '已完成' },
-      { name: '投资决策委员会', handler: '投委会', time: '', status: '进行中' },
-      { name: '国资委备案', handler: '区国资办', time: '', status: '未开始' },
-    ],
-    pending: { companyId: c.id, afterAmount: f.afterAmount, newReg, newRatio }
-  })
-  c.status = '变更中'
-  showChangeDialog.value = false
-  ElMessage.success('变更申请已提交，等待投资决策委员会审议')
+  if (!c) return
+  if (feedback(store.submitChange(c.id, changeForm.value))) showChangeDialog.value = false
 }
 
 function viewChange(row) {
@@ -1391,27 +1203,11 @@ function viewChange(row) {
 
 function approveChange(row) {
   ElMessageBox.confirm(`确认通过"${row.company}"的${row.type}申请？通过后变更即时生效。`, '变更审批', { type: 'warning' }).then(() => {
-    const now = nowStamp()
-    row.steps.forEach(s => { if (s.status === '进行中' || s.status === '未开始') { s.status = '已完成'; s.time = now } })
-    row.status = '已生效'
-    if (row.pending) {
-      const c = companies.value.find(x => x.id === row.pending.companyId)
-      if (c) {
-        c.investAmount = row.pending.afterAmount
-        c.regCapital = row.pending.newReg
-        c.holdRatio = row.pending.newRatio
-        c.equityValue = row.pending.afterAmount
-        c.status = '正常'
-        const me = c.shareholders.find(s => s.name.includes('国有资产'))
-        if (me) { me.amount = row.pending.afterAmount; me.ratio = row.pending.newRatio }
-      }
-      delete row.pending
-    }
-    showChangeDetail.value = false
-    ElMessage.success('变更已生效，股权信息已更新')
+    if (feedback(store.approveChange(changeRecords.value.indexOf(row)))) showChangeDetail.value = false
   }).catch(() => {})
 }
 
+/* ==================== 分红登记 ==================== */
 const dividendForm = ref({})
 function recordDividend(row) {
   currentCompany.value = row
@@ -1421,15 +1217,11 @@ function recordDividend(row) {
 
 function submitDividend() {
   const c = currentCompany.value
-  if (!dividendForm.value.amount) {
-    ElMessage.warning('请填写分红金额')
-    return
-  }
-  c.dividend = +(c.dividend + dividendForm.value.amount).toFixed(2)
-  showDividendDialog.value = false
-  ElMessage.success(`${c.name} ${dividendForm.value.year}年度分红 ${dividendForm.value.amount} 万元已登记`)
+  if (!c) return
+  if (feedback(store.submitDividend(c.id, dividendForm.value))) showDividendDialog.value = false
 }
 
+/* ==================== 质押 / 冻结 ==================== */
 const pledgeForm = ref({})
 function pledgeEquity(row) {
   currentCompany.value = row
@@ -1438,146 +1230,24 @@ function pledgeEquity(row) {
 }
 
 function submitPledge() {
-  const f = pledgeForm.value
-  if (!f.counterparty) {
-    ElMessage.warning('请填写质权人/执行方')
-    return
-  }
-  pledgeRecords.value.unshift({
-    company: currentCompany.value.name, type: f.type, ratio: f.ratio,
-    counterparty: f.counterparty, startDate: f.startDate, status: '生效中'
-  })
-  showPledgeDialog.value = false
-  ElMessage.success(`${f.type}登记成功`)
+  const c = currentCompany.value
+  if (!c) return
+  if (feedback(store.submitPledge(c.id, pledgeForm.value))) showPledgeDialog.value = false
 }
 
 function releasePledge(row) {
   ElMessageBox.confirm(`确认解除"${row.company}"的${row.type}（${row.ratio}%）？`, '解除确认', { type: 'warning' }).then(() => {
-    row.status = '已解除'
-    ElMessage.success('已解除登记')
+    feedback(store.releasePledge(pledgeRecords.value.indexOf(row)))
   }).catch(() => {})
 }
 
+/* ==================== 股权登记 / 核销 ==================== */
 const eqTab = ref('reg')
-
-const woList = ref([
-  { id: 1, equity: '长乐文旅发展有限公司', title: '文旅项目一期减值核销', amount: 40, reason: '滨海营地项目一期持续亏损，按减值测试结果核销长期股权投资', attach: '核销审批单.pdf', status: '已通过', createTime: '2025-12-20 09:30', lastEdit: '2025-12-28 16:20', finishTime: '2025-12-28 16:20',
-    before: [{ name: '长乐区国有资产投资经营有限公司', ratio: 30, subscribed: 900, paid: 900, removed: true }, { name: '福建滨海旅游投资集团', ratio: 70, subscribed: 2100, paid: 2100 }],
-    after: [{ name: '福建滨海旅游投资集团', ratio: 70, subscribed: 2100, paid: 2100 }],
-    steps: [
-      { level: '一级审批（财务部）', auditor: '周琳', time: '2025-12-22 10:00', attach: '财务审核意见.pdf' },
-      { level: '二级审批（分管领导）', auditor: '王副总', time: '2025-12-25 14:30', attach: '审批签呈.pdf' },
-      { level: '三级审批（区国资办）', auditor: '林主任', time: '2025-12-28 16:20', attach: '国资办批复.pdf' },
-    ] },
-  { id: 2, equity: '福建海峡新能源科技有限公司', title: '光伏组件产线减值核销申请', amount: 120, reason: '组件价格下行导致产线减值，申请核销部分股权投资', attach: '减值测试报告.pdf', status: '已拒绝', createTime: '2026-02-10 09:00', lastEdit: '2026-03-02 11:00', finishTime: '2026-03-02 11:00',
-    before: [{ name: '长乐区国有资产投资经营有限公司', ratio: 20, subscribed: 1000, paid: 1000, removed: true }, { name: '王海涛', ratio: 50, subscribed: 2500, paid: 2500 }, { name: '平潭综合实验区投资集团', ratio: 30, subscribed: 1500, paid: 1500 }],
-    after: [{ name: '王海涛', ratio: 50, subscribed: 2500, paid: 2500 }, { name: '平潭综合实验区投资集团', ratio: 30, subscribed: 1500, paid: 1500 }],
-    steps: [
-      { level: '一级审批（财务部）', auditor: '王芳', time: '2026-02-15 10:30', attach: '财务审核意见.pdf' },
-      { level: '二级审批（投资决策委员会）', auditor: '投委会', time: '2026-03-02 11:00', attach: '驳回意见书.pdf' },
-    ] },
-  { id: 3, equity: '长乐区鑫源物业服务有限公司', title: '保障房片区应收款坏账核销', amount: 15, reason: '物业费长期欠缴形成坏账，按程序核销对应投资权益', attach: '坏账核销审批单.pdf', status: '已通过', createTime: '2026-05-08 14:00', lastEdit: '2026-05-20 09:40', finishTime: '2026-05-20 09:40',
-    before: [{ name: '陈明', ratio: 40, subscribed: 200, paid: 200, removed: true }, { name: '长乐区国有资产投资经营有限公司', ratio: 35, subscribed: 175, paid: 175 }, { name: '福州榕城社区服务集团', ratio: 25, subscribed: 125, paid: 125 }],
-    after: [{ name: '长乐区国有资产投资经营有限公司', ratio: 35, subscribed: 160, paid: 160 }, { name: '福州榕城社区服务集团', ratio: 25, subscribed: 125, paid: 125 }],
-    steps: [
-      { level: '一级审批（财务部）', auditor: '刘敏', time: '2026-05-12 10:00', attach: '财务审核意见.pdf' },
-      { level: '二级审批（区国资办）', auditor: '林主任', time: '2026-05-20 09:40', attach: '国资办批复.pdf' },
-    ] },
-])
-
-const regList = ref([
-  { id: 1, name: '长乐城投建设有限公司', regCapital: 20000, address: '福建省福州市长乐区航城街道会堂路158号', contact: '0591-28923001', createTime: '2020-06-18 10:20', lastEdit: '2026-08-12 15:30', legalPerson: '郑建国', estDate: '2020-06-18', approveDate: '2020-06-15', regOrg: '福州市长乐区市场监督管理局', regStatus: '在营（开业）', term: ['2020-06-18', '2050-06-17'], scope: '城市基础设施投资建设与经营、市政公用工程施工、房地产开发经营',
-    shareholders: [
-      { name: '长乐区国有资产投资经营有限公司', subscribed: 12000, paid: 12000, ratio: 60 },
-      { name: '福建省城市建设发展基金', subscribed: 5000, paid: 5000, ratio: 25 },
-      { name: '长乐区交通建设投资集团', subscribed: 3000, paid: 2400, ratio: 15 },
-    ],
-    execs: [
-      { name: '郑建国', position: '董事长', intro: '长期从事城市建设投资管理工作，主持公司全面工作', resumeFile: '郑建国简历.pdf', createTime: '2020-06-18 11:00' },
-      { name: '王芳', position: '财务负责人', intro: '注册会计师，负责财务与融资管理', resumeFile: '王芳简历.pdf', createTime: '2021-03-01 09:30' },
-    ],
-    meetings: [
-      { name: '2026年第一次董事会', time: '2026-03-18 09:30', place: '城投集团8楼会议室', attendees: '郑建国、王芳、李国强、陈志明', resolution: '通过2025年度决算报告，批准2026年度投资计划3.2亿元' },
-    ],
-    workReports: [
-      { period: '2026年上半年', reporter: '赵磊', content: '滨海新城道路PPP项目第三期回款4200万元到账，剩余1800万元待年底结算', createTime: '2026-07-05 16:00' },
-    ],
-    finances: [
-      { year: '2025', revenue: 68200, netProfit: 4180, totalAssets: 152000, totalLiabilities: 86500 },
-      { year: '2024', revenue: 61500, netProfit: 3560, totalAssets: 141800, totalLiabilities: 82300 },
-    ],
-    changes: [
-      { title: '股权转让变更审批', type: '股权转让', reason: '引入省城投战略投资者，划转9%股权', content: '国资持股比例由60%调整为51%', attach: '股权转让协议.pdf', status: '已通过', finishTime: '2025-12-20 16:00',
-        before: [
-          { name: '长乐区国有资产投资经营有限公司', ratio: 60, subscribed: 12000, paid: 12000 },
-          { name: '福建省城市建设发展基金', ratio: 25, subscribed: 5000, paid: 5000 },
-          { name: '长乐区交通建设投资集团', ratio: 15, subscribed: 3000, paid: 2400 },
-        ],
-        after: [
-          { name: '长乐区国有资产投资经营有限公司', ratio: 51, subscribed: 10200, paid: 10200 },
-          { name: '福建省城市建设发展基金', ratio: 25, subscribed: 5000, paid: 5000 },
-          { name: '长乐区交通建设投资集团', ratio: 15, subscribed: 3000, paid: 2400 },
-          { name: '省城投战略投资者', ratio: 9, subscribed: 1800, paid: 1800 },
-        ] },
-    ] },
-  { id: 2, name: '福建海峡新能源科技有限公司', regCapital: 5000, address: '福建省福州市鼓楼区软件园C区23号楼', contact: '0591-87345002', createTime: '2024-03-28 14:00', lastEdit: '2026-09-05 10:12', legalPerson: '王海涛', estDate: '2023-12-01', approveDate: '2023-11-28', regOrg: '福州市鼓楼区市场监督管理局', regStatus: '存续', term: ['2023-12-01', '2043-11-30'], scope: '光伏组件研发、生产与销售，新能源电站投资建设',
-    shareholders: [
-      { name: '王海涛', subscribed: 2500, paid: 2500, ratio: 50 },
-      { name: '长乐区国有资产投资经营有限公司', subscribed: 1000, paid: 1000, ratio: 20 },
-      { name: '平潭综合实验区投资集团', subscribed: 1500, paid: 1500, ratio: 30 },
-    ],
-    execs: [
-      { name: '王海涛', position: '董事长', intro: '新能源行业资深专家，主导光伏组件技术研发', resumeFile: '王海涛简历.pdf', createTime: '2023-12-01 09:00' },
-      { name: '赵磊', position: '董事', intro: '国资方委派董事，负责投资监管', resumeFile: '赵磊简历.pdf', createTime: '2024-04-15 10:00' },
-    ],
-    meetings: [
-      { name: '2026年第二次董事会', time: '2026-08-28 15:00', place: '海峡新能源3楼会议室', attendees: '王海涛、赵磊、平潭投资集团代表', resolution: '同意按股比增资500万元用于二期产线，报区国资办备案' },
-    ],
-    workReports: [
-      { period: '2026年三季度', reporter: '赵磊', content: '增资扩股事项投委会已通过，等待区国资办备案后办理工商变更', createTime: '2026-09-05 10:00' },
-    ],
-    finances: [
-      { year: '2025', revenue: 12600, netProfit: -380, totalAssets: 18900, totalLiabilities: 12400 },
-      { year: '2024', revenue: 9800, netProfit: 420, totalAssets: 15200, totalLiabilities: 8600 },
-    ],
-    changes: [
-      { title: '增资扩股变更审批', type: '增资扩股', reason: '扩建光伏组件二期产线，按股比追加投资', content: '国资出资由1000万元增至1500万元，持股比例调整为23.08%', attach: '增资扩股协议.pdf', status: '审批中', finishTime: '',
-        before: [
-          { name: '王海涛', ratio: 50, subscribed: 2500, paid: 2500 },
-          { name: '长乐区国有资产投资经营有限公司', ratio: 20, subscribed: 1000, paid: 1000 },
-          { name: '平潭综合实验区投资集团', ratio: 30, subscribed: 1500, paid: 1500 },
-        ],
-        after: [
-          { name: '王海涛', ratio: 46.15, subscribed: 3000, paid: 2500 },
-          { name: '长乐区国有资产投资经营有限公司', ratio: 23.08, subscribed: 1500, paid: 1000 },
-          { name: '平潭综合实验区投资集团', ratio: 30.77, subscribed: 2000, paid: 1500 },
-        ] },
-    ] },
-  { id: 3, name: '长乐文旅发展有限公司', regCapital: 3000, address: '福建省福州市长乐区吴航街道郑和中路12号', contact: '0591-28812345', createTime: '2023-05-16 09:00', lastEdit: '2026-05-28 11:30', legalPerson: '林芳', estDate: '2023-05-16', approveDate: '2023-05-12', regOrg: '福州市长乐区市场监督管理局', regStatus: '在营（开业）', term: ['2023-05-16', '2053-05-15'], scope: '文化旅游项目开发、景区运营管理、文创产品销售',
-    shareholders: [
-      { name: '长乐区国有资产投资经营有限公司', subscribed: 900, paid: 900, ratio: 30 },
-      { name: '福建滨海旅游投资集团', subscribed: 2100, paid: 2100, ratio: 70 },
-    ],
-    execs: [
-      { name: '林芳', position: '董事长', intro: '文旅行业经营管理经验丰富', resumeFile: '林芳简历.pdf', createTime: '2023-05-16 10:00' },
-      { name: '周琳', position: '财务负责人', intro: '国资方委派财务负责人', resumeFile: '周琳简历.pdf', createTime: '2023-08-01 09:00' },
-    ],
-    meetings: [
-      { name: '2025年度股东会', time: '2026-05-28 10:00', place: '文旅公司会议室', attendees: '林芳、周琳、滨海旅游投资集团代表', resolution: '确认2025年度亏损620万元，不进行利润分配，二期投资暂缓' },
-    ],
-    workReports: [
-      { period: '2026年上半年', reporter: '周琳', content: '滨海营地项目客流量低于可研预期45%，已计提长期股权投资减值准备40万元', createTime: '2026-06-30 15:00' },
-    ],
-    finances: [
-      { year: '2025', revenue: 2140, netProfit: -620, totalAssets: 5800, totalLiabilities: 3900 },
-    ],
-    changes: [] },
-])
 
 const regFilter = reactive({ company: '' })
 const regQuery = reactive({ company: '' })
 const regPage = ref(1)
-const regSize = ref(10)
+const regSize = ref(15)
 const regCompanyOptions = computed(() => [...new Set(regList.value.map(r => r.name))])
 function doRegSearch() {
   Object.assign(regQuery, regFilter)
@@ -1589,19 +1259,13 @@ const pagedRegs = computed(() => filteredRegs.value.slice((regPage.value - 1) * 
 const woFilter = reactive({ keyword: '' })
 const woQuery = reactive({ keyword: '' })
 const woPage = ref(1)
-const woSize = ref(10)
+const woSize = ref(15)
 function doWoSearch() {
   Object.assign(woQuery, woFilter)
   woPage.value = 1
 }
 const filteredWos = computed(() => woList.value.filter(w => !woQuery.keyword || w.equity.includes(woQuery.keyword) || w.title.includes(woQuery.keyword)))
 const pagedWos = computed(() => filteredWos.value.slice((woPage.value - 1) * woSize.value, woPage.value * woSize.value))
-
-function eqNowTime() {
-  const d = new Date()
-  const p = n => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
-}
 
 const showEqSave = ref(false)
 const eqForm = ref({})
@@ -1613,35 +1277,7 @@ function addEqHolder() {
   eqForm.value.shareholders.push({ name: '', subscribed: 0, paid: 0, ratio: 0 })
 }
 function submitEqSave() {
-  const f = eqForm.value
-  if (!f.name) {
-    ElMessage.warning('请填写股权名称')
-    return
-  }
-  regList.value.unshift({
-    id: Date.now(),
-    name: f.name,
-    regCapital: f.shareholders.reduce((s, x) => s + (x.subscribed || 0), 0),
-    address: f.address || '—',
-    contact: f.contact || '—',
-    createTime: eqNowTime(),
-    lastEdit: eqNowTime(),
-    legalPerson: f.legalPerson || '—',
-    estDate: f.estDate || '—',
-    approveDate: f.approveDate || '—',
-    regOrg: f.regOrg || '—',
-    regStatus: f.regStatus,
-    term: f.term && f.term.length === 2 ? f.term : ['—', '—'],
-    scope: f.scope || '—',
-    shareholders: f.shareholders.filter(x => x.name),
-    execs: [],
-    meetings: [],
-    workReports: [],
-    finances: [],
-    changes: [],
-  })
-  showEqSave.value = false
-  ElMessage.success('股权信息保存成功')
+  if (feedback(store.submitEqSave(eqForm.value))) showEqSave.value = false
 }
 
 const showRegDetail = ref(false)
@@ -1700,28 +1336,7 @@ function openWoSave() {
   showWoSave.value = true
 }
 function submitWoSave() {
-  const f = woForm.value
-  if (!f.equity || !f.title || !f.amount) {
-    ElMessage.warning('请填写股权名称、核销标题与核销金额')
-    return
-  }
-  woList.value.unshift({
-    id: Date.now(),
-    equity: f.equity,
-    title: f.title,
-    amount: f.amount,
-    reason: f.reason || '—',
-    attach: '核销申请单.pdf',
-    status: '已通过',
-    createTime: eqNowTime(),
-    lastEdit: eqNowTime(),
-    finishTime: eqNowTime(),
-    before: [{ name: '长乐区国有资产投资经营有限公司', ratio: 100, subscribed: f.amount, paid: f.amount, removed: true }],
-    after: [],
-    steps: [{ level: '一级审批（财务部）', auditor: '王芳', time: eqNowTime(), attach: '财务审核意见.pdf' }],
-  })
-  showWoSave.value = false
-  ElMessage.success('股权核销已新增')
+  if (feedback(store.submitWoSave(woForm.value))) showWoSave.value = false
 }
 </script>
 
@@ -1736,34 +1351,34 @@ function submitWoSave() {
   display: inline-block;
   margin-left: 4px;
   padding: 0 5px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: var(--bg-page);
-  color: #666;
-  font-size: 11px;
+  color: var(--t-sub);
+  font-size: 12px;
   line-height: 16px;
 }
 
 .pane-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .pane-tip {
-  color: #666;
+  color: var(--t-sub);
   font-size: 12px;
 }
 
 .expand-block {
-  padding: 6px 40px;
-  color: #555;
+  padding: 8px 24px;
+  color: var(--t-sub);
   font-size: 13px;
   line-height: 1.8;
 }
 
 .area-hint {
-  color: #909399;
+  color: var(--t-weak);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -1771,13 +1386,13 @@ function submitWoSave() {
 .thumb {
   width: 40px;
   height: 40px;
-  border: 1px solid #ebeef5;
-  background: #fafafa;
-  border-radius: 3px;
+  border: 1px solid var(--bd);
+  background: var(--bg-page);
+  border-radius: var(--r-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #c0c4cc;
+  color: var(--t-weak);
   font-size: 18px;
   cursor: pointer;
 }
@@ -1796,16 +1411,16 @@ function submitWoSave() {
 .cmp-col {
   flex: 1;
   min-width: 0;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  padding: 10px 12px;
-  background: #fafafa;
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
+  padding: 12px;
+  background: var(--bg-page);
 }
 
 .cmp-head {
   font-weight: 600;
   font-size: 13px;
-  color: #333;
+  color: var(--t-main);
   margin-bottom: 8px;
 }
 
@@ -1823,15 +1438,15 @@ function submitWoSave() {
 }
 
 .cmp-line.before {
-  color: #52c41a;
+  color: var(--c-success);
 }
 
 .cmp-line.after {
-  color: #fa8c16;
+  color: var(--c-warning);
 }
 
 .cmp-line.removed {
   text-decoration: line-through;
-  color: #f56c6c;
+  color: var(--c-danger);
 }
 </style>

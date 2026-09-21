@@ -4,34 +4,34 @@
       <h2>履约催缴</h2>
     </div>
 
-    <el-row :gutter="16" style="margin-bottom:16px">
+    <el-row :gutter="16">
       <el-col :span="6">
         <el-card shadow="never" class="kpi-card">
-          <div class="kpi-value">12</div>
+          <div class="kpi-value">{{ records.length }}</div>
           <div class="kpi-label">欠费记录(条)</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="never" class="kpi-card" style="border-left:3px solid #F56C6C">
-          <div class="kpi-value">28.5<span style="font-size:14px;font-weight:normal">万</span></div>
+          <div class="kpi-value">{{ kpiArrearsTotal }}<span style="font-size:14px;font-weight:normal">万</span></div>
           <div class="kpi-label">欠费总额</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="never" class="kpi-card" style="border-left:3px solid #E6A23C">
-          <div class="kpi-value">5</div>
+          <div class="kpi-value">{{ kpiOver3Months }}</div>
           <div class="kpi-label">超3月未缴(条)</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="never" class="kpi-card" style="border-left:3px solid #67C23A">
-          <div class="kpi-value">86</div>
+          <div class="kpi-value">{{ kpiUrgeCount }}</div>
           <div class="kpi-label">本年催缴次数</div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card shadow="never">
+    <el-card shadow="never" class="fill">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="催缴列表" name="list">
           <div style="display:flex;align-items:center;margin-bottom:12px">
@@ -236,6 +236,9 @@
                     <div class="cell"><div class="label">费项</div><div class="value">{{ row.feeType }}</div></div>
                     <div class="cell"><div class="label">已催次数</div><div class="value">{{ row.urgeCount }} 次</div></div>
                     <div class="cell"><div class="label">合同编号</div><div class="value hl">{{ row.contractNo }}</div></div>
+                    <div class="cell"><div class="label">承租人信用评级</div><div class="value">{{ row.credit }}</div></div>
+                    <div class="cell"><div class="label">承租人合计欠费(元)</div><div class="value hl">{{ partyStore.statsOf(row.tenant).totalArrears * 10000 }}</div></div>
+                    <div class="cell"><div class="label">承租人逾期次数</div><div class="value">{{ partyStore.statsOf(row.tenant).overdueCount }} 次</div></div>
                   </div>
                 </div>
               </template>
@@ -243,6 +246,11 @@
             <el-table-column prop="contractNo" label="合同编号" width="140" />
             <el-table-column prop="assetName" label="资产名称" width="160" show-overflow-tooltip />
             <el-table-column prop="tenant" label="承租人" width="110" show-overflow-tooltip />
+            <el-table-column prop="credit" label="信用" width="90">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.credit.startsWith('D') ? 'danger' : row.credit.startsWith('C') ? 'warning' : row.credit.startsWith('B') ? '' : 'success'">{{ row.credit }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="amount" label="应收(元)" width="100" align="right" />
             <el-table-column prop="overdueDays" label="逾期天数" width="90" align="right">
               <template #default="{ row }">
@@ -562,15 +570,19 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Filter, Search, Download, Plus, Delete, Setting, Picture, ZoomIn, ZoomOut, MoreFilled } from '@element-plus/icons-vue'
+import { useContractStore } from '../../store/contract'
+import { usePartyStore } from '../../store/party'
+import { useAssetStore } from '../../store/asset'
+import { useAuditStore } from '../../store/audit'
+
+const contractStore = useContractStore()
+const partyStore = usePartyStore()
+const assetStore = useAssetStore()
+const auditStore = useAuditStore()
 
 const activeTab = ref('list')
 
-const companies = [
-  '长乐区国有资产投资经营有限公司',
-  '福州新区城投集团有限公司',
-  '长乐区城市建设投资有限公司',
-  '闽江口工业区开发有限公司'
-]
+const companies = ['城投集团', '产投集团', '水投集团', '领航公司']
 
 const showListFilter = ref(false)
 const listFilter = ref({ company: '', rentType: '' })
@@ -589,14 +601,43 @@ const makeAssets = (region, project, zone, name, code, location, company, leaseT
   { region, project, zone, name, code, location, company, leaseType }
 ])
 
-const urgeList = ref([
-  { id: 1, tenant: '张某', contractNo: 'HT-2023-018', company: companies[0], leaseRange: '2024-01-01 至 2026-12-31', payCycle: '按季度', dueDate: '2026-06-30', rentType: '固定租金', monthlyRent: 15000, feeType: '租金', amount: 45000, assetName: '航城商铺A-03', assets: makeAssets('福建省福州市长乐区', '航城商业项目', 'A区', '航城商铺A-03', 'ZC-CL-0018', '长乐区航城街道会堂路128号', companies[0], '对外出租') },
-  { id: 2, tenant: '某物业公司', contractNo: 'HT-2024-012', company: companies[1], leaseRange: '2025-01-01 至 2027-12-31', payCycle: '按月', dueDate: '2026-08-31', rentType: '递增租金', monthlyRent: 8500, feeType: '管理费', amount: 17000, assetName: '城西停车场', assets: makeAssets('福建省福州市长乐区', '城西停车项目', 'B区', '城西停车场', 'ZC-CL-0126', '长乐区吴航街道西洋路9号', companies[1], '委托经营') },
-  { id: 3, tenant: '陈某', contractNo: 'HT-2025-008', company: companies[0], leaseRange: '2025-06-01 至 2028-05-31', payCycle: '按月', dueDate: '2026-09-05', rentType: '固定租金', monthlyRent: 3200, feeType: '租金', amount: 3200, assetName: '农贸市场1号摊位', assets: makeAssets('福建省福州市长乐区', '农贸市场项目', 'C区', '农贸市场1号摊位', 'ZC-CL-0233', '长乐区漳港街道农贸市场内1号', companies[0], '对外出租') },
-  { id: 4, tenant: '某制造企业', contractNo: 'HT-2024-025', company: companies[3], leaseRange: '2024-04-01 至 2029-03-31', payCycle: '按半年', dueDate: '2026-03-31', rentType: '提成租金', monthlyRent: 52000, feeType: '租金', amount: 312000, assetName: '工业区厂房A-02', assets: makeAssets('福建省福州市长乐区', '闽江口工业项目', 'A区', '工业区厂房A-02', 'ZC-CL-0342', '长乐区闽江口工业区兴达路66号', companies[3], '对外出租') },
-  { id: 5, tenant: '林某', contractNo: 'HT-2023-042', company: companies[2], leaseRange: '2023-10-01 至 2026-09-30', payCycle: '按季度', dueDate: '2026-09-15', rentType: '固定租金', monthlyRent: 6800, feeType: '租金', amount: 20400, assetName: '滨江商铺B-07', assets: makeAssets('福建省福州市长乐区', '滨江商业项目', 'B区', '滨江商铺B-07', 'ZC-CL-0455', '长乐区营前街道滨江路77号', companies[2], '对外出租') },
-  { id: 6, tenant: '某餐饮公司', contractNo: 'HT-2025-019', company: companies[1], leaseRange: '2025-03-01 至 2030-02-28', payCycle: '按月', dueDate: '2026-09-01', rentType: '递增租金', monthlyRent: 21000, feeType: '租金', amount: 42000, assetName: '航城商铺A-11', assets: makeAssets('福建省福州市长乐区', '航城商业项目', 'A区', '航城商铺A-11', 'ZC-CL-0026', '长乐区航城街道会堂路128号', companies[1], '对外出租') }
-])
+const rentTypeOf = (c) => ((c.increment || '').includes('递增') ? '递增租金' : '固定租金')
+
+const assetsOf = (c) => {
+  const a = assetStore.getAssetById(c.assetId)
+  return [{
+    region: '福建省福州市长乐区',
+    project: a?.location || '—',
+    zone: '—',
+    name: a?.name || c.assetName,
+    code: a?.id || c.assetId || '—',
+    location: a?.location || '—',
+    company: a?.group || '—',
+    leaseType: '对外出租'
+  }]
+}
+
+const urgeList = computed(() => contractStore.visibleContracts.map((c, i) => {
+  const a = assetStore.getAssetById(c.assetId)
+  return {
+    id: i + 1,
+    tenant: c.tenant,
+    contractNo: c.id,
+    company: a?.group || '—',
+    leaseRange: `${c.startDate} 至 ${c.endDate}`,
+    payCycle: '按年',
+    dueDate: c.endDate,
+    rentType: rentTypeOf(c),
+    monthlyRent: Math.round((c.annualRent || 0) * 10000 / 12),
+    feeType: '租金',
+    amount: Math.round((c.arrears || 0) * 10000),
+    assetName: c.assetName,
+    assets: assetsOf(c)
+  }
+}))
+
+// 催缴状态是运行期数据，按合同编号记录，欠费明细本身由合同库实时推导
+const urgeState = ref({})
 
 const filteredList = computed(() => {
   return urgeList.value.filter(item => {
@@ -622,8 +663,8 @@ const refreshList = () => {
 
 const exportUrgeBills = () => {
   const data = selectedListRows.value.length ? selectedListRows.value : filteredList.value
-  const headers = ['资产名称', '承租方', '欠费月数', '欠费金额(元)', '合同到期日']
-  const rows = data.map(r => [r.assetName, r.tenantName, r.arrearsMonths, r.arrearsAmount, r.contractEnd])
+  const headers = ['资产名称', '合同编号', '承租方', '所属公司', '租金类型', '月租金(元)', '本期欠费(元)', '交费截至时间']
+  const rows = data.map(r => [r.assetName, r.contractNo, r.tenant, r.company, r.rentType, r.monthlyRent, r.amount, r.dueDate])
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -707,7 +748,7 @@ const generateNotice = (row) => {
 const downloadNotice = () => {
   if (!currentNotice.value) return
   const n = currentNotice.value
-  const content = `\uFEFF催款通知书\n==================\n编号：${n.no}\n资产：${n.assetName}\n承租方：${n.tenantName}\n欠费金额：${n.arrearsAmount} 元\n欠费月数：${n.arrearsMonths} 个月\n合同到期日：${n.contractEnd}\n\n请于收到本通知后 7 个工作日内缴清欠款。\n\n生成日期：${n.date}\n`
+  const content = `\uFEFF催款通知书\n==================\n编号：${n.no}\n资产：${n.assetName}\n承租方：${n.tenant}\n合同编号：${n.contractNo}\n租赁起止：${n.leaseRange}\n月租金：${n.monthlyRent} 元\n欠费金额：${n.amount} 元\n交费截至时间：${n.dueDate}\n\n请于收到本通知后 7 个工作日内缴清欠款。\n\n生成日期：${n.date}\n`
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -718,7 +759,7 @@ const downloadNotice = () => {
   billRecords.value.unshift({
     billNo: n.no,
     assetName: n.assetName,
-    amount: n.arrearsAmount,
+    amount: n.amount,
     createTime: `${n.date} ${new Date().toTimeString().slice(0, 5)}`,
     status: '待送达'
   })
@@ -883,13 +924,46 @@ const urgeForm = ref({
   remark: ''
 })
 
-const records = ref([
-  { id: 1, contractNo: 'HT-2023-018', assetName: '航城商铺A-03', tenant: '张某', feeType: '租金', amount: 15000, overdueDays: 95, urgeCount: 3, status: '待催缴' },
-  { id: 2, contractNo: 'HT-2024-012', assetName: '城西停车场', tenant: '某物业公司', feeType: '管理费', amount: 8500, overdueDays: 45, urgeCount: 1, status: '待催缴' },
-  { id: 3, contractNo: 'HT-2025-008', assetName: '农贸市场1号摊位', tenant: '陈某', feeType: '租金', amount: 3200, overdueDays: 20, urgeCount: 0, status: '待催缴' },
-  { id: 4, contractNo: 'HT-2024-025', assetName: '工业区厂房A-02', tenant: '某制造企业', feeType: '租金', amount: 52000, overdueDays: 120, urgeCount: 5, status: '已催缴' },
-  { id: 5, contractNo: 'HT-2023-042', assetName: '滨江商铺B-07', tenant: '林某', feeType: '租金', amount: 6800, overdueDays: 10, urgeCount: 2, status: '已缴纳' },
-])
+const records = computed(() => contractStore.visibleContracts
+  .filter(c => (c.arrears || 0) > 0)
+  .map((c, i) => {
+    const st = urgeState.value[c.id] || {}
+    return {
+      id: i + 1,
+      contractNo: c.id,
+      assetName: c.assetName,
+      tenant: c.tenant,
+      feeType: '租金',
+      amount: Math.round(c.arrears * 10000),
+      overdueDays: c.overdueDays || 0,
+      credit: partyStore.creditOf(c.tenant),
+      status: st.status || '待催缴',
+      urgeCount: st.urgeCount || 0
+    }
+  }))
+
+const kpiArrearsTotal = computed(() =>
+  Math.round(records.value.reduce((s, r) => s + r.amount, 0) / 10000 * 100) / 100)
+const kpiOver3Months = computed(() => records.value.filter(r => r.overdueDays > 90).length)
+const kpiUrgeCount = computed(() =>
+  Object.values(urgeState.value).reduce((s, st) => s + (st.urgeCount || 0), 0))
+
+function doUrge(contractNo) {
+  const st = urgeState.value[contractNo] || { status: '待催缴', urgeCount: 0 }
+  urgeState.value[contractNo] = { status: '已催缴', urgeCount: st.urgeCount + 1 }
+  const c = contractStore.getContractById(contractNo)
+  const a = c && assetStore.getAssetById(c.assetId)
+  auditStore.recordEvent({
+    assetId: c?.assetId || '',
+    assetName: c?.assetName || '',
+    group: a?.group || '',
+    module: '履约催缴',
+    action: '发起催缴',
+    billNo: contractNo,
+    remark: `向 ${c?.tenant || '承租人'} 催缴欠费`,
+    detail: `欠费 ${c?.arrears || 0} 万元，逾期 ${c?.overdueDays || 0} 天`
+  })
+}
 
 const filteredRecords = computed(() => {
   if (!urgeFilter.value) return records.value
@@ -922,18 +996,13 @@ const batchUrge = () => {
     return
   }
   pending.forEach(r => {
-    r.status = '已催缴'
-    r.urgeCount++
+    doUrge(r.contractNo)
   })
   ElMessage.success(`已批量催缴 ${pending.length} 条记录`)
 }
 
 const confirmUrge = () => {
-  const record = records.value.find(r => r === currentRecord.value)
-  if (record) {
-    record.status = '已催缴'
-    record.urgeCount++
-  }
+  if (currentRecord.value?.contractNo) doUrge(currentRecord.value.contractNo)
   showUrge.value = false
   ElMessage.success('催缴成功')
 }
@@ -967,11 +1036,8 @@ const previewLetter = (row) => {
 const sendLetterRow = (row) => {
   row.status = '已发送'
   row.sendTime = new Date().toISOString().slice(0, 10)
-  const record = records.value.find(r => r.contractNo === row.contractNo)
-  if (record && record.status === '待催缴') {
-    record.status = '已催缴'
-    record.urgeCount++
-  }
+  const st = urgeState.value[row.contractNo]
+  if ((st?.status || '待催缴') === '待催缴') doUrge(row.contractNo)
   ElMessage.success(`函件 ${row.letterNo} 已发送，催缴记录已留痕`)
 }
 
@@ -1023,7 +1089,7 @@ const printLetter = () => {
 
 <style scoped>
 .letter-doc {
-  padding: 30px 40px;
+  padding: 24px;
   background: #fff;
   font-family: SimSun, serif;
   line-height: 1.9;
@@ -1037,18 +1103,18 @@ const printLetter = () => {
 }
 .letter-line {
   border-bottom: 2px solid #d40000;
-  margin: 10px 0 20px;
+  margin: 8px 0 20px;
 }
 .letter-title {
   text-align: center;
   font-size: 20px;
-  margin: 10px 0 6px;
+  margin: 8px 0 4px;
 }
 .letter-no {
   text-align: center;
   font-size: 13px;
-  color: #666;
-  margin-bottom: 18px;
+  color: var(--t-sub);
+  margin-bottom: 16px;
 }
 .letter-body {
   font-size: 14px;
@@ -1061,7 +1127,7 @@ const printLetter = () => {
   justify-content: flex-end;
   align-items: flex-end;
   gap: 20px;
-  margin-top: 30px;
+  margin-top: 24px;
 }
 .letter-seal {
   width: 120px;
@@ -1084,13 +1150,13 @@ const printLetter = () => {
 .file-thumb {
   width: 48px;
   height: 36px;
-  border: 1px solid #d9d9d9;
-  border-radius: 3px;
-  background: #f5f7fa;
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
+  background: var(--bg-page);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a8abb2;
+  color: var(--t-weak);
   cursor: pointer;
 }
 .file-thumb:hover {
@@ -1098,23 +1164,22 @@ const printLetter = () => {
   color: var(--c-primary);
 }
 .notice-viewport {
-  background: #e8eaed;
+  background: #fff;
   padding: 20px;
   max-height: 560px;
   overflow: auto;
-  display: flex;
-  justify-content: center;
 }
 .a4-sheet {
-  width: 620px;
+  width: 100%;
+  max-width: 760px;
   min-height: 780px;
+  margin: 0 auto;
   background: #fff;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  padding: 60px 70px;
+  padding: 24px;
   font-family: SimSun, serif;
   line-height: 2;
   transform-origin: top center;
-  flex: none;
 }
 .notice-title {
   text-align: center;
@@ -1126,8 +1191,8 @@ const printLetter = () => {
 .notice-no {
   text-align: center;
   font-size: 13px;
-  color: #666;
-  border-bottom: 1px solid #eee;
+  color: var(--t-sub);
+  border-bottom: 1px solid var(--bd);
   padding-bottom: 12px;
   margin-bottom: 20px;
 }
@@ -1135,10 +1200,10 @@ const printLetter = () => {
   font-size: 14px;
   color: #333;
   text-indent: 2em;
-  margin: 10px 0;
+  margin: 12px 0;
 }
 .notice-footer {
-  margin-top: 50px;
+  margin-top: 24px;
   text-align: right;
   font-size: 14px;
   color: #333;

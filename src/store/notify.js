@@ -123,6 +123,31 @@ export const useNotifyStore = defineStore('notify', () => {
     return true
   }
 
+  /** 新增消息模板：key 已存在时返回 false，避免覆盖内置模板 */
+  function addTemplate(payload) {
+    const key = (payload.key || '').trim()
+    if (!key) return false
+    if (templates.value.some(t => t.key === key)) return false
+    templates.value.push({
+      key,
+      scene: payload.scene || key,
+      channel: payload.channel || '站内信',
+      title: payload.title || '',
+      content: payload.content || '',
+      enabled: payload.enabled !== false
+    })
+    return true
+  }
+
+  /** 删除用户自建模板；内置 DEFAULT_TEMPLATES 键不允许删除 */
+  function removeTemplate(key) {
+    if (DEFAULT_TEMPLATES.some(d => d.key === key)) return false
+    const idx = templates.value.findIndex(t => t.key === key)
+    if (idx === -1) return false
+    templates.value.splice(idx, 1)
+    return true
+  }
+
   return {
     messages,
     templates,
@@ -137,6 +162,8 @@ export const useNotifyStore = defineStore('notify', () => {
     markAllRead,
     removeMessage,
     clearAll,
-    updateTemplate
+    updateTemplate,
+    addTemplate,
+    removeTemplate
   }
 })

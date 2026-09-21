@@ -3,12 +3,12 @@
     <div class="page-header">
       <h2>固定资产基础设置</h2>
     </div>
-    <el-card>
+    <el-card class="fill">
 
       <el-tabs v-model="activeTab">
         <!-- 位置设置 -->
         <el-tab-pane label="位置设置" name="location">
-          <el-button type="primary" style="margin-bottom: 15px" @click="handleAddLocation">
+          <el-button type="primary" style="margin-bottom: 16px" @click="handleAddLocation">
             <el-icon><Plus /></el-icon>
             新增位置
           </el-button>
@@ -160,7 +160,7 @@
           </div>
 
           <div class="section-title">折旧规则</div>
-          <el-button type="primary" style="margin-bottom: 15px" @click="handleAddDepreciation">
+          <el-button type="primary" style="margin-bottom: 16px" @click="handleAddDepreciation">
             <el-icon><Plus /></el-icon>
             新增折旧规则
           </el-button>
@@ -193,7 +193,7 @@
 
         <!-- 审批设置 -->
         <el-tab-pane label="审批设置" name="approval">
-          <el-button type="primary" style="margin-bottom: 15px" @click="handleAddApproval">
+          <el-button type="primary" style="margin-bottom: 16px" @click="handleAddApproval">
             <el-icon><Plus /></el-icon>
             新增审批流程
           </el-button>
@@ -202,7 +202,7 @@
             <el-table-column prop="type" label="适用业务" width="120" />
             <el-table-column prop="steps" label="审批步骤" min-width="250">
               <template #default="{ row }">
-                <el-tag v-for="(step, idx) in row.steps.split('->')" :key="idx" size="small" style="margin-right: 5px">{{ step }}</el-tag>
+                <el-tag v-for="(step, idx) in row.steps.split('->')" :key="idx" size="small" style="margin-right: 8px">{{ step }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="90">
@@ -283,7 +283,7 @@
         </el-form-item>
         <el-form-item label="使用年限">
           <el-input-number v-model="categoryForm.usefulLife" :min="1" :max="50" style="width: 100%" />
-          <span style="margin-left: 10px">年</span>
+          <span style="margin-left: 12px">年</span>
         </el-form-item>
         <el-form-item label="分类状态">
           <el-radio-group v-model="categoryForm.status">
@@ -313,11 +313,11 @@
         </el-form-item>
         <el-form-item label="使用年限">
           <el-input-number v-model="depreciationForm.usefulLife" :min="1" :max="50" style="width: 100%" />
-          <span style="margin-left: 10px">年</span>
+          <span style="margin-left: 12px">年</span>
         </el-form-item>
         <el-form-item label="残值率">
           <el-input-number v-model="depreciationForm.residualRate" :min="0" :max="100" style="width: 100%" />
-          <span style="margin-left: 10px">%</span>
+          <span style="margin-left: 12px">%</span>
         </el-form-item>
         <el-form-item label="说明">
           <el-input v-model="depreciationForm.description" type="textarea" :rows="3" placeholder="请输入说明" />
@@ -374,7 +374,7 @@
           <el-col :span="12">
             <el-form-item label="每月计提时间">
               <el-input-number v-model="planForm.monthlyDay" :min="1" :max="31" style="width: calc(100% - 40px)" />
-              <span style="margin-left: 10px">日</span>
+              <span style="margin-left: 12px">日</span>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -566,7 +566,7 @@ const categoryTree = ref([
 
 const catSearch = reactive({ status: '', keyword: '' })
 const catPage = ref(1)
-const catPageSize = ref(10)
+const catPageSize = ref(15)
 watch(catSearch, () => { catPage.value = 1 }, { deep: true })
 
 function nowText() {
@@ -863,7 +863,7 @@ const depreciationPlans = ref([
 
 const depSearch = reactive({ company: '', name: '', calcTime: '', purchaseMode: '' })
 const depPage = ref(1)
-const depPageSize = ref(10)
+const depPageSize = ref(15)
 watch(depSearch, () => { depPage.value = 1 }, { deep: true })
 
 const filteredDepreciationPlans = computed(() => depreciationPlans.value.filter(p =>
@@ -1030,21 +1030,21 @@ const handleApprovalSubmit = () => {
 }
 
 const locPage = ref(1)
-const locPageSize = ref(10)
+const locPageSize = ref(15)
 const pagedLocationList = computed(() => {
   const start = (locPage.value - 1) * locPageSize.value
   return locationList.value.slice(start, start + locPageSize.value)
 })
 
 const rulePage = ref(1)
-const rulePageSize = ref(10)
+const rulePageSize = ref(15)
 const pagedDepreciationRules = computed(() => {
   const start = (rulePage.value - 1) * rulePageSize.value
   return depreciationRules.value.slice(start, start + rulePageSize.value)
 })
 
 const apprPage = ref(1)
-const apprPageSize = ref(10)
+const apprPageSize = ref(15)
 const pagedApprovalFlows = computed(() => {
   const start = (apprPage.value - 1) * apprPageSize.value
   return approvalFlows.value.slice(start, start + apprPageSize.value)
@@ -1052,10 +1052,6 @@ const pagedApprovalFlows = computed(() => {
 </script>
 
 <style scoped>
-.page-container {
-  height: 100%;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;

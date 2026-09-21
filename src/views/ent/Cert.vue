@@ -18,7 +18,7 @@
       </el-form>
     </div>
 
-    <div style="margin-bottom: 12px">
+    <div>
       <el-row :gutter="16">
         <el-col :span="8">
           <el-statistic title="已办证" :value="certStats.certified" />
@@ -34,17 +34,49 @@
       </el-row>
     </div>
 
-    <el-table :data="filteredRecords" border stripe class="table-card" style="margin-bottom: 16px">
+    <div class="toolbar-row">
+      <el-button type="warning" :disabled="!certSelection.length" @click="batchStartCert">批量开始办理 ({{ certSelection.length }})</el-button>
+      <el-button type="success" :disabled="!certSelection.length" @click="batchCompleteCert">批量完成办理 ({{ certSelection.length }})</el-button>
+      <el-button :disabled="!certSelection.length" @click="certSelection = []">取消选择</el-button>
+    </div>
+
+    <el-table :data="filteredRecords" border stripe class="table-card" @selection-change="onCertSelectionChange">
+      <el-table-column type="selection" width="45" />
       <el-table-column prop="assetId" label="资产编号" width="100" />
       <el-table-column prop="assetName" label="资产名称" min-width="200" />
       <el-table-column prop="location" label="位置" width="100" />
       <el-table-column prop="certStatus" label="权证状态" width="160">
         <template #default="{ row }">
-          <el-tag :type="row.certStatus.includes('已办证') ? 'success' : 'danger'" size="small">{{ row.certStatus }}</el-tag>
+          <el-tag :type="certStatusTagType(row.certStatus)" size="small">{{ row.certStatus }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="progress" label="办证进度" min-width="200" show-overflow-tooltip />
+      <el-table-column label="操作" width="200" fixed="right">
+        <template #default="{ row }">
+          <el-button v-if="row.certStatus.includes('未启动')" type="warning" link size="small" @click="startCert(row)">开始办理</el-button>
+          <el-button v-if="row.certStatus.includes('办理中')" type="success" link size="small" @click="completeCert(row)">完成办理</el-button>
+          <el-button v-if="row.certStatus.includes('办理中')" type="info" link size="small" @click="revertCert(row)">退回未启动</el-button>
+        </template>
+      </el-table-column>
     </el-table>
+
+    <el-dialog v-model="completeDialogVisible" title="完成办证" width="500px" destroy-on-close>
+      <el-form :model="completeForm" label-width="100px">
+        <el-form-item label="资产">
+          <span>{{ completeForm.assetName }} ({{ completeForm.assetId }})</span>
+        </el-form-item>
+        <el-form-item label="权证编号" required>
+          <el-input v-model="completeForm.certDetail" placeholder="如：闽(2026)长乐区不动产权第0012345号" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="completeForm.remark" type="textarea" :rows="2" placeholder="办证完成备注" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="completeDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmComplete">确认完成</el-button>
+      </template>
+    </el-dialog>
 
     <el-tabs v-model="activeTab">
       <el-tab-pane label="产权信息" name="prop">
@@ -90,7 +122,7 @@
               <template #default="{ row }">
                 <div class="expand-panel">
                   <div class="section-title">产权证比例</div>
-                  <el-table :data="row.ratios" border size="small" style="width: 460px; margin-bottom: 12px">
+                  <el-table :data="row.ratios" border size="small" style="width: 100%; margin-bottom: 12px">
                     <el-table-column prop="name" label="名称" min-width="200" />
                     <el-table-column prop="ratio" label="比例%" width="120" align="right" />
                   </el-table>
@@ -218,21 +250,21 @@
               <el-input v-model="propForm.certNo" placeholder="请输入产权编号" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="产权证类型">
               <el-select v-model="propForm.certType" placeholder="请选择" clearable style="width: 100%">
                 <el-option v-for="t in certTypeOptions" :key="t" :label="t" :value="t" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="产权类型">
               <el-select v-model="propForm.propType" placeholder="请选择" clearable style="width: 100%">
                 <el-option v-for="t in propTypeOptions" :key="t" :label="t" :value="t" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="产权比例类型">
               <el-select v-model="propForm.ratioType" placeholder="请选择" style="width: 100%">
                 <el-option label="单独所有" value="单独所有" />
@@ -282,11 +314,15 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Picture } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
+import { useCredentialStore } from '../../store/credential'
+import { useUserStore } from '../../store/user'
 
 const assetStore = useAssetStore()
+const credentialStore = useCredentialStore()
+const userStore = useUserStore()
 
 const filterStatus = ref('')
 
@@ -299,8 +335,21 @@ const certStats = computed(() => {
   }
 })
 
+const scopedCertRecords = computed(() =>
+  assetStore.visibleAssets
+    .filter(a => a.certStatus !== '已办证')
+    .map(a => ({
+      assetId: a.id,
+      assetName: a.name,
+      location: a.location,
+      certStatus: a.certStatus,
+      progress: a.certStatus.includes('办理中') ? '材料准备中，预计 2 个月内完成' : '待启动，需协调相关部门',
+      remark: ''
+    }))
+)
+
 const filteredRecords = computed(() => {
-  return assetStore.certRecords.filter(r => {
+  return scopedCertRecords.value.filter(r => {
     if (!filterStatus.value) return true
     if (filterStatus.value === '已办证') return r.certStatus.includes('已办证')
     if (filterStatus.value === '办理中') return r.certStatus.includes('办理中')
@@ -308,6 +357,74 @@ const filteredRecords = computed(() => {
     return true
   })
 })
+
+function certStatusTagType(status) {
+  if (status.includes('已办证')) return 'success'
+  if (status.includes('办理中')) return 'warning'
+  return 'danger'
+}
+
+const certSelection = ref([])
+function onCertSelectionChange(rows) { certSelection.value = rows }
+
+function startCert(row) {
+  assetStore.updateAsset(row.assetId, { certStatus: '未办证（办理中）' })
+  ElMessage.success(`${row.assetName} 已开始办理`)
+}
+
+function revertCert(row) {
+  assetStore.updateAsset(row.assetId, { certStatus: '未办证（未启动）' })
+  ElMessage.success(`${row.assetName} 已退回未启动`)
+}
+
+const completeDialogVisible = ref(false)
+const completeForm = ref({ assetId: '', assetName: '', certDetail: '', remark: '' })
+const pendingCompleteIds = ref([])
+
+function openCompleteDialog(row) {
+  pendingCompleteIds.value = [row.assetId]
+  completeForm.value = { assetId: row.assetId, assetName: row.assetName, certDetail: '', remark: '' }
+  completeDialogVisible.value = true
+}
+
+function completeCert(row) { openCompleteDialog(row) }
+
+function confirmComplete() {
+  if (!completeForm.value.certDetail.trim()) {
+    ElMessage.warning('请填写权证编号')
+    return
+  }
+  pendingCompleteIds.value.forEach(id => {
+    assetStore.updateAsset(id, {
+      certStatus: '已办证',
+      certDetail: completeForm.value.certDetail,
+      propertyRight: '有不动产证'
+    })
+  })
+  const count = pendingCompleteIds.value.length
+  ElMessage.success(`${count} 项资产已完成办证`)
+  completeDialogVisible.value = false
+  pendingCompleteIds.value = []
+}
+
+function batchStartCert() {
+  const targets = certSelection.value.filter(r => r.certStatus.includes('未启动'))
+  if (!targets.length) { ElMessage.warning('所选资产均非"未启动"状态'); return }
+  ElMessageBox.confirm(`确认将 ${targets.length} 项资产开始办理？`, '批量开始办理', { type: 'info' }).then(() => {
+    targets.forEach(r => assetStore.updateAsset(r.assetId, { certStatus: '未办证（办理中）' }))
+    ElMessage.success(`${targets.length} 项已开始办理`)
+    certSelection.value = []
+  }).catch(() => {})
+}
+
+function batchCompleteCert() {
+  const targets = certSelection.value.filter(r => r.certStatus.includes('办理中'))
+  if (!targets.length) { ElMessage.warning('所选资产均非"办理中"状态'); return }
+  if (targets.length === 1) { openCompleteDialog(targets[0]); return }
+  pendingCompleteIds.value = targets.map(r => r.assetId)
+  completeForm.value = { assetId: '', assetName: `${targets.length} 项资产`, certDetail: '', remark: '' }
+  completeDialogVisible.value = true
+}
 
 const activeTab = ref('prop')
 
@@ -317,7 +434,7 @@ const propTypeOptions = ['房产产权', '土地产权', '不动产产权', '在
 
 const propFilters = ref({ keyword: '', company: '', certType: '', projectType: '', propType: '' })
 const propPage = ref(1)
-const propPageSize = ref(10)
+const propPageSize = ref(15)
 
 const propRecords = ref([
   {
@@ -411,18 +528,24 @@ const pagedProps = computed(() => {
 
 function handlePropSearch() { propPage.value = 1 }
 
-const certTabData = ref([
-  { certName: '吴航商业街商铺产权证', certType: '不动产权证', certCode: '闽(2020)长乐区不动产权第0012345号', company: '长乐区城市投资建设集团有限公司', obtainDate: '2020-03-15', status: '有效' },
-  { certName: '航城商务楼产权证', certType: '不动产权证', certCode: '闽(2019)长乐区不动产权第0023456号', company: '福州滨海新区建设集团有限公司', obtainDate: '2019-06-20', status: '有效' },
-  { certName: '营前厂房土地使用权证', certType: '土地证', certCode: '闽(2018)长乐区不动产权第0034567号', company: '长乐区国有资产营运有限公司', obtainDate: '2018-09-10', status: '有效' },
-  { certName: '首占保障房产权证', certType: '房产证', certCode: '闽(2021)长乐区不动产权第0045678号', company: '长乐区城市投资建设集团有限公司', obtainDate: '2021-01-25', status: '有效' },
-  { certName: '吴航农贸市场规划许可证', certType: '规划许可证', certCode: 'CLGH-2019-0156', company: '吴航街道集体资产经营公司', obtainDate: '2019-03-01', status: '即将到期' },
-  { certName: '江田仓储用地规划许可', certType: '规划许可证', certCode: 'CLGH-2020-0089', company: '福州滨海新区建设集团有限公司', obtainDate: '2020-05-15', status: '已过期' },
-  { certName: '梅花镇综合楼房产证', certType: '房产证', certCode: '闽(2020)长乐区不动产权第0067890号', company: '长乐区国有资产营运有限公司', obtainDate: '2020-08-10', status: '有效' },
-  { certName: '安东大厦不动产权证', certType: '不动产权证', certCode: '闽(2017)长乐区不动产权第0098765号', company: '长乐区城市投资建设集团有限公司', obtainDate: '2017-12-01', status: '即将到期' }
-])
+const certTabData = computed(() => {
+  const org = userStore.isEnt ? userStore.user?.org : null
+  return credentialStore.credentialList
+    .filter(c => !org || c.group === org)
+    .map(c => {
+      const asset = c.assetId ? assetStore.getAssetById(c.assetId) : null
+      return {
+        certName: `${c.type}${asset ? ' · ' + asset.name : ''}`,
+        certType: c.type,
+        certCode: c.certNo,
+        company: c.group || asset?.group || '—',
+        obtainDate: c.issueDate,
+        status: c.status
+      }
+    })
+})
 const certTabPage = ref(1)
-const certTabPageSize = ref(10)
+const certTabPageSize = ref(15)
 
 const pagedCertTab = computed(() => {
   const start = (certTabPage.value - 1) * certTabPageSize.value
@@ -510,14 +633,14 @@ function saveProp() {
 </script>
 
 <style scoped>
-.ent-cert { height: 100%; }
-.toolbar-row { display: flex; align-items: center; margin-bottom: 12px; }
-.expand-panel { padding: 12px 24px; background: #fcfcfc; }
-.file-thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.toolbar-row { display: flex; align-items: center; gap: 8px; }
+.el-tab-pane > .toolbar-row { margin-bottom: 12px; }
+.expand-panel { padding: 12px 24px; background: var(--bg-page); }
+.file-thumbs { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
 .file-thumbs .thumb {
-  width: 92px; height: 92px; border: 1px solid #d9d9d9; border-radius: 4px; background: #fafafa;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  font-size: 12px; color: #999; padding: 6px; text-align: center; word-break: break-all; overflow: hidden;
+  width: 92px; height: 92px; border: 1px solid var(--bd); border-radius: var(--r-sm); background: var(--bg-page);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  font-size: 12px; color: var(--t-weak); padding: 8px; text-align: center; word-break: break-all; overflow: hidden;
 }
-.file-thumbs .no-file { font-size: 13px; color: #999; line-height: 92px; }
+.file-thumbs .no-file { font-size: 13px; color: var(--t-weak); line-height: 92px; }
 </style>

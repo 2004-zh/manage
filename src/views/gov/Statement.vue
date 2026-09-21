@@ -13,9 +13,9 @@
       </div>
     </div>
 
-    <el-alert :title="tipText" type="info" :closable="false" show-icon style="margin-bottom: 16px" />
+    <el-alert :title="tipText" type="info" :closable="false" show-icon />
 
-    <el-table :data="tableData" border stripe class="table-card" :span-method="spanMethod" highlight-current-row @row-click="onRowClick" :summary-method="getSummaryRow" show-summary>
+    <el-table :data="tableData" border stripe class="table-card fill" :span-method="spanMethod" highlight-current-row @row-click="onRowClick" :summary-method="getSummaryRow" show-summary>
       <el-table-column prop="seq" label="序号" width="60" align="center" />
       <el-table-column prop="name" label="企业名称" width="120" fixed />
       <el-table-column prop="assets" label="资产宗数" width="90" align="right" />
@@ -25,13 +25,13 @@
       <el-table-column prop="rented" label="已出租宗数" width="100" align="right" />
       <el-table-column prop="rentalRate" label="出租率" width="80" align="right">
         <template #default="{ row }">
-          <span :style="{ color: row.rentalRate < 70 ? '#f5222d' : '#52c41a' }">{{ row.rentalRate.toFixed(1) }}%</span>
+          <span :style="{ color: row.rentalRate < 70 ? 'var(--c-danger)' : 'var(--c-success)' }">{{ row.rentalRate.toFixed(1) }}%</span>
         </template>
       </el-table-column>
       <el-table-column prop="idle" label="闲置宗数" width="90" align="right" />
       <el-table-column prop="idleRate" label="闲置率" width="80" align="right">
         <template #default="{ row }">
-          <span :style="{ color: row.idleRate > 16 ? '#fa8c16' : '#52c41a' }">{{ row.idleRate.toFixed(1) }}%</span>
+          <span :style="{ color: row.idleRate > 16 ? 'var(--c-warning)' : 'var(--c-success)' }">{{ row.idleRate.toFixed(1) }}%</span>
         </template>
       </el-table-column>
       <el-table-column prop="cumReceivable" label="累计应收租金" width="110" align="right">
@@ -49,7 +49,7 @@
       <el-table-column prop="newCert" label="当年新增办证" width="110" align="right" />
       <el-table-column prop="unCert" label="未办证" width="80" align="right">
         <template #default="{ row }">
-          <span :style="{ color: row.unCert > 4 ? '#f5222d' : '#333' }">{{ row.unCert }}</span>
+          <span :style="{ color: row.unCert > 4 ? 'var(--c-danger)' : 'var(--t-main)' }">{{ row.unCert }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="80" align="center" fixed="right">
@@ -259,7 +259,6 @@ function handleExport() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
 }
 
 .page-header h2 {

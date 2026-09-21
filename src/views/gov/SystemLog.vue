@@ -1,26 +1,73 @@
 <template>
-  <div>
-    <div class="page-header"><h2>操作日志</h2></div>
-    <el-table :data="logs" border stripe size="small">
+  <div class="page-container">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+      <h2>操作日志</h2>
+      <span style="color:var(--t-sub);font-size:13px">共 {{ logs.length }} 条</span>
+    </div>
+    <el-table :data="pagedLogs" border stripe size="small" class="fill">
       <el-table-column prop="time" label="时间" width="180" />
       <el-table-column prop="user" label="操作人" width="140" />
       <el-table-column prop="org" label="组织" width="120" />
-      <el-table-column prop="module" label="模块" width="120" />
-      <el-table-column prop="action" label="操作内容" />
+      <el-table-column prop="module" label="模块" width="140" />
+      <el-table-column prop="action" label="操作内容" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="detail" label="明细" min-width="200" show-overflow-tooltip />
+      <el-table-column prop="result" label="结果" width="80">
+        <template #default="{ row }">
+          <el-tag :type="row.result === '成功' ? 'success' : 'danger'" size="small">{{ row.result }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="ip" label="IP" width="140" />
     </el-table>
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50]"
+        :total="logs.length"
+        layout="total, sizes, prev, pager, next"
+        background
+        small
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuditStore } from '../../store/audit'
+import { useUserStore } from '../../store/user'
 
-const logs = ref([
-  { time: '2026-09-15 09:30:12', user: '林××', org: '国资中心', module: '督办管理', action: '发起督办 DB-2026-014', ip: '192.168.1.100' },
-  { time: '2026-09-15 09:15:45', user: '陈××', org: '城投集团', module: '资产台账', action: '修改 CT-005 状态为闲置', ip: '192.168.1.50' },
-  { time: '2026-09-14 16:45:30', user: '陈××', org: '城投集团', module: '数据报送', action: '提交 2026 年度报表', ip: '192.168.1.50' },
-  { time: '2026-09-14 14:20:18', user: '林××', org: '国资中心', module: '报表管理', action: '导出固定资产情况表（全部）', ip: '192.168.1.100' },
-  { time: '2026-09-14 10:30:00', user: '林××', org: '国资中心', module: '督办管理', action: '确认办结 DB-2026-005', ip: '192.168.1.100' },
-  { time: '2026-09-13 15:00:22', user: '陈××', org: '城投集团', module: '收费管理', action: '一键催缴 HT-2023-018', ip: '192.168.1.50' }
-])
+const auditStore = useAuditStore()
+const userStore = useUserStore()
+
+const page = ref(1)
+const pageSize = ref(20)
+
+// 企业端只看本组织的操作日志，监管端看全部
+const logs = computed(() => {
+  const list = auditStore.opLogs.map(r => ({
+    time: r.time,
+    user: r.operator,
+    org: r.operatorOrg,
+    module: r.module,
+    action: r.action,
+    detail: r.detail,
+    result: r.result,
+    ip: r.ip
+  }))
+  if (userStore.isEnt) return list.filter(r => r.org === userStore.user?.org)
+  return list
+})
+
+const pagedLogs = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return logs.value.slice(start, start + pageSize.value)
+})
 </script>
+
+<style scoped>
+.pager {
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

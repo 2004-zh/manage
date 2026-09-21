@@ -40,31 +40,25 @@
     </div>
 
     <el-card v-show="filterVisible" class="filter-bar" shadow="never">
-      <el-row :gutter="16">
-        <el-col :span="5">
-          <el-input v-model="filters.keyword" placeholder="申请编号/承租方/合同编号" clearable prefix-icon="Search" />
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.status" placeholder="退还状态" clearable>
-            <el-option label="待审批" value="待审批" />
-            <el-option label="已退还" value="已退还" />
-            <el-option label="已驳回" value="已驳回" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.depositType" placeholder="保证金类型" clearable>
-            <el-option label="租赁保证金" value="租赁保证金" />
-            <el-option label="履约保证金" value="履约保证金" />
-          </el-select>
-        </el-col>
-        <el-col :span="3">
+      <div class="grid-4 filter-row">
+        <el-input v-model="filters.keyword" placeholder="申请编号/承租方/合同编号" clearable prefix-icon="Search" class="full-width" />
+        <el-select v-model="filters.status" placeholder="退还状态" clearable class="full-width">
+          <el-option label="待审批" value="待审批" />
+          <el-option label="已退还" value="已退还" />
+          <el-option label="已驳回" value="已驳回" />
+        </el-select>
+        <el-select v-model="filters.depositType" placeholder="保证金类型" clearable class="full-width">
+          <el-option label="租赁保证金" value="租赁保证金" />
+          <el-option label="履约保证金" value="履约保证金" />
+        </el-select>
+        <div class="filter-actions">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
-        </el-col>
-      </el-row>
+        </div>
+      </div>
     </el-card>
 
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card fill" shadow="never">
       <div class="table-toolbar">
         <span class="toolbar-title">保证金退还列表</span>
         <div class="icon-toolbar">
@@ -364,26 +358,42 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Filter } from '@element-plus/icons-vue'
+import { useFinanceStore } from '../../store/finance'
+import { useContractStore } from '../../store/contract'
+import { useAuditStore } from '../../store/audit'
+
+const financeStore = useFinanceStore()
+const contractStore = useContractStore()
+const auditStore = useAuditStore()
 
 const filters = ref({ keyword: '', status: '', depositType: '' })
 const filterVisible = ref(true)
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(15)
 
-const deposits = ref([
-  { id: 1, applyNo: 'REF20240901', depositNo: 'BZJ202308050001', tenant: '杭州星辰科技有限公司', contractNo: 'HT20230801', depositType: '租赁保证金', amount: 116000, payDate: '2023-08-05', payTime: '2023-08-05 10:22:31', operator: '王丽', payStatus: '已收', applyDate: '2024-09-10', subletStatus: '无', subletNote: '—', subletTime: '—', subletOperator: '—', status: '待审批',
-    assets: [{ region: '浙江省杭州市上城区', project: '安东大厦', zone: 'A区', assetNo: 'ZC-HZ-0601', address: '安东大厦6F 601室', company: '杭州城投资产经营有限公司', leaseType: '部分出租' }] },
-  { id: 2, applyNo: 'REF20240902', depositNo: 'BZJ202205200002', tenant: '浙江蓝海贸易公司', contractNo: 'HT20220515', depositType: '租赁保证金', amount: 44000, payDate: '2022-05-20', payTime: '2022-05-20 14:05:47', operator: '陈强', payStatus: '已收', applyDate: '2024-09-12', subletStatus: '已转租', subletNote: '整体转租给宁波云帆信息科技有限公司，保证金随合同转移', subletTime: '2024-03-18 09:41:20', subletOperator: '陈强', status: '已退还',
-    assets: [{ region: '浙江省杭州市西湖区', project: '吴航街道商业街', zone: 'B区', assetNo: 'ZC-HZ-0117', address: '吴航街道商业街A-01商铺', company: '杭州西湖文旅资产管理有限公司', leaseType: '部分出租' }] },
-  { id: 3, applyNo: 'REF20240903', depositNo: 'BZJ202311150003', tenant: '嘉兴绿谷农产品有限公司', contractNo: 'HT20231110', depositType: '履约保证金', amount: 50000, payDate: '2023-11-15', payTime: '2023-11-15 16:32:09', operator: '王丽', payStatus: '已收', applyDate: '2024-09-15', subletStatus: '无', subletNote: '—', subletTime: '—', subletOperator: '—', status: '待审批',
-    assets: [{ region: '浙江省嘉兴市南湖区', project: '营前标准厂房', zone: 'C区', assetNo: 'ZC-JX-0202', address: '营前标准厂房2#', company: '嘉兴绿谷仓储物流有限公司', leaseType: '整体出租' }] },
-  { id: 4, applyNo: 'REF20240904', depositNo: 'BZJ202401080004', tenant: '上海锦绣服饰有限公司', contractNo: 'HT20240103', depositType: '租赁保证金', amount: 88000, payDate: '2024-01-08', payTime: '2024-01-08 11:18:55', operator: '李芳', payStatus: '已收', applyDate: '2024-09-20', subletStatus: '无', subletNote: '—', subletTime: '—', subletOperator: '—', status: '已驳回',
-    assets: [{ region: '上海市浦东新区', project: '航城商务楼', zone: 'D区', assetNo: 'ZC-SH-0303', address: '航城商务楼3F整层', company: '上海浦东金桥工业开发有限公司', leaseType: '整体出租' }] },
-  { id: 5, applyNo: 'REF20240905', depositNo: 'BZJ202306250005', tenant: '南京云帆信息科技有限公司', contractNo: 'HT20230620', depositType: '履约保证金', amount: 30000, payDate: '2023-06-25', payTime: '2023-06-25 09:47:13', operator: '陈强', payStatus: '已收', applyDate: '2024-09-22', subletStatus: '无', subletNote: '—', subletTime: '—', subletOperator: '—', status: '已退还',
-    assets: [{ region: '江苏省南京市建邺区', project: '云帆科创园', zone: 'A区', assetNo: 'ZC-NJ-0411', address: '云帆科创园B座5层', company: '南京建邺科创资产管理有限公司', leaseType: '部分出租' }] },
-  { id: 6, applyNo: 'REF20240906', depositNo: 'BZJ202402050006', tenant: '宁波海天机械有限公司', contractNo: 'HT20240201', depositType: '租赁保证金', amount: 72000, payDate: '2024-02-05', payTime: '—', operator: '—', payStatus: '待收', applyDate: '2024-09-28', subletStatus: '无', subletNote: '—', subletTime: '—', subletOperator: '—', status: '待审批',
-    assets: [{ region: '浙江省宁波市北仑区', project: '海天装备园', zone: 'E区', assetNo: 'ZC-NB-0508', address: '海天装备园1号车间', company: '宁波北仑工业资产运营有限公司', leaseType: '整体出租' }] },
-])
+// 与 Fee.vue 保证金 tab 共享同一份 deposits：financeStore.depositList（企业端按公司过滤）
+const deposits = computed(() => financeStore.depositList.map(d => ({
+  id: d.id,
+  applyNo: d.applyNo || '—',
+  depositNo: d.depositNo,
+  tenant: d.tenant,
+  contractNo: d.contractId,
+  contractId: d.contractId,
+  assetId: d.assetId,
+  depositType: d.depositType,
+  amount: Number(d.amount) || 0,
+  payDate: d.payDate,
+  payTime: d.payTime,
+  operator: d.operator,
+  payStatus: d.payStatus,
+  applyDate: d.applyDate || '—',
+  subletStatus: d.subletStatus || '无',
+  subletNote: d.subletNote || '—',
+  subletTime: d.subletTime || '—',
+  subletOperator: d.subletOperator || '—',
+  status: d.status,
+  assets: d.assets || []
+})))
 
 const filteredData = computed(() => {
   return deposits.value.filter(d => {
@@ -444,27 +454,56 @@ function openApplyDialog() {
 function submitApply() {
   formRef.value.validate(valid => {
     if (!valid) return
-    const no = 'REF' + Date.now()
-    deposits.value.unshift({
-      id: deposits.value.length + 1,
-      applyNo: no,
-      depositNo: 'BZJ' + Date.now(),
-      tenant: form.value.tenant,
-      contractNo: form.value.contractNo,
-      depositType: form.value.depositType,
-      amount: form.value.amount,
-      payDate: new Date().toISOString().slice(0, 10),
-      payTime: '—',
-      operator: '—',
-      payStatus: '待收',
-      applyDate: new Date().toISOString().slice(0, 10),
-      subletStatus: '无',
-      subletNote: '—',
-      subletTime: '—',
-      subletOperator: '—',
-      status: '待审批',
-      assets: [],
-    })
+    const today0 = new Date().toISOString().slice(0, 10)
+    // 优先命中已有的保证金（合同号一致 且 尚未待审批/已退还）→ 走 store 的 applyDepositRefund
+    const matched = financeStore.deposits.find(d =>
+      d.contractId === form.value.contractNo && d.status === '在管'
+    )
+    if (matched) {
+      financeStore.applyDepositRefund(matched.id, {
+        reason: form.value.reason,
+        applyDate: today0,
+        amount: form.value.amount || matched.amount
+      })
+    } else {
+      // 无匹配记录：直接登记一条待审批的保证金流水并留痕
+      const id = Math.max(0, ...financeStore.deposits.map(d => Number(d.id) || 0)) + 1
+      const contract = contractStore.getContractById(form.value.contractNo)
+      const applyNo = `REF-${new Date().getFullYear()}-${String(financeStore.deposits.filter(x => x.applyNo).length + 1).padStart(3, '0')}`
+      const entry = {
+        id,
+        depositNo: `BZJ-${new Date().getFullYear()}-${String(id).padStart(3, '0')}`,
+        contractId: form.value.contractNo,
+        tenant: form.value.tenant,
+        assetId: contract?.assetId || '',
+        assetName: contract?.assetName || '',
+        depositType: form.value.depositType,
+        amount: Number(form.value.amount) || 0,
+        payDate: today0,
+        payTime: '—',
+        operator: '—',
+        payStatus: '待收',
+        applyNo,
+        applyDate: today0,
+        applyReason: form.value.reason,
+        refundBankAccount: form.value.bankAccount,
+        subletStatus: '无',
+        subletNote: '—',
+        subletTime: '—',
+        subletOperator: '—',
+        status: '待审批',
+        assets: []
+      }
+      financeStore.deposits.unshift(entry)
+      auditStore.recordEvent({
+        assetId: entry.assetId,
+        assetName: entry.assetName,
+        module: '保证金',
+        action: '申请退还保证金',
+        billNo: applyNo,
+        remark: `${entry.tenant} 申请退还${entry.depositType} ${entry.amount} 元，原因：${form.value.reason}`
+      })
+    }
     applyDialogVisible.value = false
     ElMessage.success('申请已提交，等待审批')
   })
@@ -513,7 +552,15 @@ function handleView(row) {
 }
 function handleApprove(row) {
   ElMessageBox.confirm(`是否批准 ${row.tenant} 的保证金退还申请（${row.amount} 元）？`, '审批确认', { type: 'warning' })
-    .then(() => { row.status = '已退还'; ElMessage.success('审批通过'); detailVisible.value = false })
+    .then(() => {
+      financeStore.refundDeposit(row.id, {
+        amount: row.amount,
+        method: '审批通过退还',
+        reason: '审批通过'
+      })
+      ElMessage.success('审批通过')
+      detailVisible.value = false
+    })
     .catch(() => {})
 }
 
@@ -599,7 +646,13 @@ function submitRefund() {
     ElMessage.warning('退还金额不能大于保证金金额')
     return
   }
-  row.status = '已退还'
+  const deduct = Math.max(0, (row.amount || 0) - (refundForm.value.amount || 0))
+  financeStore.refundDeposit(row.id, {
+    amount: refundForm.value.amount,
+    deduct,
+    reason: refundForm.value.remark,
+    method: '现场退还'
+  })
   refundVisible.value = false
   ElMessage.success(`保证金 ￥${refundForm.value.amount.toFixed(2)} 已退还至 ${row.tenant}`)
 }
@@ -615,13 +668,15 @@ function openSitePay(row) {
 
 function submitSitePay() {
   const row = currentRow.value
+  if (!row) return
   if (!sitePayForm.value.amount) {
     ElMessage.warning('请填写缴费金额')
     return
   }
-  row.payStatus = '已收'
-  row.payTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
-  row.operator = '当前操作员'
+  financeStore.collectDeposit(row.id, {
+    amount: sitePayForm.value.amount,
+    method: sitePayForm.value.payWay
+  })
   sitePayVisible.value = false
   ElMessage.success(`现场缴费成功，收取保证金 ￥${sitePayForm.value.amount.toFixed(2)}（${sitePayForm.value.payWay}）`)
 }
@@ -629,18 +684,17 @@ function submitSitePay() {
 </script>
 
 <style scoped>
-.page-container { padding: 16px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; }
 .page-header h2 { margin: 0; font-size: 20px; }
-.filter-bar { margin-bottom: 16px; }
-.filter-bar :deep(.el-select) { width: 100%; }
-.table-card { margin-bottom: 16px; }
-.pagination-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
+.filter-row { align-items: center; }
+.filter-bar :deep(.el-select),
+.filter-bar :deep(.el-input) { width: 100%; }
+.filter-actions { display: flex; gap: 8px; }
 .table-toolbar { display: flex; align-items: center; margin-bottom: 12px; }
-.table-toolbar .toolbar-title { font-size: 14px; font-weight: 600; color: #333; }
+.table-toolbar .toolbar-title { font-size: 14px; font-weight: 600; color: var(--t-main); }
 .expand-wrap { padding: 12px 24px; }
 .detail-status { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.apply-no { font-size: 14px; color: #606266; font-weight: 600; }
-.deduct-reason { color: #909399; font-size: 12px; }
-.muted { color: #909399; font-size: 13px; }
+.apply-no { font-size: 14px; color: var(--t-sub); font-weight: 600; }
+.deduct-reason { color: var(--t-weak); font-size: 12px; }
+.muted { color: var(--t-weak); font-size: 13px; }
 </style>

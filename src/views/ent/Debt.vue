@@ -5,98 +5,105 @@
       <el-button type="primary" @click="exportData">导出报表</el-button>
     </div>
 
-    <el-row :gutter="16" style="margin-bottom:16px">
+    <el-row :gutter="16">
       <el-col :span="6">
         <el-card shadow="never" class="kpi-card">
-          <div class="kpi-value">300</div>
+          <div class="kpi-value">{{ total.assetCount }}</div>
           <div class="kpi-label">资产总数(处)</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="never" class="kpi-card">
-          <div class="kpi-value">56.15<span style="font-size:14px;font-weight:normal">亿元</span></div>
-          <div class="kpi-label">资产总额(原值)</div>
+          <div class="kpi-value">{{ total.assetValue }}<span style="font-size:14px;font-weight:normal">万元</span></div>
+          <div class="kpi-label">资产总额(账面值)</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="never" class="kpi-card">
-          <div class="kpi-value">12.38<span style="font-size:14px;font-weight:normal">亿元</span></div>
+          <div class="kpi-value">{{ total.liability }}<span style="font-size:14px;font-weight:normal">万元</span></div>
           <div class="kpi-label">负债总额</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="never" class="kpi-card">
-          <div class="kpi-value">43.77<span style="font-size:14px;font-weight:normal">亿元</span></div>
+          <div class="kpi-value">{{ total.net }}<span style="font-size:14px;font-weight:normal">万元</span></div>
           <div class="kpi-label">净资产</div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row :gutter="16">
-      <el-col :span="12">
-        <el-card shadow="never">
-          <template #header><span>资产构成</span></template>
-          <div ref="assetChartRef" style="height:300px"></div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="never">
-          <template #header><span>负债结构</span></template>
-          <div ref="debtChartRef" style="height:300px"></div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="chart-row chart-row-1-1">
+      <el-card shadow="never">
+        <template #header><span>各公司资产分布</span></template>
+        <div ref="assetChartRef" class="chart-box"></div>
+      </el-card>
+      <el-card shadow="never">
+        <template #header><span>负债结构</span></template>
+        <div ref="debtChartRef" class="chart-box"></div>
+      </el-card>
+    </div>
 
-    <el-card shadow="never" style="margin-top:16px">
+    <el-card shadow="never" class="fill">
       <template #header><span>资债明细</span></template>
-      <el-table :data="debtDetails" border stripe show-summary :summary-method="getSummary">
-        <el-table-column prop="category" label="类别" width="150" />
-        <el-table-column prop="item" label="项目" min-width="200" />
-        <el-table-column prop="amount" label="金额(万元)" width="150" align="right" />
-        <el-table-column prop="ratio" label="占比" width="100" align="right" />
-        <el-table-column prop="remark" label="备注" min-width="200" />
+      <el-table :data="overview" border stripe show-summary :summary-method="getSummary">
+        <el-table-column prop="company" label="公司" width="150" />
+        <el-table-column prop="assetCount" label="资产数(处)" width="100" align="right" />
+        <el-table-column prop="assetValue" label="资产账面值(万元)" width="150" align="right" />
+        <el-table-column prop="mortgage" label="抵押负债(万元)" width="140" align="right" />
+        <el-table-column prop="arrears" label="欠费(万元)" width="120" align="right" />
+        <el-table-column prop="net" label="净资产(万元)" width="140" align="right" />
+        <el-table-column prop="ratio" label="负债率" width="100" align="right">
+          <template #default="{ row }">{{ row.ratio }}%</template>
+        </el-table-column>
       </el-table>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { useFinanceStore } from '../../store/finance'
+
+const financeStore = useFinanceStore()
 
 const assetChartRef = ref(null)
 const debtChartRef = ref(null)
+let assetChart = null
+let debtChart = null
 
-const debtDetails = ref([
-  { category: '固定资产', item: '房屋及建筑物', amount: 482000, ratio: '85.8%', remark: '账面原值' },
-  { category: '固定资产', item: '土地使用权', amount: 67500, ratio: '12.0%', remark: '划拨+出让' },
-  { category: '固定资产', item: '在建工程', amount: 12000, ratio: '2.1%', remark: '3个在建项目' },
-  { category: '固定资产', item: '其他资产', amount: 50, ratio: '0.01%', remark: '' },
-  { category: '负债', item: '长期借款', amount: 85000, ratio: '68.7%', remark: '银行贷款' },
-  { category: '负债', item: '应付账款', amount: 22800, ratio: '18.4%', remark: '工程款' },
-  { category: '负债', item: '其他应付款', amount: 16000, ratio: '12.9%', remark: '' },
-])
+const overview = computed(() => financeStore.debtOverview)
 
-const getSummary = ({ columns, data }) => {
-  const sums = []
-  columns.forEach((col, index) => {
-    if (index === 0) { sums[index] = '合计'; return }
-    if (index === 2) {
-      const total = data.reduce((s, r) => s + (r.amount || 0), 0)
-      sums[index] = total.toLocaleString()
-      return
-    }
-    sums[index] = ''
+const total = computed(() => {
+  const t = financeStore.debtTotal
+  return {
+    assetCount: overview.value.reduce((s, r) => s + r.assetCount, 0),
+    assetValue: t.assetValue,
+    liability: t.liability,
+    net: t.net
+  }
+})
+
+const getSummary = ({ columns }) => {
+  const t = financeStore.debtTotal
+  return columns.map((col, i) => {
+    if (i === 0) return '合计'
+    if (col.property === 'assetCount') return overview.value.reduce((s, r) => s + r.assetCount, 0)
+    if (col.property === 'assetValue') return t.assetValue
+    if (col.property === 'mortgage') return t.mortgage
+    if (col.property === 'arrears') return t.arrears
+    if (col.property === 'net') return t.net
+    if (col.property === 'ratio') return t.ratio + '%'
+    return ''
   })
-  return sums
 }
 
 const exportData = () => {
-  const headers = ['类别', '项目', '金额(万元)', '占比', '备注']
-  const rows = debtDetails.value.map(r => [r.category, r.item, r.amount, r.ratio, r.remark])
-  const total = debtDetails.value.reduce((s, r) => s + (r.amount || 0), 0)
-  rows.push(['合计', '', total, '', ''])
+  const headers = ['公司', '资产数(处)', '资产账面值(万元)', '抵押负债(万元)', '欠费(万元)', '净资产(万元)', '负债率']
+  const rows = overview.value.map(r => [r.company, r.assetCount, r.assetValue, r.mortgage, r.arrears, r.net, r.ratio + '%'])
+  const t = financeStore.debtTotal
+  rows.push(['合计', overview.value.reduce((s, r) => s + r.assetCount, 0), t.assetValue, t.mortgage, t.arrears, t.net, t.ratio + '%'])
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
@@ -108,36 +115,45 @@ const exportData = () => {
   ElMessage.success('资债报表导出成功')
 }
 
-onMounted(() => {
-  const assetChart = echarts.init(assetChartRef.value)
+function updateCharts() {
+  if (!assetChart || !debtChart) return
   assetChart.setOption({
     tooltip: { trigger: 'item' },
     legend: { bottom: 0 },
     series: [{
       type: 'pie', radius: ['40%', '70%'],
-      data: [
-        { value: 482000, name: '房屋及建筑物' },
-        { value: 67500, name: '土地使用权' },
-        { value: 12000, name: '在建工程' },
-        { value: 50, name: '其他资产' },
-      ],
+      data: overview.value.map(r => ({ value: r.assetValue, name: r.company })),
       label: { formatter: '{b}\n{d}%' }
     }]
   })
-
-  const debtChart = echarts.init(debtChartRef.value)
   debtChart.setOption({
     tooltip: { trigger: 'item' },
     legend: { bottom: 0 },
     series: [{
       type: 'pie', radius: ['40%', '70%'],
       data: [
-        { value: 85000, name: '长期借款' },
-        { value: 22800, name: '应付账款' },
-        { value: 16000, name: '其他应付款' },
+        { value: financeStore.debtTotal.mortgage, name: '抵押负债' },
+        { value: financeStore.debtTotal.arrears, name: '欠费' }
       ],
       label: { formatter: '{b}\n{d}%' }
     }]
   })
+}
+
+onMounted(() => {
+  assetChart = echarts.init(assetChartRef.value)
+  debtChart = echarts.init(debtChartRef.value)
+  updateCharts()
 })
+
+watch(overview, updateCharts, { deep: true })
 </script>
+
+<style scoped>
+.page-header { display: flex; justify-content: space-between; align-items: center; }
+.page-header h2 { margin: 0; font-size: 20px; }
+.chart-box { min-height: 280px; height: 30vh; max-height: 340px; }
+.kpi-card { text-align: center; }
+.kpi-value { font-size: 24px; font-weight: 600; color: #303133; }
+.kpi-label { font-size: 13px; color: #909399; margin-top: 8px; }
+</style>

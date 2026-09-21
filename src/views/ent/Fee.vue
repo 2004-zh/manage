@@ -5,28 +5,28 @@
       <span class="page-subtitle">金额单位：万元</span>
     </div>
 
-    <el-row :gutter="16" style="margin-bottom: 16px">
+    <el-row :gutter="16">
       <el-col :span="6">
         <el-card shadow="hover">
-          <div class="kpi-value" style="color: #1890ff">{{ feeSummary.cumReceivable }}<span class="kpi-unit">万元</span></div>
+          <div class="kpi-value" style="color: #1668DC">{{ feeSummary.cumReceivable }}<span class="kpi-unit">万元</span></div>
           <div class="kpi-label">累计应收</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover">
-          <div class="kpi-value" style="color: #52c41a">{{ feeSummary.cumActual }}<span class="kpi-unit">万元</span></div>
+          <div class="kpi-value" style="color: #18A058">{{ feeSummary.cumActual }}<span class="kpi-unit">万元</span></div>
           <div class="kpi-label">累计实收</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover">
-          <div class="kpi-value" style="color: #f5222d">{{ feeSummary.arrears }}<span class="kpi-unit">万元</span></div>
+          <div class="kpi-value" style="color: #D93026">{{ feeSummary.arrears }}<span class="kpi-unit">万元</span></div>
           <div class="kpi-label">欠缴金额</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover">
-          <div class="kpi-value" style="color: #fa8c16">{{ collectionRate }}<span class="kpi-unit">%</span></div>
+          <div class="kpi-value" style="color: #E8912A">{{ collectionRate }}<span class="kpi-unit">%</span></div>
           <div class="kpi-label">当年度收缴率</div>
         </el-card>
       </el-col>
@@ -132,8 +132,8 @@
           <el-table-column prop="monthlyRent" label="月租金(元)" width="105" align="right" />
           <el-table-column label="当前欠缴" width="110" align="center">
             <template #default="{ row }">
-              <span v-if="row.arrearsMonths > 0" style="color: #f5222d; font-weight: 600">{{ row.arrearsMonths }}个月未缴</span>
-              <span v-else style="color: #52c41a">无欠缴</span>
+              <span v-if="row.arrearsMonths > 0" style="color: #D93026; font-weight: 600">{{ row.arrearsMonths }}个月未缴</span>
+              <span v-else style="color: #18A058">无欠缴</span>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="150" align="center" fixed="right">
@@ -190,7 +190,7 @@
           <el-table-column prop="yearActual" label="当年实收" width="100" align="right" />
           <el-table-column prop="arrears" label="欠缴" width="80" align="right">
             <template #default="{ row }">
-              <span :style="{ color: row.arrears > 0 ? '#f5222d' : '#333' }">{{ row.arrears }}</span>
+              <span :style="{ color: row.arrears > 0 ? '#D93026' : '#0F172A' }">{{ row.arrears }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="status" label="状态" width="80" align="center">
@@ -198,11 +198,12 @@
               <el-tag :type="row.status === '正常' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150" align="center" fixed="right">
+          <el-table-column label="操作" width="200" align="center" fixed="right">
             <template #default="{ row }">
               <el-button v-if="row.status === '欠缴'" type="warning" link size="small" @click="handleUrge(row)">催缴</el-button>
+              <el-button type="success" link size="small" @click="collectLedger(row)">收款</el-button>
               <el-button type="primary" link size="small" @click="generateBill(row)">出账</el-button>
-              <el-button type="success" link size="small" @click="openInvoice(row)">开票</el-button>
+              <el-button type="primary" link size="small" @click="openInvoice(row)">开票</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -221,19 +222,19 @@
         <el-row :gutter="16" style="margin-bottom:16px">
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#1890ff">{{ depositStats.total }}<span class="kpi-unit">万元</span></div>
+              <div class="kpi-value" style="color:#1668DC">{{ depositStats.total }}<span class="kpi-unit">万元</span></div>
               <div class="kpi-label">保证金总额</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#52c41a">{{ depositStats.held }}<span class="kpi-unit">万元</span></div>
+              <div class="kpi-value" style="color:#18A058">{{ depositStats.held }}<span class="kpi-unit">万元</span></div>
               <div class="kpi-label">在管保证金</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#fa8c16">{{ depositStats.pendingRefund }}<span class="kpi-unit">万元</span></div>
+              <div class="kpi-value" style="color:#E8912A">{{ depositStats.pendingRefund }}<span class="kpi-unit">万元</span></div>
               <div class="kpi-label">待退还</div>
             </el-card>
           </el-col>
@@ -354,25 +355,25 @@
         <el-row :gutter="16" style="margin-bottom:16px">
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#1890ff">{{ orderStats.total }}</div>
+              <div class="kpi-value" style="color:#1668DC">{{ orderStats.total }}</div>
               <div class="kpi-label">订单总数</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#52c41a">{{ orderStats.paidAmount }}<span class="kpi-unit">万元</span></div>
+              <div class="kpi-value" style="color:#18A058">{{ orderStats.paidAmount }}<span class="kpi-unit">万元</span></div>
               <div class="kpi-label">已支付金额</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#fa8c16">{{ orderStats.pending }}</div>
+              <div class="kpi-value" style="color:#E8912A">{{ orderStats.pending }}</div>
               <div class="kpi-label">待支付订单</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#f5222d">{{ orderStats.failed }}</div>
+              <div class="kpi-value" style="color:#D93026">{{ orderStats.failed }}</div>
               <div class="kpi-label">支付失败</div>
             </el-card>
           </el-col>
@@ -429,19 +430,19 @@
         <el-row :gutter="16" style="margin-bottom:16px">
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#f5222d">{{ historyStats.cumArrears }}<span class="kpi-unit">万元</span></div>
+              <div class="kpi-value" style="color:#D93026">{{ historyStats.cumArrears }}<span class="kpi-unit">万元</span></div>
               <div class="kpi-label">累计欠费</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#fa8c16">{{ historyStats.monthArrears }}<span class="kpi-unit">万元</span></div>
+              <div class="kpi-value" style="color:#E8912A">{{ historyStats.monthArrears }}<span class="kpi-unit">万元</span></div>
               <div class="kpi-label">本月欠费</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#1890ff">{{ historyStats.arrearsContracts }}</div>
+              <div class="kpi-value" style="color:#1668DC">{{ historyStats.arrearsContracts }}</div>
               <div class="kpi-label">欠费合同总数</div>
             </el-card>
           </el-col>
@@ -478,7 +479,7 @@
           <el-table-column prop="billPeriod" label="欠费期间" width="170" />
           <el-table-column prop="arrearsAmount" label="欠费金额(万元)" width="130" align="right">
             <template #default="{ row }">
-              <span style="color:#f5222d;font-weight:600">{{ row.arrearsAmount }}</span>
+              <span style="color:#D93026;font-weight:600">{{ row.arrearsAmount }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="overdueDays" label="欠费天数" width="100" align="right">
@@ -594,7 +595,7 @@
           <el-input-number v-model="refundDeduct" :min="0" :max="refundRow?.depositAmount || 0" :step="0.5" style="width:100%" />
         </el-form-item>
         <el-form-item label="实退金额">
-          <span style="font-size:16px;color:#52c41a;font-weight:600">{{ ((refundRow?.depositAmount || 0) - refundDeduct).toFixed(1) }} 万元</span>
+          <span style="font-size:16px;color:#18A058;font-weight:600">{{ ((refundRow?.depositAmount || 0) - refundDeduct).toFixed(1) }} 万元</span>
         </el-form-item>
         <el-form-item label="退还原因">
           <el-input v-model="refundReason" type="textarea" :rows="2" placeholder="请填写退还原因" />
@@ -709,7 +710,7 @@
         <h2 class="letter-title">租金催缴函</h2>
         <div class="letter-no">编号：CJH-2026-{{ String(letterSeq).padStart(3, '0') }}</div>
         <p class="letter-body"><strong>{{ currentLetterRow.tenant }}</strong>：</p>
-        <p class="letter-body">贵方与我司签订的《{{ currentLetterRow.assetName }}租赁合同》（合同编号：{{ currentLetterRow.contractId }}），约定{{ currentLetterRow.feeType }}缴纳期限为 {{ currentLetterRow.billPeriod }}。截至本函发出之日，贵方尚有 <strong style="color:#f5222d">{{ currentLetterRow.arrearsAmount }} 万元</strong> {{ currentLetterRow.feeType }}未缴纳，已逾期 <strong style="color:#f5222d">{{ currentLetterRow.overdueDays }}</strong> 天。</p>
+        <p class="letter-body">贵方与我司签订的《{{ currentLetterRow.assetName }}租赁合同》（合同编号：{{ currentLetterRow.contractId }}），约定{{ currentLetterRow.feeType }}缴纳期限为 {{ currentLetterRow.billPeriod }}。截至本函发出之日，贵方尚有 <strong style="color:#D93026">{{ currentLetterRow.arrearsAmount }} 万元</strong> {{ currentLetterRow.feeType }}未缴纳，已逾期 <strong style="color:#D93026">{{ currentLetterRow.overdueDays }}</strong> 天。</p>
         <p class="letter-body">请贵方于收到本函后 <strong>7 个工作日</strong> 内将上述欠款缴至我司指定账户，逾期我司将依据合同约定追究违约责任，并保留通过法律途径解决的权利。</p>
         <p class="letter-body">特此函告。</p>
         <div class="letter-footer">
@@ -732,7 +733,7 @@
           <el-descriptions-item label="承租方">{{ currentHistory.tenant }}</el-descriptions-item>
           <el-descriptions-item label="费项">{{ currentHistory.feeType }}</el-descriptions-item>
           <el-descriptions-item label="欠费期间">{{ currentHistory.billPeriod }}</el-descriptions-item>
-          <el-descriptions-item label="欠费金额"><span style="color:#f5222d;font-weight:600">{{ currentHistory.arrearsAmount }} 万元</span></el-descriptions-item>
+          <el-descriptions-item label="欠费金额"><span style="color:#D93026;font-weight:600">{{ currentHistory.arrearsAmount }} 万元</span></el-descriptions-item>
           <el-descriptions-item label="欠费天数">{{ currentHistory.overdueDays }} 天</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="currentHistory.status === '未结清' ? 'danger' : 'success'" size="small">{{ currentHistory.status }}</el-tag>
@@ -859,15 +860,20 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useContractStore } from '../../store/contract'
+import { useFinanceStore } from '../../store/finance'
 import { useAssetStore } from '../../store/asset'
+import { useAuditStore } from '../../store/audit'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Upload, Bell, Refresh, Filter, MoreFilled } from '@element-plus/icons-vue'
 
 const contractStore = useContractStore()
+const financeStore = useFinanceStore()
 const assetStore = useAssetStore()
-const { feeRecords } = storeToRefs(contractStore)
+const auditStore = useAuditStore()
+
+// 三页共享的收费台账：financeStore.feeList 已经是 org-scoped 的 contractStore.visibleFees
+const feeRecords = computed(() => financeStore.feeList)
 
 const activeTab = ref('hall')
 const filterStatus = ref('')
@@ -1002,10 +1008,19 @@ function openRentCollect(row) {
 function submitRentCollect() {
   const row = hallCurrent.value
   const amountYuan = Number(rentPayAmount.value)
-  // payFee 以万元计，与合同年租金/收费台账同一单位
-  contractStore.payFee(row.contractNo, Math.round(amountYuan / 100) / 100)
+  // payFee 以万元计，与合同年租金 / 收费台账同一单位；
+  // financeStore.receivePayment 内部会调 contract.payFee 并写收款凭证 + 留痕
+  const res = financeStore.receivePayment(row.contractNo, {
+    amount: Math.round(amountYuan / 100) / 100,
+    method: `${rentPayForm.value.payType}·${rentPayForm.value.payMethod}`,
+    operator: undefined
+  })
   showRentCollect.value = false
-  ElMessage.success(`已收取 ${row.tenantName} 租金 ￥${amountYuan.toLocaleString()}（${rentPayForm.value.payType} · ${rentPayForm.value.payMethod}），收费台账已同步`)
+  if (res) {
+    ElMessage.success(`已收取 ${row.tenantName} 租金 ￥${amountYuan.toLocaleString()}（凭证 ${res.receiptNo}），收费台账已同步`)
+  } else {
+    ElMessage.warning('未找到对应合同收费台账，收款未登记')
+  }
 }
 
 function previewHallContract(row) {
@@ -1026,8 +1041,30 @@ function submitOtherCharge() {
     ElMessage.warning('请填写收费金额')
     return
   }
+  const row = hallCurrent.value
+  const amt = Math.round(Number(otherForm.value.amount) * 100) / 100
+  financeStore.addBill({
+    contractId: row.contractNo,
+    tenant: row.tenantName,
+    assetId: row.assets?.[0]?.assetNo || '',
+    assetName: row.assets?.[0]?.address || row.assetName || '',
+    feeType: otherForm.value.item,
+    billMonth: new Date().toISOString().slice(0, 7),
+    billPeriod: new Date().toISOString().slice(0, 7),
+    receivable: amt,
+    received: amt,
+    status: '已缴费'
+  })
+  auditStore.recordEvent({
+    assetId: row.assets?.[0]?.assetNo || '',
+    assetName: row.assets?.[0]?.address || '',
+    module: '收费',
+    action: '其他收费',
+    billNo: row.contractNo,
+    remark: `${row.tenantName} 缴纳 ${otherForm.value.item} ￥${amt.toFixed(2)}${otherForm.value.remark ? '，备注：' + otherForm.value.remark : ''}`
+  })
   showOtherCharge.value = false
-  ElMessage.success(`已收取 ${hallCurrent.value.tenantName} ${otherForm.value.item} ￥${otherForm.value.amount.toFixed(2)}`)
+  ElMessage.success(`已收取 ${row.tenantName} ${otherForm.value.item} ￥${amt.toFixed(2)}，已入账单台账`)
 }
 
 function handleHallCommand(cmd, row) {
@@ -1035,6 +1072,14 @@ function handleHallCommand(cmd, row) {
     ElMessageBox.alert(`合同编号：${row.contractNo}\n缴费周期：${row.payCycle}\n交费截至时间：${row.dueDate}\n当前欠缴：${row.arrearsMonths > 0 ? row.arrearsMonths + '个月未缴' : '无'}\n总减免金额：￥${row.reduction}`, '缴费明细', { confirmButtonText: '关闭' })
   } else if (cmd === 'urge') {
     ElMessageBox.confirm(`确认向 ${row.tenantName} 发送租金催缴通知？`, '催缴确认', { type: 'warning' }).then(() => {
+      auditStore.recordEvent({
+        assetId: row.assets?.[0]?.assetNo || '',
+        assetName: row.assets?.[0]?.address || '',
+        module: '收费',
+        action: '催缴',
+        billNo: row.contractNo,
+        remark: `向 ${row.tenantName} 发送催缴通知，欠缴 ${row.arrearsMonths} 个月`
+      })
       ElMessage.success('催缴通知已发送')
     }).catch(() => {})
   } else if (cmd === 'contract') {
@@ -1063,6 +1108,16 @@ function batchUrgeHall() {
     return
   }
   ElMessageBox.confirm(`确认对 ${list.length} 条欠缴记录批量发送催缴通知？`, '批量催缴', { type: 'warning' }).then(() => {
+    list.forEach(r => {
+      auditStore.recordEvent({
+        assetId: r.assets?.[0]?.assetNo || '',
+        assetName: r.assets?.[0]?.address || '',
+        module: '收费',
+        action: '批量催缴',
+        billNo: r.contractNo,
+        remark: `向 ${r.tenantName} 催缴 ${r.arrearsMonths} 个月租金，欠缴约 ${(r.arrearsMonths * r.monthlyRent / 10000).toFixed(2)} 万元`
+      })
+    })
     ElMessage.success(`已向 ${list.length} 家承租方发送催缴通知`)
   }).catch(() => {})
 }
@@ -1143,41 +1198,79 @@ function handleUrge(row) {
 
 function confirmUrge() {
   if (currentUrgeRow.value) {
-    currentUrgeRow.value.lastUrgeTime = new Date().toLocaleString('zh-CN')
-    currentUrgeRow.value.urgeCount = (currentUrgeRow.value.urgeCount || 0) + 1
+    const r = currentUrgeRow.value
+    auditStore.recordEvent({
+      assetName: r.assetName || '',
+      module: '收费',
+      action: '催缴',
+      billNo: r.contractId,
+      remark: `向 ${r.tenant} 催缴欠费 ${r.arrears || 0} 万元（${urgeMethods.value.join('+')}）`
+    })
   }
   ElMessage.success('催缴通知已发送，催缴记录已留痕')
   showUrge.value = false
 }
 
+// 收款（收缴确认）：台账行直接登记实收，走 financeStore.receivePayment → contract.payFee，
+// 抬升 cumActual / yearActual 并重算欠缴，工作台累计实收随之变动。金额单位万元。
+function collectLedger(row) {
+  const outstanding = Math.max(0, Math.round(((row.cumReceivable || 0) - (row.cumActual || 0)) * 100) / 100)
+  const suggested = row.arrears > 0 ? row.arrears : outstanding
+  ElMessageBox.prompt(`为「${row.tenant}」(${row.contractId}) 登记收款，金额单位：万元`, '收款登记', {
+    inputValue: suggested ? String(suggested) : '',
+    inputPlaceholder: '请输入本次收缴金额（万元）',
+    inputPattern: /^\d+(\.\d{1,2})?$/,
+    inputErrorMessage: '请输入正确的金额（万元，最多两位小数）',
+    confirmButtonText: '确认收款',
+    cancelButtonText: '取消',
+  }).then(({ value }) => {
+    const amount = Math.round(Number(value) * 100) / 100
+    if (!(amount > 0)) { ElMessage.warning('收款金额需大于 0'); return }
+    const res = financeStore.receivePayment(row.contractId, { amount, method: '收费大厅登记' })
+    if (res) {
+      ElMessage.success(`已收缴 ${row.tenant} ${amount} 万元（凭证 ${res.receiptNo}），累计实收已更新`)
+    } else {
+      ElMessage.warning('未找到对应合同收费台账，收款未登记')
+    }
+  }).catch(() => {})
+}
+
 // 出账
 function generateBill(row) {
   ElMessageBox.confirm(`确认为 ${row.tenant} 生成本期账单？金额：${row.yearReceivable / 2} 万元`, '生成账单', { type: 'info' }).then(() => {
-    billRecords.value.unshift({
-      billNo: `ZD-${new Date().getFullYear()}-${String(billRecords.value.length + 1).padStart(3, '0')}`,
+    financeStore.addBill({
       contractId: row.contractId,
       tenant: row.tenant,
-      billPeriod: `2026-07 至 2026-12`,
-      amount: row.yearReceivable / 2,
+      assetId: row.assetId || '',
+      assetName: row.assetName,
+      feeType: '租金',
+      billMonth: '2026-07',
+      billPeriod: '2026-07 至 2026-12',
+      receivable: Math.round((row.yearReceivable / 2) * 10000),
+      received: 0,
       dueDate: '2026-07-15',
-      billStatus: '待缴'
+      status: '待缴费'
     })
-    ElMessage.success('账单已生成')
+    ElMessage.success('账单已生成，可在自动账单 / 用户账单页查看')
   }).catch(() => {})
 }
 
 function handleBatchBilling() {
   const arrearsRecords = feeRecords.value.filter(r => r.status === '欠缴')
   ElMessageBox.confirm(`确认为 ${arrearsRecords.length} 条欠缴记录批量生成账单？`, '批量出账', { type: 'warning' }).then(() => {
-    arrearsRecords.forEach((r, i) => {
-      billRecords.value.unshift({
-        billNo: `ZD-${new Date().getFullYear()}-${String(billRecords.value.length + i + 1).padStart(3, '0')}`,
+    arrearsRecords.forEach(r => {
+      financeStore.addBill({
         contractId: r.contractId,
         tenant: r.tenant,
-        billPeriod: `2026-07 至 2026-12`,
-        amount: r.arrears,
+        assetId: r.assetId || '',
+        assetName: r.assetName,
+        feeType: '租金',
+        billMonth: '2026-07',
+        billPeriod: '2026-07 至 2026-12',
+        receivable: Math.round((r.arrears || 0) * 10000),
+        received: 0,
         dueDate: '2026-10-01',
-        billStatus: '逾期'
+        status: '已逾期'
       })
     })
     ElMessage.success(`已批量生成 ${arrearsRecords.length} 条账单`)
@@ -1200,12 +1293,8 @@ const invoiceForm = ref({
   remark: ''
 })
 
-const invoiceRecords = ref([
-  { invoiceNo: 'FP-2026-001', invoiceType: '增值税普通发票', tenant: '福州长乐融辉贸易有限公司', amount: 21, tax: 1.05, issueDate: '2026-06-30', invoiceStatus: '已开具' },
-  { invoiceNo: 'FP-2026-002', invoiceType: '增值税专用发票', tenant: '福建省长乐市鸿运纺织有限公司', amount: 35, tax: 1.75, issueDate: '2026-05-15', invoiceStatus: '已开具' },
-  { invoiceNo: 'FP-2026-003', invoiceType: '电子发票', tenant: '长乐区鑫源投资有限公司', amount: 12, tax: 0.6, issueDate: '2026-07-10', invoiceStatus: '已开具' },
-  { invoiceNo: 'FP-2025-012', invoiceType: '增值税普通发票', tenant: '福州航城物流有限公司', amount: 8, tax: 0.4, issueDate: '2025-12-20', invoiceStatus: '已红冲' },
-])
+// 发票记录：与 financeStore.invoices 同源，开票页 / 税费页共用同一份流水
+const invoiceRecords = computed(() => financeStore.invoices)
 
 function handleCreateInvoice() {
   if (!invoiceForm.value.tenant || !invoiceForm.value.amount) {
@@ -1213,18 +1302,32 @@ function handleCreateInvoice() {
     return
   }
   const tax = (invoiceForm.value.amount * invoiceForm.value.taxRate / 100).toFixed(2)
-  invoiceRecords.value.unshift({
-    invoiceNo: `FP-${new Date().getFullYear()}-${String(invoiceRecords.value.length + 1).padStart(3, '0')}`,
+  const invoiceNo = `FP-${new Date().getFullYear()}-${String(financeStore.invoices.length + 1).padStart(3, '0')}`
+  const match = feeRecords.value.find(r => r.tenant === invoiceForm.value.tenant)
+  financeStore.invoices.unshift({
+    invoiceNo,
     invoiceType: invoiceForm.value.invoiceType,
     tenant: invoiceForm.value.tenant,
+    contractId: match?.contractId || '',
+    assetName: match?.assetName || '',
     amount: invoiceForm.value.amount,
+    taxRate: invoiceForm.value.taxRate,
     tax: parseFloat(tax),
     issueDate: new Date().toISOString().slice(0, 10),
-    invoiceStatus: '已开具'
+    invoiceStatus: '已开具',
+    auto: false
+  })
+  auditStore.recordEvent({
+    assetId: match?.assetId || '',
+    assetName: match?.assetName || '',
+    module: '收费',
+    action: '开票',
+    billNo: invoiceNo,
+    remark: `${invoiceForm.value.tenant} 开具${invoiceForm.value.invoiceType} ${invoiceForm.value.amount} 万元 / 税额 ${tax} 万元`
   })
   showInvoiceDialog.value = false
   invoiceForm.value = { invoiceType: '增值税普通发票', tenant: '', amount: 0, taxRate: 5, remark: '' }
-  ElMessage.success('发票已开具')
+  ElMessage.success('发票已开具，开票流水已同步到电子发票页')
 }
 
 const showInvoiceDrawer = ref(false)
@@ -1238,24 +1341,46 @@ function viewInvoice(row) {
 function handleRedInvoice(row) {
   ElMessageBox.confirm(`确认对发票"${row.invoiceNo}"进行红冲？红冲后不可恢复。`, '红冲确认', { type: 'warning' }).then(() => {
     row.invoiceStatus = '已红冲'
-    ElMessage.success('发票已红冲')
+    auditStore.recordEvent({
+      assetName: row.assetName || '',
+      module: '收费',
+      action: '发票红冲',
+      billNo: row.invoiceNo,
+      remark: `${row.tenant} 发票红冲，金额 ${row.amount} 万元 / 税额 ${row.tax} 万元`
+    })
+    ElMessage.success('发票已红冲，状态同步至电子发票台账')
   }).catch(() => {})
 }
 
-// 保证金
-const depositRecords = ref([
-  { contractId: 'HT-2026-001', tenant: '福州长乐融辉贸易有限公司', assetName: '城关商铺A-01', depositAmount: 5, receiveDate: '2026-01-15', depositStatus: '在管' },
-  { contractId: 'HT-2026-002', tenant: '福建省长乐市鸿运纺织有限公司', assetName: '航城厂房1#', depositAmount: 10, receiveDate: '2026-02-01', depositStatus: '在管' },
-  { contractId: 'HT-2025-003', tenant: '长乐区鑫源投资有限公司', assetName: '漳港办公楼2层', depositAmount: 3, receiveDate: '2025-06-10', depositStatus: '待退还' },
-  { contractId: 'HT-2024-005', tenant: '长乐吴航街道陈氏食品店', assetName: '首占商铺C-08', depositAmount: 2, receiveDate: '2024-08-15', depositStatus: '已退还' },
-])
+// 保证金台账：与 DepositReturn 页共享 financeStore.depositList
+// Fee 页的三态展示口径：在管 / 待退还 / 已退还 — 由 deposit 的 status 折叠得到
+function foldStatus(s) {
+  if (s === '已退还') return '已退还'
+  if (s === '待审批') return '待退还'
+  if (s === '已驳回') return '在管'
+  return '在管'
+}
+const depositRecords = computed(() => financeStore.depositList.map(d => ({
+  id: d.id,
+  contractId: d.contractId,
+  tenant: d.tenant,
+  assetName: d.assetName,
+  depositAmount: Math.round((Number(d.amount) || 0) / 100) / 100, // 元 → 万元
+  receiveDate: d.payDate,
+  depositStatus: foldStatus(d.status)
+})))
 
 const depositStats = computed(() => {
   const total = depositRecords.value.reduce((s, r) => s + r.depositAmount, 0)
   const held = depositRecords.value.filter(r => r.depositStatus === '在管').reduce((s, r) => s + r.depositAmount, 0)
   const pendingRefund = depositRecords.value.filter(r => r.depositStatus === '待退还').reduce((s, r) => s + r.depositAmount, 0)
   const refunded = depositRecords.value.filter(r => r.depositStatus === '已退还').reduce((s, r) => s + r.depositAmount, 0)
-  return { total, held, pendingRefund, refunded }
+  return {
+    total: Math.round(total * 100) / 100,
+    held: Math.round(held * 100) / 100,
+    pendingRefund: Math.round(pendingRefund * 100) / 100,
+    refunded: Math.round(refunded * 100) / 100
+  }
 })
 
 const showRefundDialog = ref(false)
@@ -1264,10 +1389,11 @@ const refundDeduct = ref(0)
 const refundReason = ref('')
 
 function handleRefund(row) {
+  // '在管' → '待退还'：走 store，写申请 + 留痕
+  financeStore.applyDepositRefund(row.id, { reason: 'Fee 页发起退还申请', amount: row.depositAmount * 10000 })
   refundRow.value = row
   refundDeduct.value = 0
   refundReason.value = ''
-  row.depositStatus = '待退还'
   showRefundDialog.value = true
 }
 
@@ -1284,10 +1410,18 @@ function submitRefund() {
     return
   }
   if (refundRow.value) {
-    refundRow.value.depositStatus = '已退还'
+    const row = refundRow.value
+    const deductYuan = Math.round(Number(refundDeduct.value || 0) * 10000)
+    const actualYuan = Math.max(0, Math.round((row.depositAmount || 0) * 10000 - deductYuan))
+    financeStore.refundDeposit(row.id, {
+      amount: actualYuan,
+      deduct: deductYuan,
+      reason: refundReason.value,
+      method: '银行转账'
+    })
   }
   showRefundDialog.value = false
-  ElMessage.success('保证金退还申请已提交')
+  ElMessage.success('保证金退还已登记，台账已同步')
 }
 
 const showDepositDrawer = ref(false)
@@ -1350,12 +1484,17 @@ function deleteRule(row) {
   }).catch(() => {})
 }
 
-const billRecords = ref([
-  { billNo: 'ZD-2026-001', contractId: 'HT-2026-001', tenant: '福州长乐融辉贸易有限公司', billPeriod: '2026-01 至 2026-06', amount: 10.5, dueDate: '2026-01-15', billStatus: '已缴' },
-  { billNo: 'ZD-2026-002', contractId: 'HT-2026-002', tenant: '福建省长乐市鸿运纺织有限公司', billPeriod: '2026-01 至 2026-06', amount: 17.5, dueDate: '2026-01-15', billStatus: '已缴' },
-  { billNo: 'ZD-2026-003', contractId: 'HT-2026-003', tenant: '长乐区鑫源投资有限公司', billPeriod: '2026-07 至 2026-12', amount: 6, dueDate: '2026-07-15', billStatus: '待缴' },
-  { billNo: 'ZD-2026-004', contractId: 'HT-2026-004', tenant: '福州航城物流有限公司', billPeriod: '2026-07 至 2026-12', amount: 4, dueDate: '2026-07-15', billStatus: '逾期' },
-])
+// 账单：与 UserBills.vue 共享 financeStore.billList（元），Fee 页展示口径为万元
+const billRecords = computed(() => financeStore.billList.map(b => ({
+  billNo: b.billNo,
+  contractId: b.contractId,
+  tenant: b.tenant,
+  billPeriod: b.billPeriod || b.billMonth,
+  amount: Math.round((Number(b.receivable) || 0)) / 10000,
+  dueDate: b.dueDate,
+  billStatus: b.status === '已缴费' ? '已缴' : b.status === '已逾期' ? '逾期' : b.status === '部分缴费' ? '待缴' : '待缴',
+  raw: b
+})))
 
 const showBillDrawer = ref(false)
 const currentBill = ref(null)
@@ -1367,11 +1506,8 @@ function viewBill(row) {
 
 function confirmPayment(row) {
   ElMessageBox.confirm(`确认 ${row.tenant} 的账单 ${row.billNo} 已收款 ${row.amount} 万元？`, '确认收款', { type: 'success' }).then(() => {
-    row.billStatus = '已缴'
-    if (contractStore.getContractById(row.contractId)) {
-      contractStore.payFee(row.contractId, row.amount)
-    }
-    ElMessage.success('收款确认成功')
+    financeStore.payBill(row.billNo, { amount: row.amount * 10000, method: '收费大厅确认' })
+    ElMessage.success('收款确认成功，已回写收费台账')
   }).catch(() => {})
 }
 
@@ -1437,24 +1573,23 @@ function showPayQr(row) {
 
 function simulatePaid() {
   if (!qrOrder.value) return
-  qrOrder.value.status = '已支付'
-  qrOrder.value.payTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
-  qrOrder.value.tradeNo = '4200001234' + Date.now()
-  if (contractStore.getContractById(qrOrder.value.contractId)) {
-    contractStore.payFee(qrOrder.value.contractId, qrOrder.value.amount)
-  }
+  const row = qrOrder.value
+  row.status = '已支付'
+  row.payTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+  row.tradeNo = '4200001234' + Date.now()
+  // 订单收款 → 走 financeStore.receivePayment，把收缴回写到同一份 contract.feeRecords
+  financeStore.receivePayment(row.contractId, { amount: row.amount, method: row.payMethod || '微信扫码' })
+  const done = row
   showQrDialog.value = false
-  ElMessage.success(`订单 ${qrOrder.value.orderNo} 支付成功`)
+  ElMessage.success(`订单 ${done.orderNo} 支付成功，已回写收费台账`)
 }
 
 function confirmOrderPaid(row) {
   ElMessageBox.confirm(`确认已收到 ${row.tenant} 的 ${row.amount} 万元（${row.payMethod}）？`, '确认收款', { type: 'success' }).then(() => {
     row.status = '已支付'
     row.payTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
-    if (contractStore.getContractById(row.contractId)) {
-      contractStore.payFee(row.contractId, row.amount)
-    }
-    ElMessage.success('收款已登记')
+    financeStore.receivePayment(row.contractId, { amount: row.amount, method: row.payMethod })
+    ElMessage.success('收款已登记，收费台账已同步')
   }).catch(() => {})
 }
 
@@ -1497,8 +1632,16 @@ function generateUrgeLetter(row) {
 function sendLetter() {
   const row = currentLetterRow.value
   if (row) {
-    row.urgeLogs.unshift({ time: today, text: `发送催缴函 CJH-2026-${String(letterSeq.value).padStart(3, '0')}`, type: 'danger' })
+    const no = `CJH-2026-${String(letterSeq.value).padStart(3, '0')}`
+    row.urgeLogs.unshift({ time: today, text: `发送催缴函 ${no}`, type: 'danger' })
     letterSeq.value++
+    auditStore.recordEvent({
+      assetName: row.assetName || '',
+      module: '收费',
+      action: '发送催缴函',
+      billNo: no,
+      remark: `向 ${row.tenant} 催缴 ${row.feeType} 欠费 ${row.arrearsAmount} 万元（逾期 ${row.overdueDays} 天）`
+    })
   }
   showLetterDialog.value = false
   ElMessage.success('催缴函已生成并发送，已记录催缴留痕')
@@ -1509,7 +1652,16 @@ function settleHistory(row) {
     row.status = '已结清'
     row.overdueDays = 0
     row.urgeLogs.unshift({ time: today, text: `欠费结清，共补缴 ${row.arrearsAmount} 万元`, type: 'success' })
-    ElMessage.success('已登记结清')
+    // 若合同仍在收费台账里，则同步推动实收
+    financeStore.receivePayment(row.contractId, { amount: row.arrearsAmount, method: '历史欠费结清' })
+    auditStore.recordEvent({
+      assetName: row.assetName || '',
+      module: '收费',
+      action: '历史欠费结清',
+      billNo: row.contractId,
+      remark: `${row.tenant} 结清 ${row.feeType} 欠费 ${row.arrearsAmount} 万元`
+    })
+    ElMessage.success('已登记结清，收费台账已同步')
   }).catch(() => {})
 }
 
@@ -1546,8 +1698,8 @@ function exportHistory() {
   display: flex;
   gap: 10px;
   padding: 12px;
-  background: #fafafa;
-  border-radius: 4px;
+  background: var(--bg-page);
+  border-radius: var(--r-sm);
   margin-bottom: 12px;
 }
 .expand-wrap {
@@ -1562,9 +1714,9 @@ function exportHistory() {
   color: var(--c-primary);
 }
 .invoice-preview {
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--bd);
   padding: 20px;
-  background: #fafafa;
+  background: var(--bg-page);
 }
 .invoice-preview .invoice-header {
   text-align: center;
@@ -1582,22 +1734,23 @@ function exportHistory() {
 .qr-amount {
   font-size: 26px;
   font-weight: 700;
-  color: #f5222d;
+  color: var(--c-danger);
   margin-bottom: 4px;
 }
 .qr-tenant {
   font-size: 13px;
-  color: #666;
-  margin-bottom: 14px;
+  color: var(--t-sub);
+  margin-bottom: 12px;
 }
 .qr-code {
   display: grid;
   grid-template-columns: repeat(21, 1fr);
-  width: 210px;
-  height: 210px;
+  width: 100%;
+  max-width: 210px;
+  aspect-ratio: 1 / 1;
   margin: 0 auto;
   border: 6px solid #fff;
-  outline: 1px solid #ddd;
+  outline: 1px solid var(--bd);
   background: #fff;
 }
 .qr-cell {
@@ -1609,15 +1762,15 @@ function exportHistory() {
 .qr-tip {
   margin-top: 12px;
   font-size: 13px;
-  color: #67c23a;
+  color: var(--c-success);
 }
 .qr-order-no {
   margin-top: 4px;
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
 }
 .letter-doc {
-  padding: 30px 40px;
+  padding: 24px;
   background: #fff;
   font-family: SimSun, serif;
   line-height: 1.9;
@@ -1631,22 +1784,22 @@ function exportHistory() {
 }
 .letter-line {
   border-bottom: 2px solid #d40000;
-  margin: 10px 0 20px;
+  margin: 8px 0 20px;
 }
 .letter-title {
   text-align: center;
   font-size: 20px;
-  margin: 10px 0 6px;
+  margin: 8px 0 4px;
 }
 .letter-no {
   text-align: center;
   font-size: 13px;
-  color: #666;
-  margin-bottom: 18px;
+  color: var(--t-sub);
+  margin-bottom: 16px;
 }
 .letter-body {
   font-size: 14px;
-  color: #333;
+  color: var(--t-main);
   text-indent: 2em;
   margin: 8px 0;
 }
@@ -1658,7 +1811,7 @@ function exportHistory() {
   justify-content: flex-end;
   align-items: flex-end;
   gap: 20px;
-  margin-top: 30px;
+  margin-top: 24px;
 }
 .letter-seal {
   width: 120px;
@@ -1676,6 +1829,6 @@ function exportHistory() {
 }
 .letter-date {
   font-size: 14px;
-  color: #333;
+  color: var(--t-main);
 }
 </style>

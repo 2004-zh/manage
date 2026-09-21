@@ -8,25 +8,19 @@
     </div>
 
     <el-card class="filter-bar" shadow="never">
-      <el-row :gutter="16">
-        <el-col :span="6">
-          <el-input v-model="keyword" placeholder="流程名称/编号" clearable prefix-icon="Search" />
-        </el-col>
-        <el-col :span="5">
-          <el-select v-model="bizType" placeholder="业务类型" clearable>
-            <el-option v-for="b in bizTypes" :key="b" :label="b" :value="b" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="statusFilter" placeholder="状态" clearable>
-            <el-option label="启用" :value="true" />
-            <el-option label="停用" :value="false" />
-          </el-select>
-        </el-col>
-      </el-row>
+      <div class="grid-3">
+        <el-input v-model="keyword" placeholder="流程名称/编号" clearable prefix-icon="Search" />
+        <el-select v-model="bizType" placeholder="业务类型" clearable>
+          <el-option v-for="b in bizTypes" :key="b" :label="b" :value="b" />
+        </el-select>
+        <el-select v-model="statusFilter" placeholder="状态" clearable>
+          <el-option label="启用" :value="true" />
+          <el-option label="停用" :value="false" />
+        </el-select>
+      </div>
     </el-card>
 
-    <el-row :gutter="16">
+    <el-row :gutter="16" class="fill main-row">
       <!-- 左：流程列表 -->
       <el-col :span="9">
         <el-card shadow="never" class="list-card">
@@ -261,32 +255,31 @@ function moveStep(i, dir) {
 </script>
 
 <style scoped>
-.page-container { padding: 16px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; }
 .page-header h2 { margin: 0; font-size: 20px; }
-.filter-bar { margin-bottom: 16px; }
 .filter-bar :deep(.el-select) { width: 100%; }
+.main-row { align-items: stretch; }
+.list-card, .designer-card { height: 100%; }
 .card-hd { display: flex; justify-content: space-between; align-items: center; }
-.list-card, .designer-card { min-height: 540px; }
-.flow-item { padding: 10px 12px; border: 1px solid #ebeef5; border-radius: 6px; margin-bottom: 10px; cursor: pointer; transition: all .15s; }
-.flow-item:hover { border-color: #c6e2ff; }
-.flow-item.active { border-color: #409eff; background: #ecf5ff; }
+.flow-item { padding: 10px 12px; border: 1px solid var(--bd); border-radius: var(--r-md); margin-bottom: 12px; cursor: pointer; transition: all .15s; }
+.flow-item:hover { border-color: var(--c-primary); }
+.flow-item.active { border-color: var(--c-primary); background: var(--c-primary-light); }
 .flow-top { display: flex; justify-content: space-between; align-items: center; }
 .flow-name { font-weight: 600; font-size: 14px; }
-.flow-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; color: #909399; }
+.flow-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--t-weak); }
 .flow-no { font-family: monospace; }
 .designer { padding: 8px 0; }
 .node { display: flex; justify-content: center; }
-.node-box { display: flex; align-items: center; gap: 10px; border: 1px solid #dcdfe6; border-radius: 8px; padding: 10px 14px; min-width: 320px; background: #fff; cursor: pointer; transition: box-shadow .15s; }
+.node-box { display: flex; align-items: center; gap: 10px; border: 1px solid var(--bd); border-radius: var(--r-md); padding: 10px 14px; min-width: 320px; width: 100%; max-width: 480px; background: var(--bg-card); cursor: pointer; transition: box-shadow .15s; }
 .node-box:hover { box-shadow: 0 2px 10px rgba(0,0,0,.08); }
-.node.editing .node-box { border-color: #409eff; }
+.node.editing .node-box { border-color: var(--c-primary); }
 .start-box, .end-box { justify-content: center; flex-direction: column; text-align: center; background: #f0f9eb; border-color: #b3e19d; font-weight: 600; cursor: default; }
 .end-box { background: #fef0f0; border-color: #fab6b6; }
-.node-idx { width: 24px; height: 24px; border-radius: 50%; background: #409eff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.node-idx { width: 24px; height: 24px; border-radius: 50%; background: var(--c-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
 .node-body { flex: 1; }
 .node-title { font-weight: 600; font-size: 14px; }
-.node-sub { font-size: 12px; color: #909399; margin-top: 2px; }
-.node-cond { font-size: 12px; color: #e6a23c; margin-top: 2px; }
+.node-sub { font-size: 12px; color: var(--t-weak); margin-top: 2px; }
+.node-cond { font-size: 12px; color: var(--c-warning); margin-top: 2px; }
 .node-ops { display: flex; flex-direction: column; gap: 2px; }
-.arrow { text-align: center; color: #c0c4cc; font-size: 16px; line-height: 20px; }
+.arrow { text-align: center; color: var(--t-weak); font-size: 16px; line-height: 20px; }
 </style>

@@ -32,7 +32,7 @@
           </el-form>
         </el-card>
 
-        <el-card class="table-card" shadow="never">
+        <el-card class="table-card fill" shadow="never">
           <el-table :data="pagedCosts" border stripe>
             <el-table-column type="expand">
               <template #default="{ row }">
@@ -43,7 +43,7 @@
                     <div class="cell"><div class="label">创建时间</div><div class="value">{{ row.createTime }}</div></div>
                   </div>
                   <div class="section-title">其他费用明细</div>
-                  <el-table v-if="row.extraFees.length" :data="row.extraFees" border size="small" style="width: 720px; margin-bottom: 12px">
+                  <el-table v-if="row.extraFees.length" :data="row.extraFees" border size="small" style="width: 100%; margin-bottom: 12px">
                     <el-table-column prop="name" label="费用名称" min-width="180" />
                     <el-table-column prop="amount" label="金额(万元)" width="120" align="right" />
                     <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
@@ -107,7 +107,7 @@
           </el-form>
         </el-card>
 
-        <el-card class="table-card" shadow="never">
+        <el-card class="table-card fill" shadow="never">
           <el-table :data="pagedEvals" border stripe @selection-change="handleEvalSelection">
             <el-table-column type="selection" width="45" />
             <el-table-column type="expand">
@@ -211,7 +211,7 @@
           </el-row>
         </el-card>
 
-        <el-card class="table-card" shadow="never">
+        <el-card class="table-card fill" shadow="never">
           <el-table :data="pagedData" border stripe>
             <el-table-column prop="evalNo" label="评估编号" width="120" />
             <el-table-column prop="assetName" label="资产名称" min-width="170" show-overflow-tooltip />
@@ -409,7 +409,7 @@ const costTypeOptions = ['购置成本', '建安成本', '改造成本', '维修
 
 const costFilters = ref({ keyword: '', company: '', costType: '' })
 const costPage = ref(1)
-const costPageSize = ref(10)
+const costPageSize = ref(15)
 
 const costRecords = ref([
   { id: 'CB-001', projectType: '资产', name: '吴航街道商业街 A-01 商铺', company: '长乐区城市投资建设集团有限公司', costType: '购置成本', amount: 2100.00, costDate: '2020-03-15', remark: '商业街商铺购置款', createTime: '2024-03-12 09:30', files: ['购置合同.pdf', '发票.jpg'], extraFees: [{ name: '契税', amount: 63.00, remark: '按成交价3%缴纳' }, { name: '中介费', amount: 21.00, remark: '按成交价1%支付' }] },
@@ -518,7 +518,7 @@ function deleteCost(row) {
 
 const evFilters = ref({ org: '', projectType: '' })
 const evPage = ref(1)
-const evPageSize = ref(10)
+const evPageSize = ref(15)
 const selectedEvals = ref([])
 
 const evalInfoRecords = ref([
@@ -682,13 +682,12 @@ function handleExport() {
 </script>
 
 <style scoped>
-.page-container { height: 100%; }
-.expand-panel { padding: 12px 24px; background: #fcfcfc; }
+.expand-panel { padding: 12px 24px; background: var(--bg-page); }
 .file-thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
 .file-thumbs .thumb {
-  width: 92px; height: 92px; border: 1px solid #d9d9d9; border-radius: 4px; background: #fafafa;
+  width: 92px; height: 92px; border: 1px solid var(--bd); border-radius: var(--r-sm); background: var(--bg-card);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  font-size: 12px; color: #999; padding: 6px; text-align: center; word-break: break-all; overflow: hidden;
+  font-size: 12px; color: var(--t-weak); padding: 6px; text-align: center; word-break: break-all; overflow: hidden;
 }
-.file-thumbs .no-file { font-size: 13px; color: #999; line-height: 92px; }
+.file-thumbs .no-file { font-size: 13px; color: var(--t-weak); line-height: 92px; }
 </style>

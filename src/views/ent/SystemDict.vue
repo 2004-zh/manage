@@ -6,178 +6,170 @@
 
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane label="字典管理" name="dict">
-        <el-row :gutter="16">
-          <el-col :span="11">
-            <el-card shadow="never">
-              <template #header>
-                <span>字典类型</span>
-              </template>
-              <el-form inline style="margin-bottom:4px">
-                <el-form-item>
-                  <el-input v-model="typeQuery.name" placeholder="请输入名称" clearable style="width:150px" />
-                </el-form-item>
-                <el-form-item>
-                  <el-select v-model="typeQuery.status" placeholder="请选择状态" clearable style="width:130px">
-                    <el-option label="启用" value="启用" />
-                    <el-option label="禁用" value="禁用" />
-                  </el-select>
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" :icon="Search" @click="typePage = 1">查询</el-button>
-                  <el-button type="primary" plain :icon="Plus" @click="showCreate = true">新增</el-button>
-                </el-form-item>
-              </el-form>
-              <el-table :data="pagedTypes" border stripe :row-class-name="typeRowClass" style="width:100%;cursor:pointer" @row-click="handleTypeRowClick">
-                <el-table-column prop="name" label="名称" min-width="100" />
-                <el-table-column prop="code" label="编码" min-width="120" show-overflow-tooltip />
-                <el-table-column prop="count" label="项数" width="60" align="center" />
-                <el-table-column prop="status" label="状态" width="70" align="center">
-                  <template #default="{ row }">
-                    <el-tag :type="row.status === '启用' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="createTime" label="创建时间" width="150" />
-                <el-table-column prop="updateTime" label="更新时间" width="150" />
-                <template #empty>
-                  <el-empty description="暂无数据" :image-size="70" />
+        <div class="dict-split">
+          <el-card shadow="never">
+            <template #header>
+              <span>字典类型</span>
+            </template>
+            <el-form inline style="margin-bottom:4px">
+              <el-form-item>
+                <el-input v-model="typeQuery.name" placeholder="请输入名称" clearable style="width:150px" />
+              </el-form-item>
+              <el-form-item>
+                <el-select v-model="typeQuery.status" placeholder="请选择状态" clearable style="width:130px">
+                  <el-option label="启用" value="启用" />
+                  <el-option label="禁用" value="禁用" />
+                </el-select>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" :icon="Search" @click="typePage = 1">查询</el-button>
+                <el-button type="primary" plain :icon="Plus" @click="showCreate = true">新增</el-button>
+              </el-form-item>
+            </el-form>
+            <el-table :data="pagedTypes" border stripe :row-class-name="typeRowClass" style="width:100%;cursor:pointer" @row-click="handleTypeRowClick">
+              <el-table-column prop="name" label="名称" min-width="100" />
+              <el-table-column prop="code" label="编码" min-width="120" show-overflow-tooltip />
+              <el-table-column prop="count" label="项数" width="60" align="center" class-name="num" />
+              <el-table-column prop="status" label="状态" width="70" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === '启用' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
                 </template>
-              </el-table>
-              <div class="pager">
-                <el-pagination
-                  v-model:current-page="typePage"
-                  v-model:page-size="typePageSize"
-                  :total="filteredTypes.length"
-                  :page-sizes="[10, 20, 50]"
-                  layout="total, sizes, prev, pager, next, jumper"
-                  size="small"
-                />
-              </div>
-            </el-card>
-          </el-col>
-          <el-col :span="13">
-            <el-card shadow="never">
-              <template #header>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span>字典项 <span v-if="currentType" style="color:#909399;font-size:13px">（{{ currentType.name }}）</span></span>
-                  <el-button type="primary" size="small" @click="showAddItem = true" :disabled="!currentType">新增字典项</el-button>
-                </div>
+              </el-table-column>
+              <el-table-column prop="createTime" label="创建时间" width="150" />
+              <el-table-column prop="updateTime" label="更新时间" width="150" />
+              <template #empty>
+                <el-empty description="暂无数据" :image-size="60" />
               </template>
-              <el-table :data="pagedItems" border stripe>
-                <el-table-column prop="label" label="标签" width="120" />
-                <el-table-column prop="value" label="值" width="110" />
-                <el-table-column prop="sort" label="排序" width="70" align="right" />
-                <el-table-column prop="status" label="状态" width="80">
-                  <template #default="{ row }">
-                    <el-tag :type="row.status === '启用' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="remark" label="备注" min-width="130" show-overflow-tooltip />
-                <el-table-column prop="createTime" label="创建时间" width="150" />
-                <el-table-column prop="updateTime" label="更新时间" width="150" />
-                <el-table-column label="操作" width="130" fixed="right">
-                  <template #default="{ row }">
-                    <el-button type="primary" link size="small" @click="editItem(row)">编辑</el-button>
-                    <el-button type="danger" link size="small" @click="deleteItem(row)">删除</el-button>
-                  </template>
-                </el-table-column>
-                <template #empty>
-                  <el-empty description="暂无数据" :image-size="70" />
-                </template>
-              </el-table>
-              <div class="pager">
-                <el-pagination
-                  v-model:current-page="itemPage"
-                  v-model:page-size="itemPageSize"
-                  :total="currentItems.length"
-                  :page-sizes="[10, 20, 50]"
-                  layout="total, sizes, prev, pager, next, jumper"
-                  size="small"
-                />
+            </el-table>
+            <div class="pager">
+              <el-pagination
+                v-model:current-page="typePage"
+                v-model:page-size="typePageSize"
+                :total="filteredTypes.length"
+                :page-sizes="[10, 20, 50]"
+                layout="total, sizes, prev, pager, next, jumper"
+                size="small"
+              />
+            </div>
+          </el-card>
+          <el-card shadow="never">
+            <template #header>
+              <div class="card-head">
+                <span>字典项 <span v-if="currentType" class="sub-hint">（{{ currentType.name }}）</span></span>
+                <el-button type="primary" size="small" @click="showAddItem = true" :disabled="!currentType">新增字典项</el-button>
               </div>
-            </el-card>
-          </el-col>
-        </el-row>
+            </template>
+            <el-table :data="pagedItems" border stripe>
+              <el-table-column prop="label" label="标签" width="120" />
+              <el-table-column prop="value" label="值" width="110" />
+              <el-table-column prop="sort" label="排序" width="70" align="right" class-name="num" />
+              <el-table-column prop="status" label="状态" width="80">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === '启用' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="remark" label="备注" min-width="130" show-overflow-tooltip />
+              <el-table-column prop="createTime" label="创建时间" width="150" />
+              <el-table-column prop="updateTime" label="更新时间" width="150" />
+              <el-table-column label="操作" width="130" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="primary" link size="small" @click="editItem(row)">编辑</el-button>
+                  <el-button type="danger" link size="small" @click="deleteItem(row)">删除</el-button>
+                </template>
+              </el-table-column>
+              <template #empty>
+                <el-empty description="暂无数据" :image-size="60" />
+              </template>
+            </el-table>
+            <div class="pager">
+              <el-pagination
+                v-model:current-page="itemPage"
+                v-model:page-size="itemPageSize"
+                :total="currentItems.length"
+                :page-sizes="[10, 20, 50]"
+                layout="total, sizes, prev, pager, next, jumper"
+                size="small"
+              />
+            </div>
+          </el-card>
+        </div>
       </el-tab-pane>
 
       <el-tab-pane label="资产类型表单配置" name="formSchema">
-        <el-row :gutter="16">
-          <el-col :span="8">
-            <el-card shadow="never">
-              <template #header>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span>资产类型</span>
-                  <el-button type="primary" size="small" @click="showAddAssetType = true">新增类型</el-button>
-                </div>
-              </template>
-              <el-menu :default-active="selectedAssetType" @select="handleAssetTypeSelect">
-                <el-menu-item v-for="at in assetTypes" :key="at.code" :index="at.code">
-                  <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
-                    <span>{{ at.name }}</span>
-                    <el-tag size="small" type="info">{{ at.fields.length }} 字段</el-tag>
-                  </div>
-                </el-menu-item>
-              </el-menu>
-            </el-card>
-          </el-col>
-          <el-col :span="16">
-            <el-card shadow="never">
-              <template #header>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span>字段配置 <span v-if="currentAssetType" style="color:#909399;font-size:13px">（{{ currentAssetType.name }}）</span></span>
-                  <div>
-                    <el-button type="success" size="small" @click="previewForm = true" :disabled="!currentAssetType">预览表单</el-button>
-                    <el-button type="primary" size="small" @click="showAddField = true" :disabled="!currentAssetType">新增字段</el-button>
-                  </div>
-                </div>
-              </template>
-              <el-table :data="pagedFields" border stripe>
-                <el-table-column prop="label" label="字段名称" width="140" />
-                <el-table-column prop="key" label="字段标识" width="130">
-                  <template #default="{ row }">
-                    <code style="color:#409EFF">{{ row.key }}</code>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="type" label="控件类型" width="110">
-                  <template #default="{ row }">
-                    <el-tag size="small">{{ controlTypeLabel(row.type) }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="required" label="必填" width="70" align="center">
-                  <template #default="{ row }">
-                    <el-tag :type="row.required ? 'danger' : 'info'" size="small">{{ row.required ? '是' : '否' }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="options" label="选项/默认值" min-width="180">
-                  <template #default="{ row }">
-                    <span v-if="row.type === 'select' || row.type === 'radio'">{{ (row.options || []).join('、') || '-' }}</span>
-                    <span v-else-if="row.defaultValue">{{ row.defaultValue }}</span>
-                    <span v-else style="color:#c0c4cc">-</span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="placeholder" label="提示文字" width="140" />
-                <el-table-column prop="sort" label="排序" width="70" align="right" />
-                <el-table-column label="操作" width="150" fixed="right">
-                  <template #default="{ row }">
-                    <el-button type="primary" link size="small" @click="editField(row)">编辑</el-button>
-                    <el-button type="danger" link size="small" @click="deleteField(row)">删除</el-button>
-                  </template>
-                </el-table-column>
-                <template #empty>
-                  <el-empty description="暂无数据" :image-size="70" />
-                </template>
-              </el-table>
-              <div class="pager">
-                <el-pagination
-                  v-model:current-page="fieldPage"
-                  v-model:page-size="fieldPageSize"
-                  :total="currentFields.length"
-                  :page-sizes="[10, 20, 50]"
-                  layout="total, sizes, prev, pager, next, jumper"
-                />
+        <div class="schema-split">
+          <el-card shadow="never">
+            <template #header>
+              <div class="card-head">
+                <span>资产类型</span>
+                <el-button type="primary" size="small" @click="showAddAssetType = true">新增类型</el-button>
               </div>
-            </el-card>
-          </el-col>
-        </el-row>
+            </template>
+            <el-menu :default-active="selectedAssetType" @select="handleAssetTypeSelect">
+              <el-menu-item v-for="at in assetTypes" :key="at.code" :index="at.code">
+                <div class="node-row">
+                  <span>{{ at.name }}</span>
+                  <el-tag size="small" type="info">{{ at.fields.length }} 字段</el-tag>
+                </div>
+              </el-menu-item>
+            </el-menu>
+          </el-card>
+          <el-card shadow="never">
+            <template #header>
+              <div class="card-head">
+                <span>字段配置 <span v-if="currentAssetType" class="sub-hint">（{{ currentAssetType.name }}）</span></span>
+                <div>
+                  <el-button type="success" size="small" @click="previewForm = true" :disabled="!currentAssetType">预览表单</el-button>
+                  <el-button type="primary" size="small" @click="showAddField = true" :disabled="!currentAssetType">新增字段</el-button>
+                </div>
+              </div>
+            </template>
+            <el-table :data="pagedFields" border stripe>
+              <el-table-column prop="label" label="字段名称" width="140" />
+              <el-table-column prop="key" label="字段标识" width="130">
+                <template #default="{ row }">
+                  <code class="code-key">{{ row.key }}</code>
+                </template>
+              </el-table-column>
+              <el-table-column prop="type" label="控件类型" width="110">
+                <template #default="{ row }">
+                  <el-tag size="small">{{ controlTypeLabel(row.type) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="required" label="必填" width="70" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="row.required ? 'danger' : 'info'" size="small">{{ row.required ? '是' : '否' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="options" label="选项/默认值" min-width="180">
+                <template #default="{ row }">
+                  <span v-if="row.type === 'select' || row.type === 'radio'">{{ (row.options || []).join('、') || '-' }}</span>
+                  <span v-else-if="row.defaultValue">{{ row.defaultValue }}</span>
+                  <span v-else class="muted">-</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="placeholder" label="提示文字" width="140" />
+              <el-table-column prop="sort" label="排序" width="70" align="right" class-name="num" />
+              <el-table-column label="操作" width="150" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="primary" link size="small" @click="editField(row)">编辑</el-button>
+                  <el-button type="danger" link size="small" @click="deleteField(row)">删除</el-button>
+                </template>
+              </el-table-column>
+              <template #empty>
+                <el-empty description="暂无数据" :image-size="60" />
+              </template>
+            </el-table>
+            <div class="pager">
+              <el-pagination
+                v-model:current-page="fieldPage"
+                v-model:page-size="fieldPageSize"
+                :total="currentFields.length"
+                :page-sizes="[10, 20, 50]"
+                layout="total, sizes, prev, pager, next, jumper"
+              />
+            </div>
+          </el-card>
+        </div>
       </el-tab-pane>
     </el-tabs>
 
@@ -263,7 +255,7 @@
         </el-form-item>
         <el-form-item v-if="fieldForm.type === 'select' || fieldForm.type === 'radio'" label="选项列表" required>
           <el-input v-model="fieldForm.optionsText" type="textarea" :rows="3" placeholder="每行一个选项，如：&#10;一楼&#10;二楼&#10;三楼" />
-          <div style="color:#909399;font-size:12px;margin-top:4px">每行一个选项</div>
+          <div class="form-tip">每行一个选项</div>
         </el-form-item>
         <el-form-item label="默认值">
           <el-input v-model="fieldForm.defaultValue" placeholder="选填" />
@@ -588,3 +580,30 @@ const saveField = () => {
   editingField.value = null
 }
 </script>
+
+<style scoped>
+/* 两栏一律"定宽/比例 + 自适应"，右栏吃满剩余宽度，中间不留大洞 */
+.dict-split {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 11fr) minmax(0, 13fr);
+}
+
+.schema-split {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .dict-split,
+  .schema-split { grid-template-columns: minmax(0, 1fr); }
+}
+
+.card-head { display: flex; justify-content: space-between; align-items: center; }
+.node-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.sub-hint { color: var(--t-weak); font-size: 13px; }
+.muted { color: var(--t-weak); }
+.code-key { color: var(--c-primary); font-family: var(--font-mono); }
+.form-tip { color: var(--t-weak); font-size: 12px; margin-top: 4px; }
+</style>

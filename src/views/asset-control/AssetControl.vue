@@ -4,7 +4,7 @@
       <h2>资产管控</h2>
     </div>
 
-    <el-tabs v-model="activeTab" class="ctrl-tabs">
+    <el-tabs v-model="activeTab" class="ctrl-tabs fill">
       <el-tab-pane label="全景租控" name="pano">
         <el-row :gutter="14">
           <el-col :span="5">
@@ -68,13 +68,13 @@
             <el-card shadow="never" class="ana-card">
               <div class="section-title">已使用 / 未使用</div>
               <div class="ana-body">
-                <el-progress type="circle" :percentage="usedPct" :width="88" :stroke-width="10" color="#1890ff">
+                <el-progress type="circle" :percentage="usedPct" :width="88" :stroke-width="10" color="#1668DC">
                   <template #default>
                     <div class="donut-center"><b>{{ usedPct }}%</b><span>已使用</span></div>
                   </template>
                 </el-progress>
                 <div class="ana-legend">
-                  <div><i class="dot" style="background:#1890ff"></i>已使用 {{ usedCount }} 项</div>
+                  <div><i class="dot" style="background:#1668DC"></i>已使用 {{ usedCount }} 项</div>
                   <div><i class="dot" style="background:#e0e0e0"></i>未使用 {{ unusedCount }} 项</div>
                 </div>
               </div>
@@ -352,30 +352,30 @@
 
         <el-card class="filter-bar" shadow="never">
           <el-row :gutter="16">
-            <el-col :span="5">
+            <el-col :span="6">
               <el-input v-model="filters.keyword" placeholder="规则编号/规则名称" clearable prefix-icon="Search" />
             </el-col>
-            <el-col :span="4">
+            <el-col :span="6">
               <el-select v-model="filters.controlType" placeholder="管控类型" clearable>
                 <el-option label="使用限制" value="使用限制" />
                 <el-option label="处置限制" value="处置限制" />
                 <el-option label="租赁限制" value="租赁限制" />
               </el-select>
             </el-col>
-            <el-col :span="4">
+            <el-col :span="6">
               <el-select v-model="filters.status" placeholder="状态" clearable>
                 <el-option label="启用" :value="true" />
                 <el-option label="停用" :value="false" />
               </el-select>
             </el-col>
-            <el-col :span="3">
+            <el-col :span="6">
               <el-button type="primary" @click="handleSearch">查询</el-button>
               <el-button @click="resetFilters">重置</el-button>
             </el-col>
           </el-row>
         </el-card>
 
-        <el-card class="table-card" shadow="never">
+        <el-card class="table-card fill" shadow="never">
           <el-table :data="pagedData" border stripe>
             <el-table-column prop="ruleNo" label="规则编号" width="130" />
             <el-table-column prop="ruleName" label="规则名称" min-width="180" />
@@ -632,7 +632,7 @@ watch(activeProjectId, () => {
 }, { immediate: true })
 
 const panoStatusList = ['已租赁', '未租赁', '审批中', '已占用', '处置中', '流转中', '调拨中']
-const panoStatusColors = { '已租赁': '#1890ff', '未租赁': '#bfbfbf', '审批中': '#faad14', '已占用': '#722ed1', '处置中': '#f5222d', '流转中': '#13c2c2', '调拨中': '#2fc25b' }
+const panoStatusColors = { '已租赁': '#1668DC', '未租赁': '#909399', '审批中': '#E8912A', '已占用': '#722ed1', '处置中': '#D93026', '流转中': '#13c2c2', '调拨中': '#18A058' }
 function panoColor(s) { return panoStatusColors[s] || '#909399' }
 function cardTint(s) {
   return { '已租赁': 'tint-leased', '未租赁': 'tint-idle', '审批中': 'tint-approve', '已占用': 'tint-occupied', '处置中': 'tint-dispose', '流转中': 'tint-transfer', '调拨中': 'tint-allocate' }[s] || ''
@@ -642,14 +642,14 @@ function listStatusTag(s) {
 }
 
 const vacancyBuckets = [
-  { label: '空置0-90天', min: 0, max: 90, color: '#52c41a' },
-  { label: '空置91-180天', min: 91, max: 180, color: '#faad14' },
-  { label: '空置180天以上', min: 181, max: Infinity, color: '#f5222d' }
+  { label: '空置0-90天', min: 0, max: 90, color: '#18A058' },
+  { label: '空置91-180天', min: 91, max: 180, color: '#E8912A' },
+  { label: '空置180天以上', min: 181, max: Infinity, color: '#D93026' }
 ]
 const expiryBuckets = [
-  { label: '到期0-90天', min: 0, max: 90, color: '#f5222d' },
-  { label: '到期91-180天', min: 91, max: 180, color: '#faad14' },
-  { label: '到期180天以上', min: 181, max: Infinity, color: '#52c41a' }
+  { label: '到期0-90天', min: 0, max: 90, color: '#D93026' },
+  { label: '到期91-180天', min: 91, max: 180, color: '#E8912A' },
+  { label: '到期180天以上', min: 181, max: Infinity, color: '#18A058' }
 ]
 
 // 抵押看融资台账里是否还有未解押的记录，权证看资产自身的办证状态
@@ -750,7 +750,7 @@ const usedCount = computed(() => projectPanoAssets.value.filter(a => a.used).len
 const unusedCount = computed(() => projectPanoAssets.value.length - usedCount.value)
 const usedPct = computed(() => projectPanoAssets.value.length ? Math.round(usedCount.value / projectPanoAssets.value.length * 100) : 0)
 
-const typeColors = { '房产类': '#1890ff', '设备类': '#faad14', '车位类': '#13c2c2' }
+const typeColors = { '房产类': '#1668DC', '设备类': '#E8912A', '车位类': '#13c2c2' }
 const typeStats = computed(() => {
   const map = {}
   projectPanoAssets.value.forEach(a => { map[a.type] = (map[a.type] || 0) + 1 })
@@ -773,7 +773,7 @@ const maxReceipt = computed(() => Math.max(1, ...monthlyReceipts.value.map(x => 
 
 const listQ = ref({ assetNo: '', status: '', type: '', zone: '' })
 const listPage = ref(1)
-const listPageSize = ref(10)
+const listPageSize = ref(15)
 const panoTypes = computed(() => [...new Set(projectPanoAssets.value.map(a => a.type))])
 const panoZones = computed(() => [...new Set(projectPanoAssets.value.map(a => a.zone))])
 
@@ -797,7 +797,7 @@ function handlePanoSearch() {
 // ===== 管控规则（原有逻辑） =====
 const filters = ref({ keyword: '', controlType: '', status: '' })
 const page = ref(1)
-const pageSize = 10
+const pageSize = 15
 
 const rules = ref([
   { id: 1, ruleNo: 'CTRL2024001', ruleName: '房产出租年限控制', controlType: '租赁限制', scope: '房产类', description: '单次出租合同期限不得超过5年，超过需经总经理审批', creator: '张伟', createTime: '2024-05-12', enabled: true },
@@ -907,7 +907,6 @@ function handleDelete(row) {
 </script>
 
 <style scoped>
-.page-container { padding: 16px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .page-header h2 { margin: 0; font-size: 20px; }
 .card-hd { display: flex; justify-content: space-between; align-items: center; }
@@ -917,10 +916,10 @@ function handleDelete(row) {
 .lv-tag { transform: scale(0.82); }
 .is-asset { font-size: 13px; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 4px; }
-.legend { display: flex; gap: 14px; font-size: 12px; color: #666; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--t-sub); }
 .legend-item { display: flex; align-items: center; gap: 4px; }
 .kpi-row { margin-bottom: 16px; }
-.kpi { background: #f7f9fc; border-radius: 8px; padding: 12px; text-align: center; }
+.kpi { background: var(--bg-th); border-radius: 8px; padding: 12px; text-align: center; }
 .kpi-v { font-size: 24px; font-weight: 600; }
 .kpi-l { font-size: 12px; color: #909399; margin-top: 4px; }
 .floor-block { margin-bottom: 18px; }
@@ -928,46 +927,46 @@ function handleDelete(row) {
 .floor-name { font-weight: 600; }
 .floor-area { font-size: 12px; color: #909399; }
 .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-.room-cell { border: 2px solid #dcdfe6; border-left-width: 5px; border-radius: 6px; padding: 8px 10px; cursor: pointer; background: #fff; transition: box-shadow .15s; }
+.room-cell { border: 2px solid var(--bd); border-left-width: 5px; border-radius: 6px; padding: 8px 10px; cursor: pointer; background: #fff; transition: box-shadow .15s; }
 .room-cell:hover { box-shadow: 0 2px 10px rgba(0,0,0,.1); }
 .room-cell.active { box-shadow: 0 0 0 2px rgba(64,158,255,.3); }
 .room-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .room-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.room-status { color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 3px; flex-shrink: 0; }
-.room-area { font-size: 12px; color: #606266; margin: 4px 0; }
+.room-status { color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; flex-shrink: 0; }
+.room-area { font-size: 12px; color: var(--t-sub); margin: 4px 0; }
 .room-foot { font-size: 12px; }
-.tenant { color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-.tenant.muted { color: #c0c4cc; }
+.tenant { color: var(--t-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.tenant.muted { color: var(--t-weak); }
 .pano-head-card { margin-bottom: 12px; }
 .proj-head { display: flex; gap: 16px; align-items: stretch; margin-bottom: 4px; }
 .proj-photo { width: 132px; height: 92px; flex: none; border-radius: 6px; background: linear-gradient(135deg, #e8eef7, #d6e2f0); color: #8aa2c0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; border: 1px dashed #c3d3e8; }
 .proj-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.proj-name { font-size: 17px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 8px; }
+.proj-name { font-size: 17px; font-weight: 600; color: var(--t-main); display: flex; align-items: center; gap: 8px; }
 .proj-addr { font-size: 13px; color: #888; display: flex; align-items: center; gap: 4px; }
 .ana-row { margin-bottom: 12px; }
 .ana-card :deep(.el-card__body) { padding: 12px 16px; }
 .ana-body { display: flex; align-items: center; gap: 16px; }
 .donut-center { display: flex; flex-direction: column; align-items: center; line-height: 1.3; }
 .donut-center b { font-size: 17px; color: var(--c-primary); }
-.donut-center span { font-size: 11px; color: #999; }
-.ana-legend { font-size: 12px; color: #666; display: flex; flex-direction: column; gap: 6px; }
+.donut-center span { font-size: 12px; color: var(--t-weak); }
+.ana-legend { font-size: 12px; color: var(--t-sub); display: flex; flex-direction: column; gap: 6px; }
 .ana-legend .dot { margin: 0 6px 0 0; }
 .type-pie { width: 88px; height: 88px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 14px #fff; }
 .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 96px; padding-top: 4px; }
 .bar-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
 .bar { width: 100%; max-width: 16px; background: linear-gradient(180deg, #4facfe, var(--c-primary)); border-radius: 2px 2px 0 0; min-height: 2px; }
-.bar-m { font-size: 10px; color: #999; transform: scale(0.9); white-space: nowrap; }
+.bar-m { font-size: 12px; color: var(--t-weak); white-space: nowrap; }
 .chip-row .dot { margin: 0 5px 0 0; }
 .pano-filter { display: flex; align-items: center; gap: 16px; margin: 4px 0 14px; }
 .pano-tip { font-size: 12px; color: #bbb; }
 .pano-map { display: flex; gap: 18px; align-items: flex-start; }
 .floor-nav { display: flex; flex-direction: column; gap: 12px; flex: none; padding-top: 4px; }
-.floor-circle { width: 46px; height: 46px; border-radius: 50%; background: var(--bg-page); border: 1px solid #e0e3e8; color: #666; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+.floor-circle { width: 46px; height: 46px; border-radius: 50%; background: var(--bg-page); border: 1px solid #E2E8F0; color: var(--t-sub); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
 .floor-circle:hover { color: var(--c-primary); border-color: var(--c-primary); }
 .floor-circle.active { background: var(--c-primary); border-color: var(--c-primary); color: #fff; box-shadow: 0 2px 8px rgba(22,104,220,.35); }
 .floor-panel { flex: 1; min-width: 0; }
 .pano-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; }
-.pano-card { border: 1px solid #e5e8ee; border-left: 4px solid #d9d9d9; border-radius: 6px; padding: 8px 10px; font-size: 12px; transition: box-shadow .15s; }
+.pano-card { border: 1px solid #E2E8F0; border-left: 4px solid var(--bd); border-radius: 6px; padding: 8px 10px; font-size: 12px; transition: box-shadow .15s; }
 .pano-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.1); }
 .tint-leased { background: #eef3fa; }
 .tint-idle { background: #fff; }
@@ -978,15 +977,15 @@ function handleDelete(row) {
 .tint-allocate { background: #f0fff0; }
 .pano-tree-card { min-height: 560px; }
 .pano-tree-card :deep(.el-card__body) { padding: 10px; }
-.proj-photo-img { width: 132px; height: 92px; object-fit: cover; border-radius: 6px; flex: none; border: 1px solid #e0e3e8; }
+.proj-photo-img { width: 132px; height: 92px; object-fit: cover; border-radius: 6px; flex: none; border: 1px solid #E2E8F0; }
 .pc-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 4px; }
-.pc-name { font-size: 13px; font-weight: 600; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pc-badge { flex: none; color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 3px; }
-.pc-row { color: #666; margin-top: 3px; }
+.pc-name { font-size: 13px; font-weight: 600; color: var(--t-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-badge { flex: none; color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; }
+.pc-row { color: var(--t-sub); margin-top: 3px; }
 .pc-tags { display: flex; align-items: center; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
 .pc-sep { color: #ccc; }
-.pc-tenant { color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pc-expiry { color: #f5222d; font-weight: 600; }
+.pc-tenant { color: var(--t-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-expiry { color: var(--c-danger); font-weight: 600; }
 .list-filter { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .rules-toolbar { margin-bottom: 16px; }
 .filter-bar { margin-bottom: 16px; }

@@ -4,8 +4,8 @@
       <h2>系统参数</h2>
     </div>
 
-    <el-card shadow="never">
-      <div class="filter-bar">
+    <el-card shadow="never" class="fill">
+      <div class="toolbar">
         <el-input v-model="filter.name" placeholder="参数名称" clearable size="default" style="width:180px" />
         <el-input v-model="filter.key" placeholder="参数键名" clearable size="default" style="width:180px" />
         <el-select v-model="filter.type" placeholder="参数类型" clearable size="default" style="width:140px">
@@ -40,7 +40,7 @@
           v-model:current-page="page"
           v-model:page-size="pageSize"
           :total="filtered.length"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[10, 15, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
         />
       </div>
@@ -82,7 +82,7 @@ import { Search, Plus } from '@element-plus/icons-vue'
 
 const filter = ref({ name: '', key: '', type: '' })
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(15)
 const showEdit = ref(false)
 const editing = ref(null)
 const form = ref({ name: '', key: '', value: '', type: '自定义', remark: '' })
@@ -135,5 +135,5 @@ const removeRow = row => {
 </script>
 
 <style scoped>
-.filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 </style>

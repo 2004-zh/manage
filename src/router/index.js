@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import { useUserStore } from '../store/user'
+import { useAuditStore } from '../store/audit'
 
 const router = createRouter({
   history: import.meta.env.MODE === 'singlefile' ? createWebHashHistory() : createWebHistory(),
@@ -94,6 +95,7 @@ const router = createRouter({
         { path: 'report-asset-stats', name: 'EntReportAssetStats', component: () => import('../views/report-center/ReportCenter.vue'), meta: { title: '资产统计报表' } },
         { path: 'report-operation-stats', name: 'EntReportOperationStats', component: () => import('../views/report-center/ReportCenter.vue'), meta: { title: '经营分析报表' } },
         { path: 'report-finance-stats', name: 'EntReportFinanceStats', component: () => import('../views/report-center/ReportCenter.vue'), meta: { title: '财务报表' } },
+        { path: 'inventory', name: 'EntInventory', component: () => import('../views/inventory/InventoryCheck.vue'), meta: { title: '盘点清查' } },
         { path: 'report-inventory-stats', name: 'EntReportInventoryStats', component: () => import('../views/report-center/ReportCenter.vue'), meta: { title: '盘点报表' } },
         { path: 'report-repair-stats', name: 'EntReportRepairStats', component: () => import('../views/report-center/ReportCenter.vue'), meta: { title: '维修统计报表' } },
         { path: 'data-report', name: 'EntDataReport', component: () => import('../views/ent/Report.vue'), meta: { title: '数据上报' } },
@@ -109,6 +111,7 @@ const router = createRouter({
         { path: 'system/user', name: 'EntSystemUser', component: () => import('../views/gov/SystemRole.vue'), meta: { title: '用户管理' } },
         { path: 'system/dict', name: 'EntSystemDict', component: () => import('../views/ent/SystemDict.vue'), meta: { title: '数据字典' } },
         { path: 'system/params', name: 'EntSystemParams', component: () => import('../views/ent/SystemParams.vue'), meta: { title: '系统参数' } },
+        { path: 'system/message-center', name: 'EntMessageCenter', component: () => import('../views/ent/MessageCenter.vue'), meta: { title: '消息中心' } },
         { path: 'system/msg-template', name: 'EntMessageTemplate', component: () => import('../views/ent/MessageTemplate.vue'), meta: { title: '消息模板' } },
         { path: 'system/log', name: 'EntSystemLog', component: () => import('../views/gov/SystemLog.vue'), meta: { title: '操作日志' } },
         { path: 'system/workflow', name: 'EntWorkflowConfig', component: () => import('../views/workflow-config/WorkflowConfig.vue'), meta: { title: '流程配置' } },
@@ -160,6 +163,25 @@ router.beforeEach((to, from, next) => {
   }
 
   next()
+})
+
+// H2 系统操作日志：每次进入业务页面记一条访问日志
+let lastLogged = ''
+router.afterEach((to) => {
+  if (to.path === '/login' || to.path === '/' || !to.meta?.title) return
+  const userStore = useUserStore()
+  if (!userStore.isLoggedIn) return
+  const key = `${userStore.user.org}|${to.path}`
+  if (key === lastLogged) return
+  lastLogged = key
+  const endpoint = to.meta.endpoint || userStore.user.endpoint || 'sys'
+  useAuditStore().logOp({
+    module: to.meta.title,
+    action: '访问页面',
+    target: to.path,
+    detail: `${endpoint === 'gov' ? '监管端' : '企业端'} · ${to.meta.title}`,
+    result: '成功'
+  })
 })
 
 export default router

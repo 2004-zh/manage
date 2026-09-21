@@ -9,7 +9,7 @@
       </div>
     </div>
 
-    <el-card>
+    <el-card class="fill report-card">
       <el-tabs v-model="activeCategory" class="category-tabs">
         <el-tab-pane v-for="cat in categories" :key="cat" :label="cat" :name="cat" />
       </el-tabs>
@@ -30,7 +30,7 @@
             clearable
             style="width: 140px"
           >
-            <el-option v-for="o in f.options" :key="o" :label="o" :value="o" />
+            <el-option v-for="o in filterOptions(f)" :key="o" :label="o" :value="o" />
           </el-select>
           <el-date-picker
             v-else
@@ -67,6 +67,12 @@
         >{{ opt }}</span>
       </div>
 
+      <!-- 分组汇总：按资产类别/权属/状态的组内合计，来源于当前筛选后的 store 行 -->
+      <div v-if="summaryText" class="chip-row">
+        <span class="chip-label">汇总</span>
+        <span class="chip on">{{ summaryText }}</span>
+      </div>
+
       <el-table :data="pagedRows" border stripe style="width: 100%">
         <el-table-column
           v-for="col in cfg.columns"
@@ -83,7 +89,7 @@
           </template>
         </el-table-column>
         <template #empty>
-          <el-empty description="暂无数据" :image-size="80" />
+          <el-empty :description="cfg.emptyTip || '暂无数据'" :image-size="80" />
         </template>
       </el-table>
 
@@ -106,6 +112,9 @@ import { ElMessage } from 'element-plus'
 import { Search, Refresh, Download, Printer } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
+import { useFinanceStore } from '../../store/finance'
+import { useInventoryStore } from '../../store/inventory'
+import { useAuditStore } from '../../store/audit'
 import { ASSET_CATEGORIES } from '../../data/assetCategory'
 
 const route = useRoute()
@@ -114,285 +123,384 @@ const pageTitle = computed(() => route.meta?.title || '报表中心')
 const categories = ASSET_CATEGORIES
 const activeCategory = ref('房产类')
 const page = ref(1)
-const pageSize = 10
+const pageSize = 15
 const filterState = ref({})
 const chipState = reactive({})
 
-const SOURCE_CHIPS = { label: '来源类型', options: ['不限', '房屋拆迁', '收储', '征收', '法院判决', '股权合作', '置换代管', '投资建设', '还建', '回迁', '划入', '租入', '购入', '自筹建设', '托管', '移交资产'] }
-const OWNERSHIP_CHIPS = { label: '资产权属', options: ['不限', '其他', '联营', '委托经营资产', '自有资产', '代管资产', '移交资产'] }
-
+/* 页签配置：五个报表路由共用本组件，靠 route.name（兜底 path 段）区分。
+ * filters/chips 的 options 在 cfg 中按当前数据行动态去重生成；
+ * filters: input 按 fields 模糊匹配，select 按 prop 精确匹配，date 按行 _date 落区间；
+ * rows 一律来自 store（资产/合同/费用/财务/盘点/审计留痕），不再内置演示数据。 */
 const CONFIG = {
   EntReportAssetStats: {
     filters: [
-      { key: 'kw', label: '资产编号/名称', type: 'input' },
-      { key: 'tenant', label: '租赁方信息', type: 'input' },
-      { key: 'company', label: '所属公司', type: 'select', options: ['城投经营有限公司', '文旅经营有限公司', '农投经营有限公司', '江苏安东控股集团有限公司'] },
-      { key: 'lease', label: '租赁状态', type: 'select', options: ['已使用', '未使用'] }
+      { key: 'kw', label: '资产编号/名称', type: 'input', fields: ['code', 'name', 'project'] },
+      { key: 'tenant', label: '租赁方信息', type: 'input', fields: ['tenant'] },
+      { key: 'company', label: '所属公司', type: 'select', prop: '_group' },
+      { key: 'lease', label: '租赁状态', type: 'select', prop: 'leaseStatus' }
     ],
-    chips: [SOURCE_CHIPS, OWNERSHIP_CHIPS],
+    chips: [
+      { label: '来源类型', prop: '_source' },
+      { label: '资产权属', prop: '_own' }
+    ],
     columns: [
-      { prop: 'region', label: '省市区', width: 170, tip: true },
-      { prop: 'project', label: '项目', width: 120, tip: true },
-      { prop: 'district', label: '分区', width: 70 },
-      { prop: 'company', label: '所属公司', width: 150, tip: true },
+      { prop: 'region', label: '省市区', width: 150, tip: true },
+      { prop: 'project', label: '项目', width: 150, tip: true },
+      { prop: 'district', label: '分区', width: 90 },
+      { prop: 'company', label: '所属公司', width: 110, tip: true },
       { prop: 'code', label: '资产编号', width: 110 },
-      { prop: 'name', label: '资产名称', min: 160, tip: true },
+      { prop: 'name', label: '资产名称', min: 180, tip: true },
       { prop: 'leaseStatus', label: '租赁状态', width: 90, tag: true },
-      { prop: 'type', label: '资产类型', width: 90 },
-      { prop: 'layout', label: '资产房型', width: 90 }
+      { prop: 'type', label: '资产类型', width: 100 },
+      { prop: 'layout', label: '资产用途', width: 90 },
+      { prop: 'area', label: '面积(㎡)', width: 100 },
+      { prop: 'bookValue', label: '账面原值(万元)', width: 120 }
     ],
-    rows: [
-      { category: '房产类', region: '江苏省/淮安市/涟水县/涟城街道', project: '涟水中央城', district: '24', company: '江苏安东控股集团有限公司', code: 'ZYC35106', name: '中央城35号楼106商铺', leaseStatus: '已使用', type: '商品房', layout: '场地' },
-      { category: '房产类', region: '江苏省/淮安市/涟水县/涟城街道', project: '涟水中央城', district: '35', company: '江苏安东控股集团有限公司', code: 'ZYC35105', name: '中央城35号楼105商铺', leaseStatus: '已使用', type: '商品房', layout: '场地' },
-      { category: '房产类', region: '江苏省/淮安市/涟水县/涟城街道', project: '涟水中央城', district: '35', company: '江苏安东控股集团有限公司', code: 'ZYC35104', name: '中央城35号楼104商铺', leaseStatus: '已使用', type: '商品房', layout: '场地' },
-      { category: '房产类', region: '江苏省/淮安市/涟水县/涟城街道', project: '涟水中央城', district: '32', company: '江苏安东控股集团有限公司', code: 'ZYC32104', name: '中央城32号楼104商铺', leaseStatus: '已使用', type: '商品房', layout: '场地' },
-      { category: '房产类', region: '江苏省/淮安市/涟水县/涟城街道', project: '涟水中央城', district: '33', company: '江苏安东控股集团有限公司', code: 'ZYC33106', name: '中央城33号楼106商铺', leaseStatus: '已使用', type: '商品房', layout: '场地' },
-      { category: '房产类', region: '江苏省/淮安市/涟水县/涟城街道', project: '涟水中央城', district: '33', company: '江苏安东控股集团有限公司', code: 'ZYC33105', name: '中央城33号楼105商铺', leaseStatus: '已使用', type: '商品房', layout: '场地' },
-      { category: '房产类', region: '北京市朝阳区/朝阳区', project: '阳光花园项目', district: 'A', company: '城投经营有限公司', code: 'ZC2024001', name: '阳光花园1号楼101室', leaseStatus: '已使用', type: '廉租房', layout: '三室一厅' },
-      { category: '房产类', region: '北京市朝阳区/朝阳区', project: '阳光花园项目', district: 'B', company: '产投经营有限公司', code: 'ZC2024002', name: '阳光花园1号楼102室', leaseStatus: '未使用', type: '廉租房', layout: '三室一厅' },
-      { category: '房产类', region: '湖北省/武汉市/武昌区', project: '国贸中心项目', district: 'A', company: '城投经营有限公司', code: 'ZC2024020', name: '国贸写字楼A座1501', leaseStatus: '已使用', type: '写字楼', layout: '整层' },
-      { category: '农贸市场', region: '广东省/广州市/天河区', project: '朝阳农贸市场项目', district: 'C', company: '农投经营有限公司', code: 'ZC2024040', name: '朝阳农贸市场1号厅', leaseStatus: '已使用', type: '市场', layout: '摊位' },
-      { category: '土地类', region: '福建省/福州市/长乐区', project: '长乐地块A', district: 'A', company: '城投经营有限公司', code: 'ZC2024050', name: '长乐区工业用地A1', leaseStatus: '未使用', type: '工业用地', layout: '—' },
-      { category: '运输设备', region: '福建省/福州市', project: '运输车队', district: '—', company: '文旅经营有限公司', code: 'ZC2024060', name: '重型运输卡车01', leaseStatus: '已使用', type: '车辆', layout: '—' },
-      { category: '公共设备类', region: '福建省/福州市/长乐区', project: '市政设施', district: '—', company: '城投经营有限公司', code: 'ZC2024070', name: '公共停车场设备', leaseStatus: '已使用', type: '设备', layout: '—' },
-      { category: '长期股权投资类', region: '福建省/福州市', project: '股权投资项目', district: '—', company: '产投经营有限公司', code: 'ZC2024080', name: '海峡银行股权投资', leaseStatus: '已使用', type: '股权', layout: '—' },
-      { category: '经营性生产设备类', region: '江苏省/淮安市', project: '生产基地', district: '—', company: '江苏安东控股集团有限公司', code: 'ZC2024090', name: '数控机床生产线', leaseStatus: '已使用', type: '设备', layout: '—' },
-      { category: '特殊特种行业类', region: '福建省/福州市', project: '港口项目', district: '—', company: '城投经营有限公司', code: 'ZC2024100', name: '港口特种作业设备', leaseStatus: '已使用', type: '特种设备', layout: '—' },
-      { category: '经营权类资产', region: '福建省/福州市/长乐区', project: '公交运营', district: '—', company: '城投经营有限公司', code: 'ZC2024110', name: '公交线路经营权', leaseStatus: '已使用', type: '经营权', layout: '—' },
-      { category: '特殊动植物类', region: '福建省/福州市', project: '养殖基地', district: '—', company: '农投经营有限公司', code: 'ZC2024120', name: '水产养殖基地', leaseStatus: '已使用', type: '生物资产', layout: '—' },
-      { category: '矿产资源类', region: '福建省/龙岩市', project: '矿区项目', district: '—', company: '产投经营有限公司', code: 'ZC2024130', name: '石灰石矿区', leaseStatus: '已使用', type: '矿产', layout: '—' },
-      { category: '经营类房屋店铺', region: '福建省/福州市/鼓楼区', project: '商业街项目', district: 'A', company: '文旅经营有限公司', code: 'ZC2024140', name: '东街口商铺01', leaseStatus: '已使用', type: '商铺', layout: '店面' }
-    ]
+    emptyTip: '当前筛选条件下暂无资产'
   },
   EntReportOperationStats: {
     filters: [
-      { key: 'kw', label: '合同编号/承租方', type: 'input' },
-      { key: 'company', label: '所属公司', type: 'select', options: ['城投经营有限公司', '文旅经营有限公司', '农投经营有限公司'] },
-      { key: 'lease', label: '租赁状态', type: 'select', options: ['已出租', '部分出租', '未出租'] },
-      { key: 'range', label: '租期', type: 'date' }
+      { key: 'kw', label: '合同编号/承租方', type: 'input', fields: ['code', 'tenant', 'name'] },
+      { key: 'company', label: '所属公司', type: 'select', prop: '_group' },
+      { key: 'lease', label: '租赁状态', type: 'select', prop: 'lease' },
+      { key: 'range', label: '租期起始', type: 'date' }
     ],
-    chips: [{ label: '租金类型', options: ['不限', '固定租金', '递增租金', '提成租金'] }],
+    chips: [{ label: '租金类型', prop: 'rentType' }],
     columns: [
       { prop: 'code', label: '合同编号', width: 130 },
       { prop: 'name', label: '资产名称', min: 160, tip: true },
-      { prop: 'tenant', label: '承租方', width: 150, tip: true },
+      { prop: 'tenant', label: '承租方', width: 160, tip: true },
+      { prop: 'company', label: '所属公司', width: 110 },
       { prop: 'period', label: '租期', width: 170 },
       { prop: 'rent', label: '月租金(元)', width: 100 },
+      { prop: 'yearRecv', label: '本年应收(万元)', width: 115 },
+      { prop: 'yearActual', label: '本年实收(万元)', width: 115 },
       { prop: 'collection', label: '收缴状态', width: 90, tag: true },
       { prop: 'lease', label: '租赁状态', width: 90, tag: true },
       { prop: 'rate', label: '出租率', width: 90 }
     ],
-    rows: [
-      { category: '经营类房屋店铺', code: 'HT-2026-001', name: '吴航街道商业街 A-01 商铺', tenant: '福州长乐融辉贸易有限公司', period: '2026-01-15 至 2028-01-14', rent: 8500, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '房产类', code: 'HT-2026-002', name: '航城商务楼 3F', tenant: '福建省长乐市鸿运纺织有限公司', period: '2026-02-01 至 2031-01-31', rent: 26000, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '房产类', code: 'HT-2025-018', name: '营前标准厂房 2#', tenant: '长乐区鑫源投资有限公司', period: '2025-07-01 至 2028-06-30', rent: 12800, collection: '欠缴', lease: '已出租', rate: '100%' },
-      { category: '房产类', code: 'HT-2024-035', name: '福州航城物流有限公司仓库', tenant: '福州航城物流有限公司', period: '2024-04-01 至 2026-03-31', rent: 15600, collection: '欠缴', lease: '部分出租', rate: '72%' },
-      { category: '房产类', code: 'HT-2026-009', name: '滨江科技园A座8层', tenant: '杭州星辰科技有限公司', period: '2026-03-01 至 2029-02-28', rent: 3200, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '经营类房屋店铺', code: 'HT-2025-027', name: '西湖区文三路商铺', tenant: '长乐吴航街道陈氏食品店', period: '2025-12-01 至 2027-11-30', rent: 1500, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '房产类', code: 'HT-2024-012', name: '首占新区保障房 1# 楼', tenant: '长乐××物业管理有限公司', period: '2024-06-01 至 2029-05-31', rent: 96, collection: '已缴', lease: '部分出租', rate: '81%' },
-      { category: '农贸市场', code: 'HT-2024-015', name: '吴航农贸市场摊位区', tenant: '长乐××市场管理有限公司', period: '2024-01-01 至 2028-12-31', rent: 68, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '房产类', code: 'HT-2025-006', name: '航城商务楼 5F', tenant: '福建××科技有限公司', period: '2025-01-01 至 2027-12-31', rent: 156, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '土地类', code: 'HT-2026-011', name: '余杭区仓储中心3号库', tenant: '浙江蓝海贸易公司', period: '2026-05-01 至 2029-04-30', rent: 48000, collection: '欠缴', lease: '未出租', rate: '0%' },
-      { category: '运输设备', code: 'HT-2026-015', name: '重型运输卡车01', tenant: '福州远洋运输有限公司', period: '2026-03-01 至 2028-02-28', rent: 15000, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '公共设备类', code: 'HT-2025-030', name: '公共停车场设备', tenant: '长乐区市政管理处', period: '2025-06-01 至 2027-05-31', rent: 3200, collection: '欠缴', lease: '已出租', rate: '100%' },
-      { category: '长期股权投资类', code: 'HT-2026-020', name: '海峡银行股权投资', tenant: '福建海峡银行股份有限公司', period: '2026-01-01 至 2030-12-31', rent: 50000, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '经营性生产设备类', code: 'HT-2025-042', name: '数控机床生产线', tenant: '长乐恒达制造有限公司', period: '2025-09-01 至 2028-08-31', rent: 22000, collection: '欠缴', lease: '已出租', rate: '100%' },
-      { category: '特殊特种行业类', code: 'HT-2026-025', name: '港口特种作业设备', tenant: '福州港务集团有限公司', period: '2026-04-01 至 2029-03-31', rent: 38000, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '经营权类资产', code: 'HT-2025-050', name: '公交线路经营权', tenant: '长乐区公交公司', period: '2025-01-01 至 2030-12-31', rent: 12000, collection: '已缴', lease: '已出租', rate: '100%' },
-      { category: '特殊动植物类', code: 'HT-2026-030', name: '水产养殖基地', tenant: '福州绿源农业合作社', period: '2026-06-01 至 2029-05-31', rent: 8000, collection: '欠缴', lease: '已出租', rate: '100%' },
-      { category: '矿产资源类', code: 'HT-2025-055', name: '石灰石矿区', tenant: '福建矿业开发有限公司', period: '2025-03-01 至 2030-02-28', rent: 45000, collection: '已缴', lease: '已出租', rate: '100%' }
-    ]
+    emptyTip: '暂无合同，请先在「合同台账」录入合同'
   },
   EntReportFinanceStats: {
     filters: [
-      { key: 'kw', label: '账单编号/承租方', type: 'input' },
-      { key: 'fee', label: '费用类型', type: 'select', options: ['租金', '物业费', '水电费', '其他'] },
-      { key: 'status', label: '缴费状态', type: 'select', options: ['已缴', '欠缴', '逾期'] },
-      { key: 'range', label: '账单期间', type: 'date' }
+      { key: 'kw', label: '单据编号/对象', type: 'input', fields: ['bill', 'contract', 'target'] },
+      { key: 'kind', label: '科目类别', type: 'select', prop: '_kind' },
+      { key: 'status', label: '状态', type: 'select', prop: 'status' },
+      { key: 'range', label: '业务日期', type: 'date' }
     ],
-    chips: [{ label: '费用类型', options: ['不限', '租金', '物业费', '水电费', '其他'] }],
+    chips: [{ label: '科目类别', prop: '_kind' }],
     columns: [
-      { prop: 'bill', label: '账单编号', width: 140 },
-      { prop: 'tenant', label: '承租方', min: 180, tip: true },
+      { prop: 'bill', label: '单据编号', width: 140 },
+      { prop: 'subject', label: '会计事项', width: 140, tip: true },
+      { prop: 'target', label: '往来对象/资产', min: 170, tip: true },
       { prop: 'contract', label: '合同编号', width: 130 },
-      { prop: 'month', label: '账单月份', width: 100 },
-      { prop: 'feeType', label: '费用类型', width: 90 },
-      { prop: 'due', label: '应收(元)', width: 110 },
-      { prop: 'paid', label: '实缴(元)', width: 110 },
-      { prop: 'status', label: '缴费状态', width: 90, tag: true }
+      { prop: 'period', label: '期间', width: 110 },
+      { prop: 'due', label: '应收/应缴(万元)', width: 125 },
+      { prop: 'paid', label: '实收/金额(万元)', width: 125 },
+      { prop: 'status', label: '状态', width: 90, tag: true }
     ],
-    rows: [
-      { category: '房产类', bill: 'ZD-2026-0801', tenant: '福州长乐融辉贸易有限公司', contract: 'HT-2026-001', month: '2026-08', feeType: '租金', due: 8500, paid: 8500, status: '已缴' },
-      { category: '房产类', bill: 'ZD-2026-0802', tenant: '福建省长乐市鸿运纺织有限公司', contract: 'HT-2026-002', month: '2026-08', feeType: '租金', due: 26000, paid: 26000, status: '已缴' },
-      { category: '房产类', bill: 'ZD-2026-0803', tenant: '长乐区鑫源投资有限公司', contract: 'HT-2025-018', month: '2026-08', feeType: '租金', due: 12800, paid: 0, status: '欠缴' },
-      { category: '房产类', bill: 'ZD-2026-0804', tenant: '福州航城物流有限公司', contract: 'HT-2024-035', month: '2026-08', feeType: '物业费', due: 4600, paid: 0, status: '逾期' },
-      { category: '房产类', bill: 'ZD-2026-0805', tenant: '杭州星辰科技有限公司', contract: 'HT-2026-009', month: '2026-08', feeType: '租金', due: 3200, paid: 3200, status: '已缴' },
-      { category: '经营类房屋店铺', bill: 'ZD-2026-0806', tenant: '长乐吴航街道陈氏食品店', contract: 'HT-2025-027', month: '2026-08', feeType: '水电费', due: 1860, paid: 1860, status: '已缴' },
-      { category: '房产类', bill: 'ZD-2026-0807', tenant: '长乐××物业管理有限公司', contract: 'HT-2024-012', month: '2026-08', feeType: '租金', due: 9600, paid: 9600, status: '已缴' },
-      { category: '农贸市场', bill: 'ZD-2026-0808', tenant: '长乐××市场管理有限公司', contract: 'HT-2024-015', month: '2026-08', feeType: '租金', due: 6800, paid: 0, status: '欠缴' },
-      { category: '房产类', bill: 'ZD-2026-0809', tenant: '福建××科技有限公司', contract: 'HT-2025-006', month: '2026-08', feeType: '物业费', due: 2300, paid: 2300, status: '已缴' },
-      { category: '土地类', bill: 'ZD-2026-0810', tenant: '浙江蓝海贸易公司', contract: 'HT-2026-011', month: '2026-08', feeType: '其他', due: 500, paid: 0, status: '逾期' },
-      { category: '运输设备', bill: 'ZD-2026-0811', tenant: '福州远洋运输有限公司', contract: 'HT-2026-015', month: '2026-08', feeType: '租金', due: 15000, paid: 15000, status: '已缴' },
-      { category: '公共设备类', bill: 'ZD-2026-0812', tenant: '长乐区市政管理处', contract: 'HT-2025-030', month: '2026-08', feeType: '物业费', due: 3200, paid: 0, status: '欠缴' },
-      { category: '长期股权投资类', bill: 'ZD-2026-0813', tenant: '福建海峡银行股份有限公司', contract: 'HT-2026-020', month: '2026-08', feeType: '其他', due: 50000, paid: 50000, status: '已缴' },
-      { category: '经营性生产设备类', bill: 'ZD-2026-0814', tenant: '长乐恒达制造有限公司', contract: 'HT-2025-042', month: '2026-08', feeType: '租金', due: 22000, paid: 0, status: '逾期' },
-      { category: '特殊特种行业类', bill: 'ZD-2026-0815', tenant: '福州港务集团有限公司', contract: 'HT-2026-025', month: '2026-08', feeType: '租金', due: 38000, paid: 38000, status: '已缴' },
-      { category: '经营权类资产', bill: 'ZD-2026-0816', tenant: '长乐区公交公司', contract: 'HT-2025-050', month: '2026-08', feeType: '其他', due: 12000, paid: 12000, status: '已缴' },
-      { category: '特殊动植物类', bill: 'ZD-2026-0817', tenant: '福州绿源农业合作社', contract: 'HT-2026-030', month: '2026-08', feeType: '租金', due: 8000, paid: 0, status: '欠缴' },
-      { category: '矿产资源类', bill: 'ZD-2026-0818', tenant: '福建矿业开发有限公司', contract: 'HT-2025-055', month: '2026-08', feeType: '租金', due: 45000, paid: 45000, status: '已缴' }
-    ]
+    emptyTip: '当前筛选条件下暂无财务台账记录'
   },
   EntReportInventoryStats: {
     filters: [
-      { key: 'kw', label: '盘点单号/范围', type: 'input' },
-      { key: 'company', label: '所属公司', type: 'select', options: ['城投经营有限公司', '文旅经营有限公司', '农投经营有限公司'] },
-      { key: 'status', label: '盘点状态', type: 'select', options: ['已完成', '进行中', '待盘点'] },
+      { key: 'kw', label: '盘点单号/任务名称', type: 'input', fields: ['code', 'name', 'scope'] },
+      { key: 'company', label: '所属公司', type: 'select', prop: '_group' },
+      { key: 'status', label: '盘点状态', type: 'select', prop: 'status' },
       { key: 'range', label: '盘点日期', type: 'date' }
     ],
-    chips: [{ label: '盘点类型', options: ['不限', '全面盘点', '抽样盘点', '离任盘点'] }],
+    chips: [{ label: '盘点范围', prop: 'scope' }],
     columns: [
       { prop: 'code', label: '盘点单号', width: 130 },
-      { prop: 'scope', label: '盘点范围', min: 180, tip: true },
-      { prop: 'type', label: '盘点类型', width: 90 },
+      { prop: 'name', label: '任务名称', min: 170, tip: true },
+      { prop: 'company', label: '所属公司', width: 110 },
+      { prop: 'scope', label: '盘点范围', width: 110 },
       { prop: 'date', label: '盘点日期', width: 110 },
-      { prop: 'owner', label: '负责人', width: 90 },
-      { prop: 'book', label: '账面数(宗)', width: 90 },
-      { prop: 'actual', label: '实盘数(宗)', width: 90 },
-      { prop: 'diff', label: '差异数(宗)', width: 90 },
+      { prop: 'book', label: '账面数(项)', width: 100 },
+      { prop: 'actual', label: '已盘数(项)', width: 100 },
+      { prop: 'diff', label: '差异数(项)', width: 100 },
+      { prop: 'diffRate', label: '差异率', width: 90 },
       { prop: 'status', label: '盘点状态', width: 90, tag: true }
     ],
-    rows: [
-      { category: '房产类', code: 'PD-2026-001', scope: '涟水中央城 24-35 分区', type: '全面盘点', date: '2026-03-15', owner: '陈秀英', book: 120, actual: 120, diff: 0, status: '已完成' },
-      { category: '房产类', code: 'PD-2026-002', scope: '阳光花园项目全部楼栋', type: '全面盘点', date: '2026-04-20', owner: '林建国', book: 86, actual: 85, diff: 1, status: '已完成' },
-      { category: '房产类', code: 'PD-2026-003', scope: '国贸中心A/B座写字楼', type: '抽样盘点', date: '2026-05-18', owner: '周敏', book: 42, actual: 42, diff: 0, status: '已完成' },
-      { category: '农贸市场', code: 'PD-2026-004', scope: '朝阳农贸市场 1/2 号厅', type: '全面盘点', date: '2026-06-22', owner: '吴海涛', book: 64, actual: 62, diff: 2, status: '已完成' },
-      { category: '经营类房屋店铺', code: 'PD-2026-005', scope: '万达广场商铺 A/B 区', type: '抽样盘点', date: '2026-07-10', owner: '陈秀英', book: 38, actual: 38, diff: 0, status: '已完成' },
-      { category: '房产类', code: 'PD-2026-006', scope: '高新技术产业园厂房 C1/C2', type: '全面盘点', date: '2026-08-05', owner: '林建国', book: 12, actual: 12, diff: 0, status: '进行中' },
-      { category: '房产类', code: 'PD-2026-007', scope: '滨江科技园A座整层', type: '抽样盘点', date: '2026-08-25', owner: '周敏', book: 26, actual: 26, diff: 0, status: '进行中' },
-      { category: '土地类', code: 'PD-2026-008', scope: '余杭区仓储中心全部库房', type: '全面盘点', date: '2026-09-10', owner: '吴海涛', book: 18, actual: 0, diff: 0, status: '待盘点' },
-      { category: '运输设备', code: 'PD-2026-009', scope: '运输车队全部车辆', type: '全面盘点', date: '2026-09-15', owner: '陈秀英', book: 15, actual: 0, diff: 0, status: '待盘点' },
-      { category: '公共设备类', code: 'PD-2026-010', scope: '市政公共设施', type: '抽样盘点', date: '2026-09-20', owner: '林建国', book: 30, actual: 0, diff: 0, status: '待盘点' }
-    ]
+    emptyTip: '暂无盘点任务，请先在「盘点清查」发起并完成盘点'
   },
   EntReportRepairStats: {
     filters: [
-      { key: 'kw', label: '工单号/资产名称', type: 'input' },
-      { key: 'company', label: '所属公司', type: 'select', options: ['城投经营有限公司', '文旅经营有限公司', '农投经营有限公司'] },
-      { key: 'status', label: '工单状态', type: 'select', options: ['已完成', '维修中', '待派单'] },
-      { key: 'range', label: '报修日期', type: 'date' }
+      { key: 'kw', label: '工单号/资产名称', type: 'input', fields: ['code', 'name', 'content'] },
+      { key: 'company', label: '所属公司', type: 'select', prop: '_group' },
+      { key: 'status', label: '处理状态', type: 'select', prop: 'status' },
+      { key: 'range', label: '报修/发生日期', type: 'date' }
     ],
-    chips: [{ label: '维修类型', options: ['不限', '自修', '委外维修', '应急抢修'] }],
+    chips: [{ label: '记录来源', prop: 'source' }],
     columns: [
-      { prop: 'code', label: '工单号', width: 130 },
-      { prop: 'name', label: '资产名称', min: 170, tip: true },
-      { prop: 'content', label: '报修内容', min: 150, tip: true },
-      { prop: 'type', label: '维修类型', width: 90 },
-      { prop: 'report', label: '报修日期', width: 110 },
-      { prop: 'done', label: '完成日期', width: 110 },
+      { prop: 'code', label: '单据/工单号', width: 140 },
+      { prop: 'name', label: '资产名称', min: 160, tip: true },
+      { prop: 'company', label: '所属公司', width: 110 },
+      { prop: 'content', label: '维修事项', min: 150, tip: true },
+      { prop: 'source', label: '记录来源', width: 120 },
+      { prop: 'report', label: '发生日期', width: 110 },
       { prop: 'cost', label: '维修费用(元)', width: 110 },
-      { prop: 'status', label: '工单状态', width: 90, tag: true }
+      { prop: 'status', label: '处理状态', width: 90, tag: true }
     ],
-    rows: [
-      { category: '房产类', code: 'WX-2026-015', name: '中央城33号楼105商铺', content: '空调压缩机更换', type: '委外维修', report: '2026-08-02', done: '2026-08-05', cost: 8500, status: '已完成' },
-      { category: '房产类', code: 'WX-2026-016', name: '阳光花园1号楼101室', content: '卫生间防水重做', type: '委外维修', report: '2026-08-06', done: '2026-08-12', cost: 4600, status: '已完成' },
-      { category: '房产类', code: 'WX-2026-017', name: '国贸写字楼A座1501', content: '门禁读卡器故障', type: '自修', report: '2026-08-09', done: '2026-08-09', cost: 0, status: '已完成' },
-      { category: '农贸市场', code: 'WX-2026-018', name: '朝阳农贸市场1号厅', content: '排水沟堵塞清淤', type: '应急抢修', report: '2026-08-14', done: '2026-08-14', cost: 1200, status: '已完成' },
-      { category: '经营类房屋店铺', code: 'WX-2026-019', name: '万达广场商铺A101', content: '卷帘门电机异响', type: '自修', report: '2026-08-18', done: '2026-08-20', cost: 350, status: '已完成' },
-      { category: '房产类', code: 'WX-2026-020', name: '航城商务楼 3F', content: '消防喷淋头渗漏', type: '委外维修', report: '2026-08-23', done: '', cost: 2600, status: '维修中' },
-      { category: '土地类', code: 'WX-2026-021', name: '余杭区仓储中心3号库', content: '屋面彩钢板掀翻', type: '应急抢修', report: '2026-08-27', done: '', cost: 15800, status: '维修中' },
-      { category: '房产类', code: 'WX-2026-022', name: '阳光花园2号楼201室', content: '入户门锁芯更换', type: '自修', report: '2026-09-01', done: '', cost: 0, status: '待派单' },
-      { category: '房产类', code: 'WX-2026-023', name: '国贸写字楼B座801', content: '电梯困人检修', type: '委外维修', report: '2026-09-03', done: '', cost: 6800, status: '维修中' },
-      { category: '房产类', code: 'WX-2026-024', name: '涟水中央城35号楼104商铺', content: '外立面脱落修补', type: '委外维修', report: '2026-09-08', done: '', cost: 0, status: '待派单' }
-    ]
+    emptyTip: '维修工单记录待接入：当前仅汇总财务侧维修费用台账与业务留痕'
   }
 }
 
+// 路由名 → 页签；直接输入 URL 时按 path 段兜底
+const PATH_TO_TAB = {
+  'report-asset-stats': 'EntReportAssetStats',
+  'report-operation-stats': 'EntReportOperationStats',
+  'report-finance-stats': 'EntReportFinanceStats',
+  'report-inventory-stats': 'EntReportInventoryStats',
+  'report-repair-stats': 'EntReportRepairStats'
+}
+const tabName = computed(() => {
+  if (CONFIG[route.name]) return route.name
+  const seg = String(route.path || '').split('/').filter(Boolean).pop()
+  return PATH_TO_TAB[seg] || 'EntReportAssetStats'
+})
+
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
+const financeStore = useFinanceStore()
+const inventoryStore = useInventoryStore()
+const auditStore = useAuditStore()
 
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
+
+/* ===== 资产统计报表：assetStore.visibleAssets 逐宗明细，含类别/权属/来源与面积原值合计所需的行字段 ===== */
 const assetStatsRows = computed(() => assetStore.visibleAssets.map(a => ({
   category: a.assetCategory || '房产类',
   region: '福建省/福州市/长乐区',
   project: a.projectName || a.name,
   district: a.zoneName || '—',
   company: a.group || '—',
-  code: a.code || a.assetNo || a.id,
+  code: a.assetNo || a.code || a.id,
   name: a.name,
-  leaseStatus: (a.status === '已出租' || a.status === '部分出租') ? '已使用' : '未使用',
-  type: a.type,
-  layout: a.layout || '—'
+  leaseStatus: (a.status === '已出租' || a.status === '部分出租') ? '已出租'
+    : (a.status === '自用' ? '自用' : '未出租'),
+  type: a.type || '—',
+  layout: a.assetUsage || a.layout || '—',
+  area: round2(a.area),
+  bookValue: round2(a.bookValue),
+  tenant: a.tenant || '—',
+  _group: a.group || '—',
+  _source: a.sourceType || a.acquisitionMethod || '—',
+  _own: a.propertyRight || '—',
+  _status: a.status || '—'
 })))
+
+/* ===== 经营分析报表：contractStore.visibleContracts + visibleFees（本年应收/实收、收缴） ===== */
+const feeByContract = computed(() => {
+  const map = {}
+  contractStore.visibleFees.forEach(f => { map[f.contractId] = f })
+  return map
+})
 
 const operationRows = computed(() => contractStore.visibleContracts.map(c => {
   const asset = assetStore.getAssetById(c.assetId)
+  const fee = feeByContract.value[c.id]
   const terminated = c.status === '已终止' || c.status === '退租'
-  const rate = asset && asset.area ? Math.min(100, Math.round((c.leaseArea || asset.area) / asset.area * 100)) : 100
+  const total = asset && asset.area ? asset.area : (c.leaseArea || 0)
+  const rate = total ? Math.min(100, Math.round((c.leaseArea || total) / total * 100)) : 100
   return {
-    category: asset ? (asset.assetCategory || '房产类') : '房产类',
+    category: asset ? (asset.assetCategory || '房产类') : '',
     code: c.id,
     name: c.assetName || (asset ? asset.name : '—'),
     tenant: c.tenant,
+    company: asset ? (asset.group || '—') : '—',
     period: `${c.startDate || '—'} 至 ${c.endDate || '—'}`,
     rent: Math.round((c.annualRent || 0) * 10000 / 12),
-    collection: (c.arrears || 0) > 0 ? '欠缴' : '已缴',
+    yearRecv: fee ? round2(fee.yearReceivable) : 0,
+    yearActual: fee ? round2(fee.yearActual) : 0,
+    collection: fee
+      ? ((fee.arrears || 0) > 0 || fee.status === '欠缴' ? '欠缴' : '已缴')
+      : (c.status === '欠缴' ? '欠缴' : '已缴'),
     lease: terminated ? '未出租' : (rate < 100 ? '部分出租' : '已出租'),
-    rate: `${terminated ? 0 : rate}%`
+    rate: `${terminated ? 0 : rate}%`,
+    rentType: /递增/.test(c.increment || '') ? '递增租金' : '固定租金',
+    _group: asset ? (asset.group || '—') : '—',
+    _date: c.startDate || ''
   }
 }))
 
-const dynamicRows = {
-  EntReportAssetStats: assetStatsRows,
-  EntReportOperationStats: operationRows
+/* ===== 财务报表：实收(费用台账)/开票/支出/税费/差价/凭证，统一万元口径（税费由元换算） ===== */
+const groupOfContract = (contractId) => {
+  const c = contractStore.getContractById(contractId)
+  return c ? (assetStore.getAssetById(c.assetId)?.group || '—') : '—'
 }
 
-const cfg = computed(() => {
-  const c = CONFIG[route.name] || CONFIG.EntReportAssetStats
-  if (route.name === 'EntReportAssetStats') {
-    const groups = [...new Set(assetStore.visibleAssets.map(a => a.group).filter(Boolean))]
-    return { ...c, filters: c.filters.map(f => f.key === 'company' ? { ...f, options: groups } : f) }
-  }
-  return c
+const financeRows = computed(() => {
+  const rows = []
+  contractStore.visibleFees.forEach(f => {
+    rows.push({
+      category: '', bill: `ZD-${f.contractId}`, subject: '租金收缴',
+      target: f.tenant, contract: f.contractId,
+      period: `${new Date().getFullYear()}-12`, due: round2(f.yearReceivable), paid: round2(f.yearActual),
+      status: (f.arrears || 0) > 0 || f.status === '欠缴' ? '欠缴' : '已缴',
+      _kind: '租金', _group: groupOfContract(f.contractId), _date: ''
+    })
+  })
+  financeStore.invoices.forEach(iv => {
+    rows.push({
+      category: '', bill: iv.invoiceNo, subject: `开票·${iv.invoiceType}`,
+      target: iv.tenant, contract: iv.contractId,
+      period: iv.issueDate, due: '', paid: round2(iv.amount),
+      status: iv.invoiceStatus,
+      _kind: '开票', _group: groupOfContract(iv.contractId), _date: iv.issueDate || ''
+    })
+  })
+  financeStore.expenses.forEach(e => {
+    rows.push({
+      category: '', bill: e.expenseNo, subject: `支出·${e.expenseType}`,
+      target: e.assetName, contract: '',
+      period: e.occurDate, due: '', paid: round2(e.amount),
+      status: e.expenseVoucher ? '已入账' : '待入账',
+      _kind: '支出', _group: '—', _date: e.occurDate || ''
+    })
+  })
+  financeStore.taxRecords.forEach(t => {
+    rows.push({
+      category: '', bill: t.taxNo, subject: `税费·${t.taxType}`,
+      target: t.relatedAsset, contract: '',
+      period: t.deadline, due: round2((t.taxAmount || 0) / 10000),
+      paid: t.payStatus === '已缴纳' ? round2((t.taxAmount || 0) / 10000) : '',
+      status: t.payStatus,
+      _kind: '税费', _group: '—', _date: t.deadline || ''
+    })
+  })
+  financeStore.rentMarginRows.forEach(m => {
+    rows.push({
+      category: '', bill: `CJ-${m.contractId}`, subject: '市场租金差价',
+      target: m.tenant, contract: m.contractId,
+      period: `${new Date().getFullYear()}`, due: round2(m.marketAnnual), paid: round2(m.actualAnnual),
+      status: m.adjusted ? '已调价' : '正常',
+      _kind: '差价', _group: m.group || '—', _date: ''
+    })
+  })
+  financeStore.vouchers.forEach(v => {
+    rows.push({
+      category: '', bill: v.voucherNo, subject: `凭证·${v.bizType}`,
+      target: v.bizId, contract: v.bizType === '保证金收取' ? v.bizId : '',
+      period: v.date, due: '', paid: '',
+      status: '已生成',
+      _kind: '凭证', _group: '—', _date: v.date || ''
+    })
+  })
+  return rows
 })
+
+/* ===== 盘点报表：inventoryStore.taskList（含进行中），差异数/差异率来自 taskSummary ===== */
+const inventoryRows = computed(() => inventoryStore.taskList.map(t => ({
+  category: '',
+  code: t.id,
+  name: t.name,
+  company: t.group || '—',
+  scope: t.scope,
+  date: (t.finishedTime || t.createdTime || '').slice(0, 10),
+  book: t.summary.total,
+  actual: t.summary.checked,
+  diff: t.summary.diff,
+  diffRate: `${t.summary.diffRate}%`,
+  status: t.status,
+  _group: t.group || '—',
+  _date: (t.finishedTime || t.createdTime || '').slice(0, 10)
+})))
+
+/* ===== 维修统计报表：无独立工单实体，汇总财务维修费用台账 + 审计留痕中的维修事件 ===== */
+const repairRows = computed(() => {
+  const rows = financeStore.expenses
+    .filter(e => (e.expenseType || '').includes('维修'))
+    .map(e => ({
+      category: '',
+      code: e.expenseNo,
+      name: e.assetName,
+      company: '—',
+      content: `维修费用（供应商：${e.supplier || '—'}）`,
+      source: '财务费用台账',
+      report: e.occurDate || '',
+      cost: round2((e.amount || 0) * 10000),
+      status: e.expenseVoucher ? '已完成' : '进行中',
+      _group: '—',
+      _date: e.occurDate || ''
+    }))
+  auditStore.changeRecords.forEach(r => {
+    const text = `${r.module || ''} ${r.action || ''} ${r.remark || ''} ${r.after || ''}`
+    if (!/维修|repairCost/i.test(text)) return
+    rows.push({
+      category: '',
+      code: r.billNo || '—',
+      name: r.assetName || '—',
+      company: r.group || '—',
+      content: `${r.module || '其他'}·${r.action || '维修留痕'}`,
+      source: '业务留痕',
+      report: String(r.time || '').slice(0, 10),
+      cost: '',
+      status: '进行中',
+      _group: r.group || '—',
+      _date: String(r.time || '').slice(0, 10)
+    })
+  })
+  return rows
+})
+
+const tabRows = computed(() => {
+  switch (tabName.value) {
+    case 'EntReportOperationStats': return operationRows.value
+    case 'EntReportFinanceStats': return financeRows.value
+    case 'EntReportInventoryStats': return inventoryRows.value
+    case 'EntReportRepairStats': return repairRows.value
+    default: return assetStatsRows.value
+  }
+})
+
+const uniqProp = (rows, prop) => [...new Set(rows.map(r => r[prop]).filter(v => v !== undefined && v !== null && v !== ''))]
+
+const cfg = computed(() => {
+  const c = CONFIG[tabName.value]
+  const rows = tabRows.value
+  return {
+    ...c,
+    filters: c.filters.map(f =>
+      f.type === 'select' ? { ...f, options: f.options || uniqProp(rows, f.prop) } : f),
+    chips: c.chips.map(ch => ({ ...ch, options: ['不限', ...uniqProp(rows, ch.prop)] }))
+  }
+})
+
+const filterOptions = (f) => f.options || []
 
 const initChipState = () => {
   Object.keys(chipState).forEach(k => delete chipState[k])
   cfg.value.chips.forEach(row => { chipState[row.label] = '不限' })
 }
 
-watch(() => route.name, () => {
+watch(tabName, () => {
   page.value = 1
   filterState.value = {}
   initChipState()
 }, { immediate: true })
 
+/* 通用过滤：类别页签 + input/select/date + chips，全部作用于 store 行 */
 const filteredRows = computed(() => {
-  const dyn = dynamicRows[route.name]
-  let rows = dyn ? dyn.value : cfg.value.rows
-  if (activeCategory.value) {
-    rows = rows.filter(r => !r.category || r.category === activeCategory.value)
-  }
+  let rows = tabRows.value.filter(r => !activeCategory.value || !r.category || r.category === activeCategory.value)
   const fs = filterState.value
-  if (fs.kw) {
-    const kw = fs.kw.toLowerCase()
-    rows = rows.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(kw)))
-  }
   cfg.value.filters.forEach(f => {
-    if (f.key === 'kw') return
     const val = fs[f.key]
-    if (val) {
-      const col = cfg.value.columns.find(c => {
-        const labelMap = { tenant: '承租方', company: '所属公司', lease: '租赁状态', fee: '费用类型', status: '缴费状态', type: '类型', range: '' }
-        return c.label === (labelMap[f.key] || f.label)
-      })
-      if (col) rows = rows.filter(r => String(r[col.prop]) === String(val))
+    if (!val) return
+    if (f.type === 'input') {
+      const kw = String(val).toLowerCase()
+      const fields = f.fields || null
+      rows = rows.filter(r => fields
+        ? fields.some(k => String(r[k] ?? '').toLowerCase().includes(kw))
+        : Object.values(r).some(v => String(v).toLowerCase().includes(kw)))
+    } else if (f.type === 'select') {
+      rows = rows.filter(r => String(r[f.prop]) === String(val))
+    } else if (Array.isArray(val) && val[0] && val[1]) {
+      rows = rows.filter(r => r._date && r._date >= val[0] && r._date <= val[1])
     }
   })
   cfg.value.chips.forEach(chip => {
     const sel = chipState[chip.label]
-    if (sel && sel !== '不限') {
-      const col = cfg.value.columns.find(c => c.label === chip.label)
-      if (col) rows = rows.filter(r => String(r[col.prop]) === sel)
-    }
+    if (sel && sel !== '不限') rows = rows.filter(r => String(r[chip.prop]) === sel)
   })
   return rows
 })
@@ -402,15 +510,45 @@ const pagedRows = computed(() => {
   return filteredRows.value.slice(start, start + pageSize)
 })
 
+/* 汇总条：当前筛选后行集的组内合计（数量/面积/原值、应收实收、差异、维修费用） */
+const countBy = (rows, key) => {
+  const m = {}
+  rows.forEach(r => { const k = r[key] || '—'; m[k] = (m[k] || 0) + 1 })
+  return Object.entries(m).map(([k, v]) => `${k} ${v}`).join('、')
+}
+
+const summaryText = computed(() => {
+  const rows = filteredRows.value
+  if (!rows.length) return ''
+  const sum = (k) => round2(rows.reduce((s, r) => s + (Number(r[k]) || 0), 0))
+  switch (tabName.value) {
+    case 'EntReportAssetStats':
+      return `共 ${rows.length} 宗 · 面积合计 ${sum('area')}㎡ · 账面原值合计 ${sum('bookValue')}万元 · 按状态：${countBy(rows, '_status')} · 按权属：${countBy(rows, '_own')}`
+    case 'EntReportOperationStats':
+      return `合同 ${rows.length} 份 · 本年应收合计 ${sum('yearRecv')}万元 · 本年实收合计 ${sum('yearActual')}万元 · 欠缴 ${rows.filter(r => r.collection === '欠缴').length} 份`
+    case 'EntReportFinanceStats':
+      return `台账 ${rows.length} 笔 · 应收/应缴合计 ${sum('due')}万元 · 实收/金额合计 ${sum('paid')}万元`
+    case 'EntReportInventoryStats':
+      return `盘点任务 ${rows.length} 项 · 账面 ${sum('book')} 项 · 已盘 ${sum('actual')} 项 · 差异 ${sum('diff')} 项`
+    case 'EntReportRepairStats':
+      return `维修记录 ${rows.length} 条 · 费用合计 ${sum('cost')}元`
+    default:
+      return ''
+  }
+})
+
 const tagType = (v) => ({
-  '已使用': 'success', '已出租': 'success', '已缴': 'success', '已完成': 'success',
-  '未使用': 'warning', '部分出租': 'warning', '欠缴': 'warning', '进行中': 'warning', '待盘点': 'info', '待派单': 'info',
-  '逾期': 'danger', '未出租': 'info'
+  '已使用': 'success', '已出租': 'success', '自用': 'primary', '已缴': 'success', '已完成': 'success',
+  '已入账': 'success', '正常': 'success', '已缴纳': 'success', '已生成': 'success', '已开具': 'success',
+  '已调价': 'primary',
+  '部分出租': 'warning', '欠缴': 'warning', '进行中': 'warning', '待入账': 'warning', '待缴纳': 'warning',
+  '待开具': 'warning', '维修中': 'warning',
+  '逾期': 'danger', '已逾期': 'danger', '待盘点': 'info', '待派单': 'info', '未出租': 'info', '已红冲': 'info'
 }[v] || 'info')
 
 const handleSearch = () => {
   page.value = 1
-  ElMessage.success('查询完成')
+  ElMessage.success(`查询完成，共 ${filteredRows.value.length} 条`)
 }
 
 const handleReset = () => {
@@ -419,6 +557,7 @@ const handleReset = () => {
   page.value = 1
 }
 
+/* 导出：当前筛选后的全部表格行 → CSV（带 BOM，Excel 直接打开不乱码） */
 const handleExport = () => {
   const cols = cfg.value.columns
   const headers = cols.map(c => c.label)
@@ -431,7 +570,7 @@ const handleExport = () => {
   a.download = `${pageTitle.value}_${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
-  ElMessage.success('导出成功')
+  ElMessage.success(`已导出 ${rows.length} 行`)
 }
 
 const handlePrint = () => {
@@ -447,5 +586,12 @@ const handlePrint = () => {
 
 .search-form {
   margin-bottom: 4px;
+}
+
+/* tab 切换后短表格也不留灰底空洞：让卡片 body 撑到剩余高度，pager 紧贴表格 */
+.report-card :deep(.el-card__body) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 </style>

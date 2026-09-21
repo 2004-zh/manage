@@ -12,16 +12,14 @@
       </div>
     </div>
 
-    <el-row :gutter="16" class="kpi-row">
-      <el-col :span="4" v-for="kpi in kpiList" :key="kpi.label">
-        <el-card class="kpi-card" shadow="hover" @click="applyKpiFilter(kpi.status)">
-          <div class="kpi-value" :style="{ color: kpi.color }">
-            {{ kpi.value }}<span class="kpi-unit">{{ kpi.unit }}</span>
-          </div>
-          <div class="kpi-label">{{ kpi.label }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="grid-4 kpi-row">
+      <el-card v-for="kpi in kpiList" :key="kpi.label" class="kpi-card" shadow="hover" @click="applyKpiFilter(kpi.status)">
+        <div class="kpi-value">
+          {{ kpi.value }}<span class="kpi-unit">{{ kpi.unit }}</span>
+        </div>
+        <div class="kpi-label">{{ kpi.label }}</div>
+      </el-card>
+    </div>
 
     <div class="filter-bar">
       <el-form :inline="true" :model="filter">
@@ -45,7 +43,7 @@
       </el-form>
     </div>
 
-    <el-table :data="filteredList" border stripe class="table-card">
+    <el-table :data="filteredList" border stripe class="table-card fill">
       <el-table-column prop="id" label="督办编号" width="140" />
       <el-table-column prop="group" label="督办对象" width="120" />
       <el-table-column prop="type" label="督办类型" width="120" />
@@ -138,9 +136,16 @@ onMounted(() => scanOverdue(true))
 </script>
 
 <style scoped>
+/* KPI 语义色映射到主题变量（替代脚本数据里的 Element 默认色，含自创蓝 #409eff） */
+.kpi-row > :nth-child(2) .kpi-value { color: var(--c-warning); }
+.kpi-row > :nth-child(3) .kpi-value { color: var(--c-primary); }
+.kpi-row > :nth-child(4) .kpi-value { color: var(--st-idle); }
+.kpi-row > :nth-child(5) .kpi-value { color: var(--c-danger); }
+.kpi-row > :nth-child(6) .kpi-value { color: var(--c-success); }
+
 .overdue-tip {
   font-size: 12px;
-  color: #f56c6c;
+  color: var(--c-danger);
   margin-top: 2px;
 }
 </style>

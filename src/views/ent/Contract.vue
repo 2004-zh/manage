@@ -25,7 +25,7 @@
           </el-form>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <span style="color:#666;font-size:13px">共 <strong>{{ filteredLetters.length }}</strong> 条</span>
+          <span style="color:#475569;font-size:13px">共 <strong>{{ filteredLetters.length }}</strong> 条</span>
           <div>
             <el-button type="primary" size="small" @click="openLetterDialog()">新增</el-button>
             <el-button size="small" :disabled="letterSelection.length === 0" @click="batchEditLetters">编辑</el-button>
@@ -170,19 +170,19 @@
         <el-row :gutter="16" style="margin-bottom:16px">
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#52c41a">{{ signStats.total }}</div>
+              <div class="kpi-value" style="color:#18A058">{{ signStats.total }}</div>
               <div class="kpi-label">已签署合同</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#fa8c16">{{ signStats.pending }}</div>
+              <div class="kpi-value" style="color:#E8912A">{{ signStats.pending }}</div>
               <div class="kpi-label">待签署</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#1890ff">{{ signStats.expired }}</div>
+              <div class="kpi-value" style="color:#1668DC">{{ signStats.expired }}</div>
               <div class="kpi-label">签章过期</div>
             </el-card>
           </el-col>
@@ -257,7 +257,7 @@
           </div>
           <div class="ac-dash-main">
             <div class="ac-alert">
-              <el-icon color="#fa8c16"><WarningFilled /></el-icon>
+              <el-icon color="#E8912A"><WarningFilled /></el-icon>
               即将到期 <span class="ac-red">{{ acStats.expiring }}</span>
               待处理 <span class="ac-red">{{ acStats.pending }}</span>
               涉及资产 <span>{{ acStats.assets }}</span>
@@ -405,25 +405,25 @@
         <el-row :gutter="16" style="margin-bottom:16px">
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#fa8c16">{{ approvalStats.pending }}</div>
+              <div class="kpi-value" style="color:#E8912A">{{ approvalStats.pending }}</div>
               <div class="kpi-label">待审批</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#1890ff">{{ approvalStats.inProgress }}</div>
+              <div class="kpi-value" style="color:#1668DC">{{ approvalStats.inProgress }}</div>
               <div class="kpi-label">审批中</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#52c41a">{{ approvalStats.approved }}</div>
+              <div class="kpi-value" style="color:#18A058">{{ approvalStats.approved }}</div>
               <div class="kpi-label">已通过</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#f5222d">{{ approvalStats.rejected }}</div>
+              <div class="kpi-value" style="color:#D93026">{{ approvalStats.rejected }}</div>
               <div class="kpi-label">已驳回</div>
             </el-card>
           </el-col>
@@ -469,19 +469,19 @@
         <el-row :gutter="16" style="margin-bottom:16px">
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#fa8c16">{{ settlementStats.expiring }}</div>
+              <div class="kpi-value" style="color:#E8912A">{{ settlementStats.expiring }}</div>
               <div class="kpi-label">即将到期（30天内）</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#f5222d">{{ settlementStats.expired }}</div>
+              <div class="kpi-value" style="color:#D93026">{{ settlementStats.expired }}</div>
               <div class="kpi-label">已到期未处理</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover">
-              <div class="kpi-value" style="color:#52c41a">{{ settlementStats.renewed }}</div>
+              <div class="kpi-value" style="color:#18A058">{{ settlementStats.renewed }}</div>
               <div class="kpi-label">已续租</div>
             </el-card>
           </el-col>
@@ -521,7 +521,7 @@
           <el-table-column prop="arrears" label="欠费(万元)" width="100" align="right" />
           <el-table-column label="到期天数" width="100" align="center">
             <template #default="{ row }">
-              <span :style="{ color: daysLeft(row) < 0 ? '#f5222d' : daysLeft(row) <= 30 ? '#fa8c16' : '#333' }">
+              <span :style="{ color: daysLeft(row) < 0 ? '#D93026' : daysLeft(row) <= 30 ? '#E8912A' : '#0F172A' }">
                 {{ daysLeft(row) >= 0 ? daysLeft(row) + '天' : '已过期' + Math.abs(daysLeft(row)) + '天' }}
               </span>
             </template>
@@ -733,7 +733,26 @@
           <div class="area-hint" v-else>先选择资产，系统按剩余可租面积校验（支持部分租赁）</div>
         </el-form-item>
         <el-form-item label="承租方" required>
-          <el-input v-model="createForm.tenant" placeholder="请输入承租方" />
+          <el-select
+            v-model="createForm.tenant"
+            placeholder="从客商档案选择承租方（可输入新建）"
+            filterable
+            allow-create
+            default-first-option
+            style="width:100%"
+          >
+            <el-option
+              v-for="p in partyStore.partyList"
+              :key="p.id"
+              :label="`${p.name}　${p.creditLevel}`"
+              :value="p.name"
+              :disabled="p.creditLevel.startsWith('D')"
+            />
+          </el-select>
+          <div v-if="createForm.tenant && partyStore.getByName(createForm.tenant)" class="area-hint">
+            信用评级 {{ partyStore.creditOf(createForm.tenant) }} · 在租 {{ partyStore.statsOf(createForm.tenant).activeCount }} 份 · 合计欠费 {{ partyStore.statsOf(createForm.tenant).totalArrears }} 万元
+          </div>
+          <div v-else-if="createForm.tenant" class="area-hint">该名称未在客商档案，签约后将自动建档</div>
         </el-form-item>
         <el-form-item label="起始日期" required>
           <el-date-picker v-model="createForm.startDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
@@ -845,17 +864,17 @@
         </div>
       </div>
 
-      <div v-if="signStep === 2" class="sign-step-content" style="text-align:center;padding:40px 0">
-        <el-icon :size="48" color="#1890ff" style="margin-bottom:16px"><Loading /></el-icon>
+      <div v-if="signStep === 2" class="sign-step-content" style="text-align:center;padding:24px 0">
+        <el-icon :size="48" color="#1668DC" style="margin-bottom:16px"><Loading /></el-icon>
         <p style="font-size:16px;margin-bottom:8px">正在等待双方签署...</p>
-        <p style="color:#999;margin-bottom:20px">已向 {{ signingRow?.tenant }} 发送签署通知</p>
+        <p style="color:#94A3B8;margin-bottom:20px">已向 {{ signingRow?.tenant }} 发送签署通知</p>
         <el-button type="primary" @click="signStep = 3">模拟双方完成签署</el-button>
       </div>
 
-      <div v-if="signStep === 3" class="sign-step-content" style="text-align:center;padding:40px 0">
-        <el-icon :size="48" color="#52c41a" style="margin-bottom:16px"><CircleCheck /></el-icon>
-        <p style="font-size:16px;margin-bottom:8px;color:#52c41a">签署完成</p>
-        <p style="color:#999;margin-bottom:20px">合同已电子签章并自动归档</p>
+      <div v-if="signStep === 3" class="sign-step-content" style="text-align:center;padding:24px 0">
+        <el-icon :size="48" color="#18A058" style="margin-bottom:16px"><CircleCheck /></el-icon>
+        <p style="font-size:16px;margin-bottom:8px;color:#18A058">签署完成</p>
+        <p style="color:#94A3B8;margin-bottom:20px">合同已电子签章并自动归档</p>
         <el-button type="primary" @click="finishSign">完成</el-button>
       </div>
     </el-dialog>
@@ -959,7 +978,7 @@
           <el-descriptions-item v-if="currentLetter.freeMonths" label="免租期">{{ currentLetter.freeMonths }} 个月</el-descriptions-item>
           <el-descriptions-item label="减免费用">
             <el-tag v-if="currentLetter.feeReduction" size="small">{{ currentLetter.feeReduction }}</el-tag>
-            <span v-else style="color:#999">—</span>
+            <span v-else style="color:#94A3B8">—</span>
           </el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="letterStatusType(currentLetter.status)" size="small">{{ currentLetter.status }}</el-tag>
@@ -977,8 +996,8 @@
     <el-dialog v-model="showLetterImport" title="导入意向书" width="500px">
       <el-upload drag action="#" :auto-upload="false" accept=".xlsx,.xls,.csv" :on-change="handleLetterFileChange" :file-list="letterFileList" :limit="1">
         <div style="padding:20px">
-          <div style="font-size:14px;color:#333;margin-bottom:8px">点击或拖拽文件到此区域上传</div>
-          <div style="font-size:12px;color:#999">支持格式：.xlsx, .xls, .csv，单次上传一个文件</div>
+          <div style="font-size:14px;color:#0F172A;margin-bottom:8px">点击或拖拽文件到此区域上传</div>
+          <div style="font-size:12px;color:#94A3B8">支持格式：.xlsx, .xls, .csv，单次上传一个文件</div>
         </div>
       </el-upload>
       <template #footer>
@@ -1020,7 +1039,7 @@
           <el-table-column prop="item" label="项目" min-width="180" />
           <el-table-column prop="amount" label="金额(万元)" width="140" align="right">
             <template #default="{ row }">
-              <span :style="{ color: row.amount < 0 ? '#f5222d' : row.amount > 0 ? '#52c41a' : '#333' }">
+              <span :style="{ color: row.amount < 0 ? '#D93026' : row.amount > 0 ? '#18A058' : '#0F172A' }">
                 {{ row.amount >= 0 ? '+' : '' }}{{ row.amount.toLocaleString() }}
               </span>
             </template>
@@ -1096,7 +1115,7 @@
           <el-table-column prop="item" label="项目" min-width="160" />
           <el-table-column prop="amount" label="金额(万元)" width="130" align="right">
             <template #default="{ row }">
-              <span :style="{ color: row.amount < 0 ? '#f5222d' : '#52c41a' }">{{ row.amount >= 0 ? '+' : '' }}{{ row.amount.toLocaleString() }}</span>
+              <span :style="{ color: row.amount < 0 ? '#D93026' : '#18A058' }">{{ row.amount >= 0 ? '+' : '' }}{{ row.amount.toLocaleString() }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="remark" label="说明" min-width="160" />
@@ -1140,7 +1159,7 @@
 
     <el-dialog v-model="showAcRenew" title="续租确认" width="460px">
       <div class="ac-confirm" v-if="acRenewRow">
-        <el-icon :size="26" color="#fa8c16"><WarningFilled /></el-icon>
+        <el-icon :size="26" color="#E8912A"><WarningFilled /></el-icon>
         <div>
           <p>当前合同编号：<strong>{{ acRenewRow.id }}</strong></p>
           <p>租户身份证号：{{ maskId(acRenewRow.lessee.idNo) }}</p>
@@ -1330,9 +1349,9 @@
             :timestamp="s.time"
           >
             <div style="font-weight:600">{{ s.title }}</div>
-            <div style="font-size:13px;color:#666">审核人：{{ s.auditor }}</div>
-            <div style="font-size:13px;color:#666">审核时间：{{ s.time }}</div>
-            <div style="font-size:13px;color:#666;display:flex;align-items:center;gap:8px">
+            <div style="font-size:13px;color:#475569">审核人：{{ s.auditor }}</div>
+            <div style="font-size:13px;color:#475569">审核时间：{{ s.time }}</div>
+            <div style="font-size:13px;color:#475569;display:flex;align-items:center;gap:8px">
               附件：<span class="ac-sign">签名</span>
               <el-button type="primary" link size="small" :icon="Download" @click="acDownloadSign(s)">下载</el-button>
             </div>
@@ -1351,7 +1370,7 @@
           <el-descriptions-item label="文件类型">{{ acFilePreviewRow.attachment.endsWith('.pdf') ? 'PDF 文档' : '其他' }}</el-descriptions-item>
           <el-descriptions-item label="上传时间">{{ acFilePreviewRow.signDate }}</el-descriptions-item>
         </el-descriptions>
-        <div style="margin-top:16px;padding:20px;background:#f5f5f5;border-radius:4px;text-align:center;color:#999">
+        <div style="margin-top:16px;padding:20px;background:#F5F7FA;border-radius:4px;text-align:center;color:#94A3B8">
           <el-icon :size="48"><Document /></el-icon>
           <p style="margin-top:8px">{{ acFilePreviewRow.attachment }}</p>
         </div>
@@ -1365,8 +1384,8 @@
     <el-dialog v-model="showAcImportDialog" title="导入合同" width="500px">
       <el-upload drag action="#" :auto-upload="false" accept=".xlsx,.xls,.csv" :on-change="handleAcImportFileChange" :file-list="acImportFileList" :limit="1">
         <div style="padding:20px">
-          <div style="font-size:14px;color:#333;margin-bottom:8px">点击或拖拽文件到此区域上传</div>
-          <div style="font-size:12px;color:#999">支持格式：.xlsx, .xls, .csv，请按导入模板格式填写</div>
+          <div style="font-size:14px;color:#0F172A;margin-bottom:8px">点击或拖拽文件到此区域上传</div>
+          <div style="font-size:12px;color:#94A3B8">支持格式：.xlsx, .xls, .csv，请按导入模板格式填写</div>
         </div>
       </el-upload>
       <template #footer>
@@ -1382,6 +1401,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
+import { usePartyStore } from '../../store/party'
 import { useUserStore } from '../../store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -1394,6 +1414,7 @@ import RichTextEditor from '../../components/RichTextEditor.vue'
 const router = useRouter()
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
+const partyStore = usePartyStore()
 const userStore = useUserStore()
 // 审批台是本页自带的演示数据，按登录公司过滤；合同列表本身走 store 的 visibleContracts
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
@@ -1716,6 +1737,10 @@ function handleCreateContract() {
   }
   if (!f.leaseArea || f.leaseArea <= 0) {
     ElMessage.warning('请填写租赁面积')
+    return
+  }
+  if (partyStore.creditOf(f.tenant).startsWith('D')) {
+    ElMessage.error(`承租方“${f.tenant}”已列入黑名单，禁止签约`)
     return
   }
   const asset = assetStore.visibleAssets.find(a => a.id === f.assetId)
@@ -2621,11 +2646,11 @@ const acStats = computed(() => {
 })
 
 const acCards = computed(() => [
-  { label: '合同总数', value: acStats.value.total, icon: Document, color: '#1890ff', key: 'total' },
-  { label: '即将到期', value: acStats.value.expiring, icon: AlarmClock, color: '#fa8c16', key: 'expiring' },
-  { label: '待处理', value: acStats.value.pending, icon: WarningFilled, color: '#f5222d', key: '待审批' },
+  { label: '合同总数', value: acStats.value.total, icon: Document, color: '#1668DC', key: 'total' },
+  { label: '即将到期', value: acStats.value.expiring, icon: AlarmClock, color: '#E8912A', key: 'expiring' },
+  { label: '待处理', value: acStats.value.pending, icon: WarningFilled, color: '#D93026', key: '待审批' },
   { label: '审批中', value: acStats.value.approving, icon: Stamp, color: '#722ed1', key: '审批中' },
-  { label: '已作废', value: acStats.value.voided, icon: CircleClose, color: '#999', key: '已作废' }
+  { label: '已作废', value: acStats.value.voided, icon: CircleClose, color: '#94A3B8', key: '已作废' }
 ])
 
 function drillAc(card) {
@@ -2993,9 +3018,9 @@ function acDownloadSign(step) {
 
 <style scoped>
 .contract-preview {
-  border: 1px solid #e8e8e8;
-  padding: 30px;
-  background: #fafafa;
+  border: 1px solid var(--bd);
+  padding: 24px;
+  background: var(--bg-page);
   max-height: 400px;
   overflow-y: auto;
 }
@@ -3008,17 +3033,17 @@ function acDownloadSign(step) {
 .contract-preview .contract-body p {
   line-height: 2;
   text-indent: 2em;
-  color: #333;
+  color: var(--t-main);
 }
 .sign-step-content {
-  min-height: 200px;
+  padding: 4px 0;
 }
 .area-hint {
   width: 100%;
   margin-top: 4px;
   font-size: 12px;
   line-height: 20px;
-  color: #909399;
+  color: var(--t-weak);
 }
 .area-hint .el-tag {
   margin-left: 6px;
@@ -3028,8 +3053,8 @@ function acDownloadSign(step) {
   display: flex;
   align-items: center;
   gap: 24px;
-  background: #fff;
-  border-radius: 4px;
+  background: var(--bg-card);
+  border-radius: var(--r-sm);
   padding: 16px 60px 16px 24px;
   margin-bottom: 12px;
 }
@@ -3040,7 +3065,7 @@ function acDownloadSign(step) {
 .ac-dash-cap {
   margin-top: 6px;
   font-size: 13px;
-  color: #999;
+  color: var(--t-weak);
 }
 .ac-dash-main {
   flex: 1;
@@ -3053,27 +3078,27 @@ function acDownloadSign(step) {
   flex-wrap: wrap;
   background: #fffbe6;
   border: 1px solid #ffe58f;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   padding: 6px 12px;
   font-size: 13px;
-  color: #666;
+  color: var(--t-sub);
   margin-bottom: 12px;
 }
 .ac-red {
-  color: #f5222d;
+  color: var(--c-danger);
   font-weight: 700;
 }
 .ac-mini-cards {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 .ac-mini {
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   padding: 10px 12px;
   cursor: pointer;
   transition: box-shadow 0.2s;
@@ -3088,16 +3113,16 @@ function acDownloadSign(step) {
 .ac-mini-value {
   font-size: 20px;
   font-weight: 700;
-  color: #333;
+  color: var(--t-main);
   line-height: 1.2;
 }
 .ac-mini-label {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   white-space: nowrap;
 }
 .ac-mini-arrow {
-  color: #c0c4cc;
+  color: var(--t-weak);
 }
 .ac-refresh {
   position: absolute;
@@ -3110,8 +3135,8 @@ function acDownloadSign(step) {
   margin-top: 4px;
 }
 .ac-expand {
-  padding: 8px 16px 12px 48px;
-  background: #fafafa;
+  padding: 12px 24px;
+  background: var(--bg-page);
 }
 .ac-confirm {
   display: flex;
@@ -3120,7 +3145,7 @@ function acDownloadSign(step) {
 }
 .ac-confirm p {
   font-size: 14px;
-  color: #333;
+  color: var(--t-main);
   line-height: 1.9;
 }
 .ac-approve-row {
@@ -3132,16 +3157,16 @@ function acDownloadSign(step) {
 .ac-note {
   margin-left: 10px;
   font-size: 12px;
-  color: #909399;
+  color: var(--t-weak);
 }
 .ac-sign {
   display: inline-block;
   min-width: 64px;
   padding: 2px 10px;
-  border: 1px dashed #c0c4cc;
-  border-radius: 3px;
+  border: 1px dashed var(--bd);
+  border-radius: var(--r-sm);
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   text-align: center;
 }
 </style>

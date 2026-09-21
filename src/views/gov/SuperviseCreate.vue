@@ -4,8 +4,9 @@
       <h2>发起督办</h2>
     </div>
 
-    <el-card>
-      <el-form :model="form" label-width="100px" style="max-width: 600px">
+    <el-card class="fill">
+      <div class="section-title">督办信息</div>
+      <el-form :model="form" label-width="100px" class="form-grid">
         <el-form-item label="督办对象" required>
           <el-select v-model="form.group" placeholder="选择集团" style="width: 100%" @change="onGroupChange">
             <el-option v-for="g in groups" :key="g" :label="g" :value="g" />
@@ -40,7 +41,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="督办事由" required>
+        <el-form-item label="督办事由" required class="span-2">
           <el-input v-model="form.reason" type="textarea" :rows="3" placeholder="请描述督办原因和要求" />
         </el-form-item>
         <el-form-item label="限期" required>
@@ -50,8 +51,8 @@
           <el-input v-model="form.contact" placeholder="企业对接人" />
         </el-form-item>
 
-        <el-form-item v-if="currentContact" label="联系方式">
-          <el-descriptions :column="1" border size="small">
+        <el-form-item v-if="currentContact" label="联系方式" class="span-2">
+          <el-descriptions :column="2" border size="small">
             <el-descriptions-item label="对接人">{{ currentContact.contact }}</el-descriptions-item>
             <el-descriptions-item label="职务">{{ currentContact.title }}</el-descriptions-item>
             <el-descriptions-item label="手机">
@@ -62,7 +63,7 @@
           </el-descriptions>
         </el-form-item>
 
-        <el-form-item>
+        <el-form-item class="span-2">
           <el-button type="primary" @click="handleSubmit">提交督办</el-button>
           <el-button @click="$router.back()">取消</el-button>
         </el-form-item>
@@ -167,3 +168,20 @@ if (route.query.assetId) {
   form.value.asset = route.query.asset || route.query.assetId
 }
 </script>
+
+<style scoped>
+/* 表单通栏两列，避免 600px 窄表单右侧留大片灰底 */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+}
+
+.form-grid :deep(.el-form-item.span-2) {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1100px) {
+  .form-grid { grid-template-columns: minmax(0, 1fr); }
+}
+</style>

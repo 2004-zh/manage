@@ -18,7 +18,7 @@
       </div>
     </div>
     <template v-if="!isCodeMode">
-    <el-card>
+    <el-card class="fill">
 
       <el-tabs v-model="activeCategory" class="category-tabs">
         <el-tab-pane v-for="cat in assetCategories" :key="cat" :label="cat" :name="cat" />
@@ -132,7 +132,7 @@
                 <div class="label">项目名称</div>
                 <div class="value hl">{{ row.project }}</div>
               </div>
-              <div class="cell">
+              <div class="cell" style="grid-column: span 3">
                 <div class="label">项目地址</div>
                 <div class="value">{{ row.projectAddress }}</div>
               </div>
@@ -220,7 +220,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建/修改时间" min-width="170" show-overflow-tooltip sortable>
-          <template #default="{ row }">{{ (row.createdAt || '').slice(0, 10) }} 至 {{ (row.updatedAt || '').slice(0, 10) }}</template>
+          <template #default="{ row }">{{ fmtTs(row.createdAt) }} 至 {{ fmtTs(row.updatedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
@@ -293,7 +293,7 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :total="total"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[15, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -338,7 +338,6 @@
             <div class="info-line"><el-icon><Location /></el-icon><span>{{ curProject.address }}</span></div>
           </div>
           <div class="info-side">
-            <div class="info-time">创建时间：{{ curProject.createTime }}</div>
             <div class="qr-block">
               <div class="qr-matrix qr-lg">
                 <span v-for="(cell, i) in qrMatrix(curProject.code)" :key="i" :class="{ on: cell }" />
@@ -425,7 +424,7 @@
             </div>
             <div class="rate-block">
               <div class="rate-head"><span>上月收费率</span><b>{{ curProject.feeRate }}%</b></div>
-              <el-progress :percentage="curProject.feeRate" :show-text="false" :stroke-width="8" color="#1890ff" />
+              <el-progress :percentage="curProject.feeRate" :show-text="false" :stroke-width="8" color="#1668DC" />
               <div class="rate-cap"><span>上月待收费 / 上月欠缴(万元)</span><span>{{ curProject.pendingFee }}/{{ curProject.arrears }}</span></div>
             </div>
           </el-card>
@@ -460,10 +459,10 @@
           </div>
           <div class="dist-mid">
             <div class="dist-chips">
-              <div class="dchip c1"><div><b>{{ roomStats.total }}</b><span>资产总数(宗)</span></div><el-icon color="#1890ff"><OfficeBuilding /></el-icon></div>
-              <div class="dchip c2"><div><b>{{ roomStats.area }}</b><span>资产面积(㎡)</span></div><el-icon color="#faad14"><Box /></el-icon></div>
+              <div class="dchip c1"><div><b>{{ roomStats.total }}</b><span>资产总数(宗)</span></div><el-icon color="#1668DC"><OfficeBuilding /></el-icon></div>
+              <div class="dchip c2"><div><b>{{ roomStats.area }}</b><span>资产面积(㎡)</span></div><el-icon color="#E8912A"><Box /></el-icon></div>
               <div class="dchip c3"><div><b>{{ roomStats.leased }}</b><span>在租资产(宗)</span></div><el-icon color="#36cfc9"><Key /></el-icon></div>
-              <div class="dchip c4"><div><b>{{ roomStats.idle }}</b><span>闲置资产(宗)</span></div><el-icon color="#fa8c16"><Files /></el-icon></div>
+              <div class="dchip c4"><div><b>{{ roomStats.idle }}</b><span>闲置资产(宗)</span></div><el-icon color="#E8912A"><Files /></el-icon></div>
             </div>
             <div class="dist-grid">
               <div
@@ -486,7 +485,7 @@
             </div>
           </div>
           <div class="dist-right">
-            <div class="rate-line"><span>出租率</span><el-progress :percentage="curProject.rentRate" :show-text="false" :stroke-width="8" color="#faad14" class="rate-line-bar" /><b>{{ curProject.rentRate }}%</b></div>
+            <div class="rate-line"><span>出租率</span><el-progress :percentage="curProject.rentRate" :show-text="false" :stroke-width="8" color="#E8912A" class="rate-line-bar" /><b>{{ curProject.rentRate }}%</b></div>
             <div class="rate-line"><span>收费率</span><el-progress :percentage="curProject.feeRate" :show-text="false" :stroke-width="8" class="rate-line-bar" /><b>{{ curProject.feeRate }}%</b></div>
           </div>
         </div>
@@ -546,21 +545,21 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="资产类型" prop="type">
               <el-select v-model="assetForm.type" placeholder="请选择" style="width: 100%">
                 <el-option v-for="t in assetTypeOptions" :key="t" :label="t" :value="t" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="资产分类" prop="assetCategory">
               <el-select v-model="assetForm.assetCategory" placeholder="请选择" style="width: 100%">
                 <el-option v-for="c in assetCategories" :key="c" :label="c" :value="c" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="资产状态" prop="status">
               <el-select v-model="assetForm.status" placeholder="请选择" style="width: 100%">
                 <el-option label="闲置" value="闲置" />
@@ -643,48 +642,8 @@
       </template>
     </el-dialog>
 
-    <!-- 分区管理对话框 -->
-    <el-dialog v-model="districtDialogVisible" :title="'分区管理 - ' + districtProject" width="780px">
-      <div class="district-toolbar">
-        <el-input v-model="districtKeyword" placeholder="请输入分区名称" clearable style="width: 220px" @keyup.enter="handleDistrictQuery" />
-        <el-button type="primary" @click="handleDistrictQuery">
-          <el-icon><Search /></el-icon>
-          查询
-        </el-button>
-        <el-button type="primary" plain @click="handleDistrictAdd">
-          <el-icon><Plus /></el-icon>
-          新增
-        </el-button>
-      </div>
-      <el-table :data="pagedDistricts" style="width: 100%">
-        <el-table-column prop="name" label="分区名称" min-width="140" />
-        <el-table-column prop="status" label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="row.status === '启用' ? 'success' : 'info'" size="small">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="160" />
-        <el-table-column prop="updatedAt" label="修改时间" width="160" />
-        <el-table-column label="操作" width="120">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleDistrictEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDistrictDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-        <template #empty>
-          <el-empty description="暂无数据" :image-size="80" />
-        </template>
-      </el-table>
-      <div class="pager">
-        <el-pagination
-          v-model:current-page="districtPage"
-          v-model:page-size="districtSize"
-          :total="filteredDistricts.length"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next, jumper"
-        />
-      </div>
-    </el-dialog>
+    <!-- 分区管理：与项目管理页共用同一个弹窗，读写 project store 的真实分区 -->
+    <PartitionManager v-model="partitionVisible" :project-id="partitionProjectId" />
 
     <!-- 资产导出字段选择对话框 -->
     <el-dialog v-model="exportDialogVisible" title="资产导出" width="680px">
@@ -745,6 +704,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Upload, Download, Search, Refresh, Filter, Location, Picture, Delete, MoreFilled, Back, OfficeBuilding, Close, Box, Key, Files, DataAnalysis, TrendCharts, Wallet, Coin, Money, Document } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import AssetDetailDrawer from '../../components/AssetDetailDrawer.vue'
+import PartitionManager from '../../components/PartitionManager.vue'
 import { useAssetStore } from '../../store/asset'
 import { useProjectStore } from '../../store/project'
 import { useContractStore } from '../../store/contract'
@@ -782,7 +742,6 @@ const activeOwnership = ref('不限')
 const viewMode = ref('list')
 const filterVisible = ref(true)
 
-const districtNames = ['A分区', 'B分区', 'C分区']
 const CHANGLE_REGION = '福建省/福州市/长乐区'
 const operateCompanies = ['城投经营有限公司', '文旅经营有限公司', '农投经营有限公司']
 const propertyCompanies = ['市国有资产产权管理有限公司', '城投产权管理有限公司']
@@ -792,6 +751,13 @@ const photoColors = ['linear-gradient(135deg, #4f8ef7, #7db4ff)', 'linear-gradie
 const statusToLedger = { '已出租': '出租', '部分出租': '出租', '空置': '闲置' }
 const ledgerToStoreStatus = { '出租': '已出租', '闲置': '闲置', '自用': '自用' }
 const leaseStatusMap = { '出租': '已租赁', '闲置': '未租赁', '自用': '自用中' }
+
+// 当天创建的资产要能看出"刚登记"，精确到时分；跨年存量数据到日期即可
+const fmtTs = (ts) => {
+  if (!ts) return '—'
+  const d = String(ts)
+  return d.startsWith(new Date().toISOString().slice(0, 10)) ? d.slice(0, 16) : d.slice(0, 10)
+}
 
 const toLedgerRow = (a, i) => {
   const status = statusToLedger[a.status] || a.status
@@ -808,9 +774,12 @@ const toLedgerRow = (a, i) => {
     remark: a.remark || '',
     category: a.assetCategory || '房产类',
     project: a.projectName || a.name,
+    projectId: a.projectId || '',
+    partitionId: a.partitionId || '',
     projectAddress: a.projectAddress || a.location,
     assetAddress: a.assetAddress || a.location,
-    district: a.zoneName || districtNames[i % districtNames.length],
+    // 分区只认项目结构里真实存在的名字；没挂项目的资产就是"未分区"，不再轮询编 A/B/C 分区
+    district: a.zoneName || '未分区',
     sourceType: a.sourceType || '划入',
     region: CHANGLE_REGION,
     operateCompany: a.operateCompany || a.group || operateCompanies[i % operateCompanies.length],
@@ -818,8 +787,9 @@ const toLedgerRow = (a, i) => {
     ownership: a.ownership || (status === '自用' ? '自有' : '委托经营'),
     assetNature: a.assetNature || assetNatures[i % assetNatures.length],
     leaseStatus: a.leaseStatus && a.leaseStatus.includes('租赁') ? a.leaseStatus : (leaseStatusMap[status] || '未租赁'),
-    createdAt: a.createdAt || '2025-01-05 09:00:00',
-    updatedAt: a.updatedAt || '2025-09-01 10:00:00',
+    createdAt: a.createdAt || '',
+    purchaseDate: a.purchaseDate || '',
+    updatedAt: a.updatedAt || '',
     totalCount: 1,
     totalArea: a.area || 0,
     activeCount: status === '闲置' ? 0 : 1,
@@ -831,7 +801,7 @@ const toLedgerRow = (a, i) => {
 const assetList = computed(() => assetStore.visibleAssets.map(toLedgerRow))
 
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(15)
 
 const formDialogVisible = ref(false)
 const detailDrawerVisible = ref(false)
@@ -1192,67 +1162,16 @@ const handleRowCommand = (cmd, row) => {
   actions[cmd]?.(row)
 }
 
-const districtDialogVisible = ref(false)
-const districtProject = ref('')
-const districtKeyword = ref('')
-const districtPage = ref(1)
-const districtSize = ref(10)
-const districtList = ref(Array.from({ length: 12 }, (_, i) => ({
-  name: `${String.fromCharCode(65 + i)}分区`,
-  status: i % 4 === 3 ? '停用' : '启用',
-  createdAt: `2024-0${(i % 9) + 1}-0${(i % 9) + 1} 09:0${i}:00`,
-  updatedAt: `2025-0${(i % 9) + 1}-1${i % 9} 14:2${i}:00`
-})))
-
-const filteredDistricts = computed(() => {
-  if (!districtKeyword.value) return districtList.value
-  return districtList.value.filter(item => item.name.includes(districtKeyword.value))
-})
-
-const pagedDistricts = computed(() => {
-  const start = (districtPage.value - 1) * districtSize.value
-  return filteredDistricts.value.slice(start, start + districtSize.value)
-})
+const partitionVisible = ref(false)
+const partitionProjectId = ref('')
 
 const handleDistrictManage = (row) => {
-  districtProject.value = row.project || row.name
-  districtKeyword.value = ''
-  districtPage.value = 1
-  districtDialogVisible.value = true
-}
-
-const handleDistrictQuery = () => {
-  districtPage.value = 1
-}
-
-const handleDistrictAdd = () => {
-  const seq = districtList.value.length + 1
-  districtList.value.unshift({
-    name: `新增分区${seq}`,
-    status: '启用',
-    createdAt: '2025-09-01 10:00:00',
-    updatedAt: '2025-09-01 10:00:00'
-  })
-  districtPage.value = 1
-  ElMessage.success('新增分区成功')
-}
-
-const handleDistrictEdit = (row) => {
-  ElMessage.success(`编辑分区"${row.name}"`)
-}
-
-const handleDistrictDelete = (row) => {
-  ElMessageBox.confirm(`确定要删除分区"${row.name}"吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    const index = districtList.value.findIndex(item => item.name === row.name)
-    if (index > -1) {
-      districtList.value.splice(index, 1)
-      ElMessage.success('删除成功')
-    }
-  }).catch(() => {})
+  if (!row.projectId) {
+    ElMessage.warning('该资产还没挂入项目，请先在项目管理里挂入')
+    return
+  }
+  partitionProjectId.value = row.projectId
+  partitionVisible.value = true
 }
 
 const handleSelectionChange = (_val) => {}
@@ -1301,8 +1220,8 @@ const codeProjects = computed(() => projectStore.visibleProjects.map(b => {
     code: b.id,
     company: b.group,
     address: b.address,
-    createTime: '2026-01-01 09:00:00',
-    status: '正常',
+    // 资产状态按项目下房间的真实租赁情况归并，不写死"正常"
+    status: rooms.length === 0 ? '未启用' : (leased === 0 ? '空置' : leased === rooms.length ? '整体在用' : '部分在用'),
     type: b.type,
     bizStatus: leased === 0 ? '未租赁' : leased === rooms.length ? '整体租赁' : '部分租赁',
     utilization,
@@ -1369,7 +1288,7 @@ const idleLegend = [
   { name: '空置90-180天', color: '#4f8ef7' },
   { name: '空置180天以上', color: '#2f54eb' },
   { name: '到期0-90天', color: '#ff7875' },
-  { name: '到期90-180天', color: '#faad14' },
+  { name: '到期90-180天', color: '#E8912A' },
   { name: '到期180天以上', color: '#fadb14' }
 ]
 
@@ -1414,7 +1333,7 @@ const qrMatrix = (code) => {
 
 const handlePrintCode = (row) => {
   const printWin = window.open('', '_blank', 'width=400,height=300')
-  printWin.document.write(`<html><head><title>打印二维码 - ${row.name}</title><style>body{font-family:sans-serif;text-align:center;padding:40px}h2{margin-bottom:8px}p{color:#666;margin:4px 0}.qr-box{border:2px solid #333;display:inline-block;padding:24px;margin:16px 0}</style></head><body><h2>${row.name}</h2><p>编码: ${row.code}</p><div class="qr-box"><p>QR Code</p></div><p>类型: ${row.type} | 状态: ${row.status}</p><p>打印时间: ${new Date().toLocaleString('zh-CN', { hour12: false })}</p></body></html>`)
+  printWin.document.write(`<html><head><title>打印二维码 - ${row.name}</title><style>body{font-family:sans-serif;text-align:center;padding:40px}h2{margin-bottom:8px}p{color:#475569;margin:4px 0}.qr-box{border:2px solid #0F172A;display:inline-block;padding:24px;margin:16px 0}</style></head><body><h2>${row.name}</h2><p>编码: ${row.code}</p><div class="qr-box"><p>QR Code</p></div><p>类型: ${row.type} | 状态: ${row.status}</p><p>打印时间: ${new Date().toLocaleString('zh-CN', { hour12: false })}</p></body></html>`)
   printWin.document.close()
   printWin.focus()
   setTimeout(() => { printWin.print() }, 300)
@@ -1452,7 +1371,7 @@ const renderCodeCharts = () => {
           type: 'pie',
           radius: ['52%', '74%'],
           center: ['36%', '50%'],
-          label: { show: true, position: 'inside', fontSize: 10, color: '#fff' },
+          label: { show: true, position: 'inside', fontSize: 12, color: '#fff' },
           labelLine: { show: false },
           data: [
             { value: curProject.value.useDonut[0], name: '已使用' },
@@ -1479,15 +1398,15 @@ const renderCodeCharts = () => {
           type: 'category',
           data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
           axisTick: { show: false },
-          axisLine: { lineStyle: { color: '#dcdfe6' } },
-          axisLabel: { color: '#646a73', fontSize: 10 }
+          axisLine: { lineStyle: { color: '#E2E8F0' } },
+          axisLabel: { color: '#646a73', fontSize: 12 }
         },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef0f3' } }, axisLabel: { color: '#646a73', fontSize: 10 } },
+        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef0f3' } }, axisLabel: { color: '#646a73', fontSize: 12 } },
         series: [{
           type: 'bar',
           barWidth: 12,
           data: curProject.value.monthly,
-          itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#36cfc9' }, { offset: 1, color: '#1890ff' }]) }
+          itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#36cfc9' }, { offset: 1, color: '#1668DC' }]) }
         }]
       })
     }
@@ -1512,10 +1431,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.page-container {
-  height: 100%;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -1545,15 +1460,15 @@ onUnmounted(() => {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
 }
 
 .asset-card {
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   overflow: hidden;
-  background: #fff;
+  background: var(--bg-card);
   transition: box-shadow 0.2s;
 }
 
@@ -1584,7 +1499,7 @@ onUnmounted(() => {
   flex: 1;
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--t-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1595,8 +1510,8 @@ onUnmounted(() => {
   grid-template-columns: 1fr 1fr;
   gap: 6px 8px;
   padding: 8px;
-  background: #fafafa;
-  border-radius: 3px;
+  background: var(--bg-th);
+  border-radius: var(--r-sm);
 }
 
 .card-stat {
@@ -1606,11 +1521,11 @@ onUnmounted(() => {
 }
 
 .card-stat-label {
-  color: #999;
+  color: var(--t-weak);
 }
 
 .card-stat-value {
-  color: #333;
+  color: var(--t-main);
   font-weight: 600;
 }
 
@@ -1620,7 +1535,7 @@ onUnmounted(() => {
   gap: 4px;
   margin-top: 8px;
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
 }
 
 .card-address span {
@@ -1634,12 +1549,6 @@ onUnmounted(() => {
   text-align: right;
 }
 
-.district-toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
 .export-picker {
   display: flex;
   gap: 16px;
@@ -1648,8 +1557,8 @@ onUnmounted(() => {
 .picker-left,
 .picker-right {
   flex: 1;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   display: flex;
   flex-direction: column;
   min-height: 320px;
@@ -1657,10 +1566,10 @@ onUnmounted(() => {
 
 .picker-head {
   padding: 8px 12px;
-  background: #fafafa;
-  border-bottom: 1px solid #ebeef5;
+  background: var(--bg-th);
+  border-bottom: 1px solid var(--bd);
   font-size: 13px;
-  color: #666;
+  color: var(--t-sub);
 }
 
 .picker-fields {
@@ -1687,26 +1596,26 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 5px 8px;
   font-size: 13px;
-  color: #333;
-  border-radius: 3px;
+  color: var(--t-main);
+  border-radius: var(--r-sm);
 }
 
 .chosen-row:hover {
-  background: #f5f7fa;
+  background: var(--bg-th);
 }
 
 .chosen-del {
   cursor: pointer;
-  color: #999;
+  color: var(--t-weak);
 }
 
 .chosen-del:hover {
-  color: #f56c6c;
+  color: var(--c-danger);
 }
 
 .timeline-operator {
   font-size: 12px;
-  color: #999;
+  color: var(--t-weak);
   margin-top: 8px;
 }
 
@@ -1717,10 +1626,9 @@ onUnmounted(() => {
   justify-content: space-between;
   height: 44px;
   padding: 0 16px;
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 2px;
-  margin-bottom: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
 }
 
 .code-topbar-left {
@@ -1745,11 +1653,7 @@ onUnmounted(() => {
 
 .switch-label {
   font-size: 13px;
-  color: #646a73;
-}
-
-.code-card {
-  margin-bottom: 10px;
+  color: var(--t-sub);
 }
 
 .code-row .el-col {
@@ -1764,7 +1668,7 @@ onUnmounted(() => {
 .code-card-title {
   font-size: 15px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--t-main);
   margin-bottom: 12px;
 }
 
@@ -1777,7 +1681,7 @@ onUnmounted(() => {
   flex: none;
   width: 240px;
   height: 160px;
-  border-radius: 2px;
+  border-radius: var(--r-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1792,7 +1696,7 @@ onUnmounted(() => {
 .info-name {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--t-main);
 }
 
 .info-line {
@@ -1801,7 +1705,7 @@ onUnmounted(() => {
   gap: 6px;
   margin-top: 8px;
   font-size: 13px;
-  color: #646a73;
+  color: var(--t-sub);
 }
 
 .info-line span {
@@ -1820,7 +1724,7 @@ onUnmounted(() => {
 
 .info-time {
   font-size: 13px;
-  color: #646a73;
+  color: var(--t-sub);
 }
 
 .info-stats {
@@ -1831,7 +1735,7 @@ onUnmounted(() => {
 .info-stat {
   flex: 1;
   text-align: center;
-  border-left: 1px solid #e4e7ed;
+  border-left: 1px solid var(--bd);
 }
 
 .info-stat:first-child {
@@ -1840,14 +1744,14 @@ onUnmounted(() => {
 
 .info-stat .label {
   font-size: 13px;
-  color: #646a73;
+  color: var(--t-sub);
 }
 
 .info-stat .value {
   margin-top: 6px;
   font-size: 15px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--t-main);
 }
 
 .kpi-pair {
@@ -1859,20 +1763,21 @@ onUnmounted(() => {
 .kpi-tile {
   position: relative;
   padding: 10px 12px;
-  background: #f7f8fa;
-  border-radius: 2px;
+  background: var(--bg-th);
+  border-radius: var(--r-sm);
 }
 
 .kpi-label {
   font-size: 13px;
-  color: #646a73;
+  color: var(--t-sub);
 }
 
 .kpi-num {
   margin-top: 4px;
   font-size: 18px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--t-main);
+  font-family: var(--font-num);
 }
 
 .kpi-ico {
@@ -1883,7 +1788,7 @@ onUnmounted(() => {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #e8f2ff;
+  background: var(--c-primary-light);
   color: var(--c-primary);
   display: flex;
   align-items: center;
@@ -1899,15 +1804,15 @@ onUnmounted(() => {
 
 .chart-cell {
   padding: 10px 12px;
-  background: #f7f8fa;
-  border-radius: 2px;
+  background: var(--bg-th);
+  border-radius: var(--r-sm);
 }
 
 .chart-value {
   margin: 2px 0 4px;
   font-size: 14px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--t-main);
 }
 
 .mini-chart {
@@ -1933,14 +1838,14 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   font-size: 13px;
-  color: #646a73;
+  color: var(--t-sub);
   margin-bottom: 6px;
 }
 
 .rate-head b {
   font-size: 15px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--t-main);
 }
 
 .rate-cap {
@@ -1949,7 +1854,7 @@ onUnmounted(() => {
   justify-content: space-between;
   margin-top: 6px;
   font-size: 12px;
-  color: #909399;
+  color: var(--t-weak);
 }
 
 .seg-tabs {
@@ -1960,10 +1865,10 @@ onUnmounted(() => {
 .seg-tabs button {
   padding: 6px 18px;
   font-size: 13px;
-  color: #1f2329;
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 2px;
+  color: var(--t-main);
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 
@@ -1997,9 +1902,9 @@ onUnmounted(() => {
   position: relative;
   padding: 9px 12px;
   font-size: 13px;
-  color: #1f2329;
-  background: #f0f1f2;
-  border-radius: 2px;
+  color: var(--t-main);
+  background: var(--bg-th);
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 
@@ -2039,7 +1944,7 @@ onUnmounted(() => {
 }
 
 .floor.on {
-  background: #8c8c8c;
+  background: var(--t-weak);
 }
 
 .dist-chips {
@@ -2053,19 +1958,20 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border-radius: 2px;
+  border-radius: var(--r-sm);
 }
 
 .dchip b {
   display: block;
   font-size: 16px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--t-main);
+  font-family: var(--font-num);
 }
 
 .dchip span {
   font-size: 12px;
-  color: #646a73;
+  color: var(--t-sub);
 }
 
 .dchip .el-icon {
@@ -2092,7 +1998,7 @@ onUnmounted(() => {
   justify-content: center;
   color: #fff;
   font-size: 12px;
-  border-radius: 2px;
+  border-radius: var(--r-sm);
 }
 
 .legend-row {
@@ -2102,7 +2008,7 @@ onUnmounted(() => {
   gap: 8px 16px;
   margin-top: 8px;
   font-size: 12px;
-  color: #646a73;
+  color: var(--t-sub);
 }
 
 .lg {
@@ -2143,11 +2049,11 @@ onUnmounted(() => {
   gap: 8px;
   margin-bottom: 16px;
   font-size: 13px;
-  color: #646a73;
+  color: var(--t-sub);
 }
 
 .rate-line b {
-  color: #1f2329;
+  color: var(--t-main);
 }
 
 .rate-line-bar {
@@ -2158,9 +2064,9 @@ onUnmounted(() => {
 .qr-block {
   flex: none;
   padding: 5px;
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 3px;
+  background: #fff; /* 二维码必须白底，深色模式下也保持可扫 */
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   width: max-content;
 }
 
@@ -2180,7 +2086,7 @@ onUnmounted(() => {
 }
 
 .qr-matrix span.on {
-  background: #303133;
+  background: var(--t-main);
 }
 
 .qr-dialog-body {
@@ -2194,7 +2100,7 @@ onUnmounted(() => {
 .qr-dialog-name {
   font-size: 15px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--t-main);
 }
 
 .qr-dialog-code {

@@ -4,14 +4,23 @@
       <h2>风险预警中心</h2>
     </div>
 
-    <el-row :gutter="16" style="margin-bottom: 16px">
-      <el-col :span="6" v-for="w in warningCards" :key="w.label">
-        <div class="warning-card" :style="{ borderColor: w.color }" @click="activeType = w.key">
-          <div class="warning-count" :style="{ color: w.color }">{{ w.count }}</div>
-          <div class="warning-label">{{ w.label }}</div>
-        </div>
-      </el-col>
-    </el-row>
+    <div class="grid-4">
+      <el-card
+        v-for="w in warningCards"
+        :key="w.label"
+        class="warning-card"
+        :class="{
+          'wc-warn': w.key === '欠费',
+          'wc-idle': w.key === '闲置超期',
+          'wc-danger': w.key === '未办证',
+          'wc-info': w.key === '合同临期'
+        }"
+        @click="activeType = w.key"
+      >
+        <div class="warning-count">{{ w.count }}</div>
+        <div class="warning-label">{{ w.label }}</div>
+      </el-card>
+    </div>
 
     <div class="filter-bar">
       <el-form :inline="true">
@@ -31,7 +40,7 @@
       </el-form>
     </div>
 
-    <el-table :data="filteredList" border stripe class="table-card">
+    <el-table :data="filteredList" border stripe class="table-card fill">
       <el-table-column prop="id" label="编号" width="80" />
       <el-table-column prop="type" label="类型" width="100">
         <template #default="{ row }">
@@ -60,10 +69,10 @@ const warningStore = useWarningStore()
 const groups = ['城投集团', '产投集团', '水投集团', '领航公司']
 
 const warningCards = [
-  { key: '欠费', label: '欠费预警', count: warningStore.warnings.arrears.total, color: '#fa8c16' },
-  { key: '闲置超期', label: '闲置超期', count: warningStore.warnings.idle.total, color: '#999' },
-  { key: '未办证', label: '未办证', count: warningStore.warnings.uncert.total, color: '#f5222d' },
-  { key: '合同临期', label: '合同临期', count: warningStore.warnings.expiring.total, color: '#1890ff' }
+  { key: '欠费', label: '欠费预警', count: warningStore.warnings.arrears.total, color: '#E8912A' },
+  { key: '闲置超期', label: '闲置超期', count: warningStore.warnings.idle.total, color: '#94A3B8' },
+  { key: '未办证', label: '未办证', count: warningStore.warnings.uncert.total, color: '#D93026' },
+  { key: '合同临期', label: '合同临期', count: warningStore.warnings.expiring.total, color: '#1668DC' }
 ]
 
 const activeType = ref('')
@@ -88,3 +97,15 @@ function handleSupervise(row) {
   router.push({ path: '/gov/supervise/create', query: { reason: row.desc, type: row.type === '欠费' ? '欠费催缴' : row.type === '闲置超期' ? '闲置盘活' : '未办证推进', group: row.group } })
 }
 </script>
+
+<style scoped>
+.wc-warn { border-left-color: var(--st-owing); }
+.wc-idle { border-left-color: var(--st-idle); }
+.wc-danger { border-left-color: var(--st-uncert); }
+.wc-info { border-left-color: var(--c-primary); }
+
+.wc-warn .warning-count { color: var(--st-owing); }
+.wc-idle .warning-count { color: var(--st-idle); }
+.wc-danger .warning-count { color: var(--st-uncert); }
+.wc-info .warning-count { color: var(--c-primary); }
+</style>

@@ -10,39 +10,31 @@
         </el-button>
       </div>
     </div>
-    <el-card>
+    <el-card class="fill">
 
       <!-- Tab切换 -->
       <el-tabs v-model="activeTab">
         <el-tab-pane label="资产统计" name="asset">
-          <el-row :gutter="20">
-            <el-col :span="6">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #1890ff">1,286</div>
-                <div class="stat-label">资产总数</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #52c41a">980</div>
-                <div class="stat-label">已出租</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #fa8c16">256</div>
-                <div class="stat-label">自用</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #f5222d">50</div>
-                <div class="stat-label">闲置</div>
-              </el-card>
-            </el-col>
-          </el-row>
+          <div class="grid-4">
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #1668DC">1,286</div>
+              <div class="stat-label">资产总数</div>
+            </el-card>
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #18A058">980</div>
+              <div class="stat-label">已出租</div>
+            </el-card>
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #E8912A">256</div>
+              <div class="stat-label">自用</div>
+            </el-card>
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #D93026">50</div>
+              <div class="stat-label">闲置</div>
+            </el-card>
+          </div>
 
-          <el-card style="margin-top: 20px">
+          <el-card style="margin-top: 16px">
             <template #header>
               <span>资产类型分布</span>
             </template>
@@ -59,28 +51,22 @@
         </el-tab-pane>
 
         <el-tab-pane label="租赁统计" name="lease">
-          <el-row :gutter="20">
-            <el-col :span="8">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #52c41a">98.5%</div>
-                <div class="stat-label">出租率</div>
-              </el-card>
-            </el-col>
-            <el-col :span="8">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #fa8c16">12</div>
-                <div class="stat-label">本月到期</div>
-              </el-card>
-            </el-col>
-            <el-col :span="8">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #1890ff">8</div>
-                <div class="stat-label">本月新签</div>
-              </el-card>
-            </el-col>
-          </el-row>
+          <div class="grid-3">
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #18A058">98.5%</div>
+              <div class="stat-label">出租率</div>
+            </el-card>
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #E8912A">12</div>
+              <div class="stat-label">本月到期</div>
+            </el-card>
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #1668DC">8</div>
+              <div class="stat-label">本月新签</div>
+            </el-card>
+          </div>
 
-          <el-card style="margin-top: 20px">
+          <el-card style="margin-top: 16px">
             <template #header>
               <span>租赁趋势（近12个月）</span>
             </template>
@@ -93,7 +79,7 @@
             </div>
           </el-card>
 
-          <el-table :data="leaseExpiringList" style="width: 100%; margin-top: 20px">
+          <el-table :data="leaseExpiringList" style="width: 100%; margin-top: 16px">
             <el-table-column prop="contractNo" label="合同编号" width="140" />
             <el-table-column prop="assetName" label="资产名称" min-width="150" show-overflow-tooltip />
             <el-table-column prop="tenant" label="承租方" width="120" />
@@ -122,34 +108,26 @@
         </el-tab-pane>
 
         <el-tab-pane label="缴费统计" name="payment">
-          <el-row :gutter="20">
-            <el-col :span="6">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #1890ff">¥2,580万</div>
-                <div class="stat-label">年度应收</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #52c41a">¥2,350万</div>
-                <div class="stat-label">已收金额</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #fa8c16">¥180万</div>
-                <div class="stat-label">待收金额</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="stat-card">
-                <div class="stat-value" style="color: #f5222d">91.1%</div>
-                <div class="stat-label">收缴率</div>
-              </el-card>
-            </el-col>
-          </el-row>
+          <div class="grid-4">
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #1668DC">¥2,580万</div>
+              <div class="stat-label">年度应收</div>
+            </el-card>
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #18A058">¥2,350万</div>
+              <div class="stat-label">已收金额</div>
+            </el-card>
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #E8912A">¥180万</div>
+              <div class="stat-label">待收金额</div>
+            </el-card>
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-value" style="color: #D93026">91.1%</div>
+              <div class="stat-label">收缴率</div>
+            </el-card>
+          </div>
 
-          <el-card style="margin-top: 20px">
+          <el-card style="margin-top: 16px">
             <template #header>
               <span>月度收缴趋势</span>
             </template>
@@ -176,9 +154,9 @@ const activeTab = ref('asset')
 const dateRange = ref([])
 
 const assetTypeData = ref([
-  { name: '保障房', count: 500, percent: 38.9, color: '#1890ff' },
-  { name: '商铺', count: 300, percent: 23.3, color: '#52c41a' },
-  { name: '写字楼', count: 200, percent: 15.6, color: '#fa8c16' },
+  { name: '保障房', count: 500, percent: 38.9, color: '#1668DC' },
+  { name: '商铺', count: 300, percent: 23.3, color: '#18A058' },
+  { name: '写字楼', count: 200, percent: 15.6, color: '#E8912A' },
   { name: '厂房', count: 186, percent: 14.5, color: '#722ed1' },
   { name: '农贸市场', count: 100, percent: 7.7, color: '#13c2c2' }
 ])
@@ -260,10 +238,6 @@ const handleExport = () => {
 </script>
 
 <style scoped>
-.page-container {
-  height: 100%;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -275,18 +249,18 @@ const handleExport = () => {
 .stat-card {
   text-align: center;
   padding: 20px;
-  margin-bottom: 20px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: bold;
   margin-bottom: 8px;
+  font-family: var(--font-num);
 }
 
 .stat-label {
   font-size: 14px;
-  color: #8c8c8c;
+  color: var(--t-weak);
 }
 
 .chart-container {
@@ -299,7 +273,7 @@ const handleExport = () => {
 
 .chart-bar-label {
   font-size: 14px;
-  color: #595959;
+  color: var(--t-sub);
   margin-bottom: 8px;
 }
 
@@ -311,14 +285,14 @@ const handleExport = () => {
 
 .chart-bar {
   height: 24px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   min-width: 40px;
   transition: width 0.3s;
 }
 
 .chart-bar-value {
   font-size: 13px;
-  color: #8c8c8c;
+  color: var(--t-weak);
   white-space: nowrap;
 }
 
@@ -328,7 +302,7 @@ const handleExport = () => {
   justify-content: space-around;
   height: 250px;
   padding: 20px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--bd);
 }
 
 .trend-item {
@@ -343,19 +317,19 @@ const handleExport = () => {
 .trend-bar {
   width: 32px;
   background: linear-gradient(180deg, var(--c-primary) 0%, #69c0ff 100%);
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
   transition: height 0.3s;
 }
 
 .trend-label {
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--t-weak);
   margin-top: 8px;
 }
 
 .trend-value {
   font-size: 12px;
-  color: #595959;
+  color: var(--t-sub);
   margin-top: 4px;
 }
 </style>

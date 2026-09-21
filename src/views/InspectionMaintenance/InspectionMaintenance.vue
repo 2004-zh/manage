@@ -13,7 +13,7 @@
         </el-button>
       </div>
     </div>
-    <el-card>
+    <el-card class="fill">
 
       <el-tabs v-model="activeTab">
         <el-tab-pane v-if="isPlanRoute" label="巡查计划" name="plan">
@@ -331,7 +331,7 @@
             <el-table-column prop="surveyor" label="勘查人员" width="140">
               <template #default="{ row }">
                 <span v-if="row.surveyor">{{ row.surveyor }}</span>
-                <span v-else style="color:#c0c4cc">-</span>
+                <span v-else style="color:var(--t-weak)">-</span>
               </template>
             </el-table-column>
             <el-table-column label="详情" width="70" align="center">
@@ -539,7 +539,7 @@
           <el-upload v-model:file-list="repairReqFiles" action="#" list-type="picture-card" :auto-upload="false" :limit="9" accept="image/*">
             <el-icon><Plus /></el-icon>
           </el-upload>
-          <div style="color:#909399;font-size:12px">最多上传9张</div>
+          <div style="color:var(--t-weak);font-size:12px">最多上传9张</div>
         </el-form-item>
         <el-form-item label="报修描述">
           <el-input v-model="repairReqForm.desc" type="textarea" :rows="3" placeholder="请输入报修描述" />
@@ -876,27 +876,27 @@ const filteredPlanList = computed(() => {
 })
 
 const inspPage = ref(1)
-const inspSize = ref(10)
+const inspSize = ref(15)
 const pagedInspections = computed(() => slicePage(filteredInspectionList.value, inspPage.value, inspSize.value))
 
 const projPage = ref(1)
-const projSize = ref(10)
+const projSize = ref(15)
 const pagedProjects = computed(() => slicePage(filteredProjectList.value, projPage.value, projSize.value))
 
 const repairPage = ref(1)
-const repairSize = ref(10)
+const repairSize = ref(15)
 const pagedRepairs = computed(() => slicePage(filteredRepairList.value, repairPage.value, repairSize.value))
 
 const mgmtPage = ref(1)
-const mgmtSize = ref(10)
+const mgmtSize = ref(15)
 const pagedMgmt = computed(() => slicePage(filteredMgmtList.value, mgmtPage.value, mgmtSize.value))
 
 const woPage = ref(1)
-const woSize = ref(10)
+const woSize = ref(15)
 const pagedWorkOrders = computed(() => slicePage(filteredWorkOrderList.value, woPage.value, woSize.value))
 
 const planPage = ref(1)
-const planSize = ref(10)
+const planSize = ref(15)
 const pagedPlans = computed(() => slicePage(filteredPlanList.value, planPage.value, planSize.value))
 
 function slicePage(list, page, size) {
@@ -1287,10 +1287,6 @@ const handleDeletePlan = (row) => {
 </script>
 
 <style scoped>
-.page-container {
-  height: 100%;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -1313,20 +1309,20 @@ const handleDeletePlan = (row) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  background: #f7f9fc;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: var(--bg-th);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
+  margin-bottom: 16px;
 }
 
 .upload-asset .asset-name {
   font-weight: 600;
-  color: #333;
+  color: var(--t-main);
 }
 
 .upload-asset .asset-addr {
-  color: #909399;
+  color: var(--t-weak);
   font-size: 12px;
 }
 </style>

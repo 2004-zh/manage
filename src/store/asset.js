@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { chengtouAssets as initialAssets } from '../data/mock'
+import { chengtouAssets as initialAssets, SEED_IMPORT_TS } from '../data/mock'
 import { resolveAssetCategory } from '../data/assetCategory'
 import { useProjectStore } from './project'
 import { useAuditStore } from './audit'
@@ -18,7 +18,7 @@ function roomToAsset(r, b, p, f) {
     bookValue: 0,
     location: `${b.address} ${p.name} ${f.name}`,
     status: r.status,
-    certStatus: r.hasPropertyRight ? '已办证' : '未办证',
+    certStatus: r.certStatus || (r.hasPropertyRight ? '已办证' : '未办证（未启动）'),
     certDetail: r.hasPropertyRight ? `闽(2023)长乐区不动产权第${r.id.replace(/\D/g, '').padStart(7, '0')}号` : '',
     group: b.group,
     projectId: b.id,
@@ -37,7 +37,9 @@ function roomToAsset(r, b, p, f) {
     leaseStatus: r.status === '已出租' ? '已出租' : '未出租',
     isLeased: r.status === '已出租' ? '是' : '否',
     partialLease: '不支持',
-    annualRent: r.monthlyRent ? r.monthlyRent * 12 / 10000 : null
+    annualRent: r.monthlyRent ? r.monthlyRent * 12 / 10000 : null,
+    // 房间级资产随项目结构批次入库，登记时间与存量种子同一口径
+    createdAt: SEED_IMPORT_TS
   }
 }
 
@@ -151,10 +153,31 @@ export const useAssetStore = defineStore('asset', () => {
   // 缓存恢复后：① 按 id 补齐后续版本新增的种子资产（$patch 会用旧数组整体覆盖 baseAssets）；
   // ② 一次性还原旧版本被压错的资产分类。用户自行登记的资产与主动删除的记录都不动。
   const SEED_CATEGORY_FIX = 'ams:seed-category-fixed-v2'
+  // v1 那次回填基本没生效：当时种子本身就没有时间戳，回填映射是空的，但标志位已落盘，
+  // 所以升到 v2 让所有老缓存再跑一次（回填只补缺失字段，不会覆盖运行期写入的值）。
+  const SEED_TS_BACKFILL = 'ams:seed-timestamps-backfilled-v2'
   function syncSeedsAfterHydrate() {
     const known = new Set(baseAssets.value.map(a => a.id))
     const missing = initialAssets.filter(a => !known.has(a.id))
     if (missing.length) baseAssets.value = [...baseAssets.value, ...missing]
+
+    // 老缓存里的种子资产可能没有 createdAt/purchaseDate（登记时间戳字段本次才补上）。
+    // 只从种子定义回填这两个缺失字段，不覆盖运行时新写入的值，也不碰用户自行登记的资产。
+    if (!localStorage.getItem(SEED_TS_BACKFILL)) {
+      const seedTs = new Map(initialAssets.filter(a => a.createdAt || a.purchaseDate).map(a => [a.id, a]))
+      if (seedTs.size) {
+        baseAssets.value = baseAssets.value.map(a => {
+          const seed = seedTs.get(a.id)
+          if (!seed) return a
+          const patch = {}
+          if (!a.createdAt && seed.createdAt) patch.createdAt = seed.createdAt
+          if (!a.updatedAt && seed.updatedAt) patch.updatedAt = seed.updatedAt
+          if (!a.purchaseDate && seed.purchaseDate) patch.purchaseDate = seed.purchaseDate
+          return Object.keys(patch).length ? { ...a, ...patch } : a
+        })
+      }
+      localStorage.setItem(SEED_TS_BACKFILL, '1')
+    }
 
     if (localStorage.getItem(SEED_CATEGORY_FIX)) return
     const seedCategory = new Map(initialAssets.map(a => [a.id, a.assetCategory]))
@@ -198,9 +221,17 @@ export const useAssetStore = defineStore('asset', () => {
     return `CT-${String(max + 1).padStart(3, '0')}`
   }
 
+  function formatNow(d = new Date()) {
+    const p = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+  }
+
   function addAsset(asset, meta = {}) {
     const newId = nextAssetId()
-    const newAsset = { ...asset, id: newId }
+    // 真实登记时刻：新入库资产以当前时间打戳，而不是让台账写死一个占位日期冒充创建时间。
+    // 若调用方（如批量导入）自带 createdAt/updatedAt 则尊重传入值。
+    const now = formatNow()
+    const newAsset = { createdAt: now, updatedAt: now, ...asset, id: newId }
     baseAssets.value.push(newAsset)
     useAuditStore().recordEvent({
       assetId: newId,
@@ -234,7 +265,7 @@ export const useAssetStore = defineStore('asset', () => {
     const baseIdx = baseAssets.value.findIndex(a => a.id === id)
     let ok
     if (baseIdx !== -1) {
-      baseAssets.value[baseIdx] = { ...baseAssets.value[baseIdx], ...updates }
+      baseAssets.value[baseIdx] = { ...baseAssets.value[baseIdx], ...updates, updatedAt: formatNow() }
       ok = true
     } else if (useProjectStore().updateRoom(id, updates)) {
       ok = true

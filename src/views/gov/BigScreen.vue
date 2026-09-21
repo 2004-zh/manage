@@ -43,19 +43,19 @@
                   <div class="cat-name">{{ c.name }}</div>
                   <div class="cat-nums">
                     <span>总数 <b>{{ c.total }}</b></span>
-                    <span style="color:#4ade80">出租 <b>{{ c.rented }}</b></span>
-                    <span style="color:#facc15">闲置 <b>{{ c.idle }}</b></span>
-                    <span style="color:#60a5fa">占用 <b>{{ c.occupied }}</b></span>
+                    <span style="color:var(--st-rented)">出租 <b>{{ c.rented }}</b></span>
+                    <span style="color:var(--st-idle)">闲置 <b>{{ c.idle }}</b></span>
+                    <span style="color:var(--st-self)">占用 <b>{{ c.occupied }}</b></span>
                   </div>
                   <div class="cat-nums cat-figs">
-                    <span>资产价值(亿) <b style="color:#1890ff">{{ c.valueYi }}</b></span>
+                    <span>资产价值(亿) <b style="color:var(--c-primary)">{{ c.valueYi }}</b></span>
                     <span>资产数量(个) <b style="color:#c084fc">{{ c.unitCount }}</b></span>
                   </div>
                 </div>
               </div>
             </div>
             <div class="bs-panel">
-              <div class="bs-panel-title">资产数量排行（街道）</div>
+              <div class="bs-panel-title">资产数量排行（街道 · Top 10）</div>
               <div ref="rankChartRef" class="bs-chart"></div>
             </div>
             <div class="bs-panel">
@@ -146,15 +146,15 @@
                   <div class="mortgage-nums">
                     <div class="mn-item">
                       <span class="mn-label">抵押价值</span>
-                      <span class="mn-value" style="color:#facc15">{{ mortgage.totalValue.toLocaleString() }}<i>万元</i></span>
+                      <span class="mn-value" style="color:var(--c-accent)">{{ mortgage.totalValue.toLocaleString() }}<i>万元</i></span>
                     </div>
                     <div class="mn-item">
                       <span class="mn-label">抵押面积</span>
-                      <span class="mn-value" style="color:#1890ff">{{ mortgage.totalArea.toLocaleString() }}<i>㎡</i></span>
+                      <span class="mn-value" style="color:var(--c-primary)">{{ mortgage.totalArea.toLocaleString() }}<i>㎡</i></span>
                     </div>
                     <div class="mn-item">
                       <span class="mn-label">抵押率</span>
-                      <span class="mn-value" style="color:#fb923c">{{ mortgage.rate }}<i>%</i></span>
+                      <span class="mn-value" style="color:var(--c-warning)">{{ mortgage.rate }}<i>%</i></span>
                     </div>
                   </div>
                 </div>
@@ -209,7 +209,7 @@
                   <el-table-column prop="assetCount" label="资产数" width="72" align="right" />
                   <el-table-column label="创收金额" width="96" align="right">
                     <template #default="{ row }">
-                      <span style="color:#1890ff">{{ row.income.toLocaleString() }} 万</span>
+                      <span style="color:var(--c-primary)">{{ row.income.toLocaleString() }} 万</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -219,7 +219,7 @@
                 <div class="lease-circles">
                   <div class="lease-circle" v-for="l in leaseCircles" :key="l.label">
                     <svg viewBox="0 0 90 90" class="lc-svg">
-                      <circle cx="45" cy="45" r="38" fill="none" stroke="#e4e7ed" stroke-width="6" />
+                      <circle cx="45" cy="45" r="38" fill="none" stroke="var(--bd)" stroke-width="6" />
                       <circle cx="45" cy="45" r="38" fill="none" :stroke="l.color" stroke-width="6" stroke-linecap="round"
                               :stroke-dasharray="ringCirc" :stroke-dashoffset="ringCirc * (1 - l.pct / 100)"
                               transform="rotate(-90 45 45)" />
@@ -323,8 +323,8 @@
                 <div class="pc-name">{{ p.name }}</div>
                 <div class="pc-nums">
                   <span>{{ p.total }}宗</span>
-                  <span style="color:#4ade80">出租{{ p.rented }}</span>
-                  <span style="color:#facc15">闲置{{ p.idle }}</span>
+                  <span style="color:var(--st-rented)">出租{{ p.rented }}</span>
+                  <span style="color:var(--st-idle)">闲置{{ p.idle }}</span>
                 </div>
                 <div class="pc-rate">出租率 {{ p.rentRate }}%</div>
               </div>
@@ -353,7 +353,7 @@
           </div>
         </div>
 
-        <div class="bs-panel" style="margin-top:12px">
+        <div class="bs-panel">
           <div class="bs-panel-title">
             资产明细
             <el-input v-model="projectKeyword" placeholder="搜索资产名称" clearable size="small" style="width:200px;margin-left:12px" />
@@ -385,6 +385,52 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { FullScreen, Timer } from '@element-plus/icons-vue'
+import { useAssetStore } from '../../store/asset'
+import { useContractStore } from '../../store/contract'
+import { useWarningStore } from '../../store/warning'
+import { useSuperviseStore } from '../../store/supervise'
+import { useFinanceStore } from '../../store/finance'
+
+const assetStore = useAssetStore()
+const contractStore = useContractStore()
+const warningStore = useWarningStore()
+const superviseStore = useSuperviseStore()
+const financeStore = useFinanceStore()
+
+const PREFERRED_GROUP_ORDER = ['城投集团', '产投集团', '水投集团', '领航公司']
+const COMPANY_ORDER = computed(() => {
+  const seen = []
+  assetStore.assets.forEach(a => { if (a.group && !seen.includes(a.group)) seen.push(a.group) })
+  const preferred = PREFERRED_GROUP_ORDER.filter(n => seen.includes(n))
+  const rest = seen.filter(n => !preferred.includes(n))
+  return [...preferred, ...rest]
+})
+const RENTED = new Set(['已出租', '部分出租'])
+const IDLE = new Set(['闲置', '空置'])
+const OPEN_CONTRACT = s => s !== '已终止' && s !== '退租'
+const round1 = v => Math.round((Number(v) || 0) * 10) / 10
+const round2 = v => Math.round((Number(v) || 0) * 100) / 100
+const statusLabel = s => RENTED.has(s) ? '出租' : (IDLE.has(s) ? '闲置' : '占用')
+// 街道几何质心（长乐区行政边界事实数据，不是业务数据）：资产没有 lnglat，
+// 按 location 匹配落到街道质心上，作为 GIS 气泡的兜底坐标。
+const STREET_CENTROIDS = {
+  '吴航街道': { lng: 119.523, lat: 25.962 },
+  '航城街道': { lng: 119.536, lat: 25.972 },
+  '营前街道': { lng: 119.508, lat: 25.920 },
+  '首占新区': { lng: 119.525, lat: 25.905 },
+  '漳港街道': { lng: 119.572, lat: 25.890 },
+  '文武砂街道': { lng: 119.555, lat: 25.845 },
+  '松下镇': { lng: 119.520, lat: 25.830 },
+  '金峰镇': { lng: 119.490, lat: 25.860 },
+  '江田镇': { lng: 119.520, lat: 25.820 },
+  '玉田镇': { lng: 119.490, lat: 25.830 },
+  '鹤上镇': { lng: 119.520, lat: 25.930 },
+  '古槐镇': { lng: 119.540, lat: 25.900 },
+  '湖南镇': { lng: 119.550, lat: 25.880 },
+  '梅花镇': { lng: 119.580, lat: 25.850 },
+  '长乐区': { lng: 119.530, lat: 25.900 },
+}
+const DISTRICT_CENTER = { lng: 119.530, lat: 25.900 }
 
 const activeTab = ref('overview')
 const hoverStreet = ref(null)
@@ -395,158 +441,186 @@ const bigscreenRef = ref(null)
 const projectKeyword = ref('')
 const clock = ref('')
 const drillLevel = ref(0)
-const currentCompany = ref(null)
-const currentProject = ref(null)
+const currentCompanyName = ref(null)
+const currentProjectName = ref(null)
 
-const companies = ref([
-  {
-    name: '城投集团',
-    subtitle: '城市建设与投资运营',
-    totalAssets: 98,
-    totalValue: 2860,
-    rentRate: 72.4,
-    collectionRate: 85.2,
-    rentedPct: 65.3,
-    idlePct: 22.4,
-    unrentablePct: 12.3,
-    riskCount: 3,
-    risks: [
-      { level: 'high', levelText: '高', text: '航城厂房2# 闲置超180天', project: '航城产业园' },
-      { level: 'mid', levelText: '中', text: '城关商铺A-05 合同到期未续签', project: '城关商业区' },
-      { level: 'low', levelText: '低', text: '滨江商铺B-07 租金逾期30天', project: '滨江商业带' },
-    ],
-    collectionRank: [
-      { project: '城关商业区', receivable: 320, collected: 298, rate: 93.1 },
-      { project: '航城产业园', receivable: 480, collected: 396, rate: 82.5 },
-      { project: '滨江商业带', receivable: 180, collected: 162, rate: 90.0 },
-      { project: '城西停车场', receivable: 120, collected: 96, rate: 80.0 },
-      { project: '农贸市场', receivable: 86, collected: 78, rate: 90.7 },
-    ],
-    projects: [
-      { name: '城关商业区', location: '吴航街道', total: 28, rented: 22, idle: 4, rentRate: 78.6, assets: [
-        { name: '城关商铺A-01', category: '房产类', area: 320, value: 180, status: '出租', tenant: '福州长乐融辉贸易有限公司', rent: 18 },
-        { name: '城关商铺A-05', category: '房产类', area: 280, value: 160, status: '闲置', tenant: '', rent: 0 },
-        { name: '农贸市场1号摊位', category: '农贸市场', area: 45, value: 12, status: '出租', tenant: '陈某', rent: 2.4 },
-        { name: '公交车辆（闽A·D8217）', category: '运输设备', area: 0, value: 65, status: '占用', tenant: '', rent: 0 },
-      ]},
-      { name: '航城产业园', location: '航城街道', total: 32, rented: 22, idle: 6, rentRate: 68.8, assets: [
-        { name: '航城厂房1#', category: '经营类房屋建筑', area: 2600, value: 780, status: '出租', tenant: '福建省长乐市鸿运纺织有限公司', rent: 45 },
-        { name: '航城厂房2#', category: '经营类房屋建筑', area: 2200, value: 660, status: '闲置', tenant: '', rent: 0 },
-        { name: '滨江商铺B-07', category: '房产类', area: 260, value: 150, status: '出租', tenant: '林某', rent: 12 },
-      ]},
-      { name: '滨江商业带', location: '航城街道', total: 18, rented: 14, idle: 3, rentRate: 77.8, assets: [] },
-      { name: '城西停车场', location: '首占镇', total: 12, rented: 8, idle: 3, rentRate: 66.7, assets: [
-        { name: '城西停车场', category: '土地类', area: 4200, value: 420, status: '出租', tenant: '福州某物业管理有限公司', rent: 15 },
-      ]},
-      { name: '农贸市场', location: '吴航街道', total: 8, rented: 7, idle: 1, rentRate: 87.5, assets: [] },
-    ],
-  },
-  {
-    name: '产投集团',
-    subtitle: '产业投资与园区运营',
-    totalAssets: 62,
-    totalValue: 1980,
-    rentRate: 68.5,
-    collectionRate: 79.8,
-    rentedPct: 58.1,
-    idlePct: 28.2,
-    unrentablePct: 13.7,
-    riskCount: 2,
-    risks: [
-      { level: 'high', levelText: '高', text: '松下冷链仓库 闲置超365天', project: '松下物流园' },
-      { level: 'mid', levelText: '中', text: '金峰厂房A-02 承租方经营困难', project: '金峰工业区' },
-    ],
-    collectionRank: [
-      { project: '金峰工业区', receivable: 380, collected: 312, rate: 82.1 },
-      { project: '松下物流园', receivable: 260, collected: 195, rate: 75.0 },
-      { project: '漳港科技园', receivable: 220, collected: 198, rate: 90.0 },
-    ],
-    projects: [
-      { name: '金峰工业区', location: '金峰镇', total: 22, rented: 14, idle: 5, rentRate: 63.6, assets: [
-        { name: '工业区厂房A-02', category: '经营类房屋建筑', area: 3100, value: 930, status: '出租', tenant: '福建某制造有限公司', rent: 52 },
-      ]},
-      { name: '松下物流园', location: '松下镇', total: 18, rented: 8, idle: 8, rentRate: 44.4, assets: [
-        { name: '松下镇冷链仓库', category: '经营类房屋建筑', area: 1800, value: 540, status: '闲置', tenant: '', rent: 0 },
-      ]},
-      { name: '漳港科技园', location: '漳港街道', total: 22, rented: 16, idle: 4, rentRate: 72.7, assets: [
-        { name: '漳港办公楼2层', category: '房产类', area: 850, value: 320, status: '出租', tenant: '长乐区鑫源投资有限公司', rent: 22 },
-      ]},
-    ],
-  },
-  {
-    name: '水投集团',
-    subtitle: '水务与环境治理',
-    totalAssets: 45,
-    totalValue: 1120,
-    rentRate: 60.0,
-    collectionRate: 82.5,
-    rentedPct: 53.3,
-    idlePct: 31.1,
-    unrentablePct: 15.6,
-    riskCount: 1,
-    risks: [
-      { level: 'mid', levelText: '中', text: '文武砂鱼塘 租约即将到期', project: '文武砂养殖基地' },
-    ],
-    collectionRank: [
-      { project: '文武砂养殖基地', receivable: 180, collected: 153, rate: 85.0 },
-      { project: '营前水务站', receivable: 120, collected: 102, rate: 85.0 },
-    ],
-    projects: [
-      { name: '文武砂养殖基地', location: '文武砂街道', total: 22, rented: 13, idle: 6, rentRate: 59.1, assets: [
-        { name: '文武砂鱼塘养殖基地', category: '土地类', area: 8600, value: 210, status: '出租', tenant: '某水产养殖合作社', rent: 8 },
-      ]},
-      { name: '营前水务站', location: '营前街道', total: 23, rented: 12, idle: 8, rentRate: 52.2, assets: [
-        { name: '营前仓库B-03', category: '房产类', area: 1500, value: 380, status: '占用', tenant: '', rent: 0 },
-      ]},
-    ],
-  },
-  {
-    name: '领航公司',
-    subtitle: '综合资产管理',
-    totalAssets: 28,
-    totalValue: 739,
-    rentRate: 57.1,
-    collectionRate: 76.3,
-    rentedPct: 46.4,
-    idlePct: 35.7,
-    unrentablePct: 17.9,
-    riskCount: 0,
-    risks: [],
-    collectionRank: [
-      { project: '首占综合区', receivable: 160, collected: 128, rate: 80.0 },
-      { project: '营前仓储区', receivable: 100, collected: 72, rate: 72.0 },
-    ],
-    projects: [
-      { name: '首占综合区', location: '首占镇', total: 16, rented: 8, idle: 5, rentRate: 50.0, assets: [
-        { name: '首占商铺C-08', category: '房产类', area: 210, value: 120, status: '出租', tenant: '长乐吴航街道陈氏食品店', rent: 8 },
-      ]},
-      { name: '营前仓储区', location: '营前街道', total: 12, rented: 5, idle: 5, rentRate: 41.7, assets: [] },
-    ],
-  },
-])
+const companies = computed(() => {
+  const assets = assetStore.assets
+  const contracts = contractStore.contracts
+  const fees = contractStore.feeRecords
+  const feeByContract = Object.fromEntries(fees.map(f => [f.contractId, f]))
+  const assetById = Object.fromEntries(assets.map(a => [a.id, a]))
+  const warningTasks = warningStore.warningTasks
+  const orders = superviseStore.orders
 
-const streets = [
-  { name: '吴航街道', x: 320, y: 180, lng: 119.523, lat: 25.962, total: 52, value: 1560, area: 42000, rented: 41, idle: 6, rentRate: 78.8 },
-  { name: '航城街道', x: 470, y: 150, lng: 119.536, lat: 25.972, total: 46, value: 1380, area: 38500, rented: 36, idle: 5, rentRate: 78.3 },
-  { name: '营前街道', x: 260, y: 300, lng: 119.508, lat: 25.920, total: 31, value: 820, area: 26000, rented: 19, idle: 8, rentRate: 61.3 },
-  { name: '首占镇', x: 420, y: 310, lng: 119.525, lat: 25.905, total: 28, value: 760, area: 21500, rented: 18, idle: 7, rentRate: 64.3 },
-  { name: '漳港街道', x: 620, y: 260, lng: 119.572, lat: 25.890, total: 26, value: 690, area: 18800, rented: 17, idle: 6, rentRate: 65.4 },
-  { name: '文武砂街道', x: 540, y: 420, lng: 119.555, lat: 25.845, total: 22, value: 610, area: 16400, rented: 13, idle: 6, rentRate: 59.1 },
-  { name: '松下镇', x: 330, y: 450, lng: 119.520, lat: 25.830, total: 16, value: 480, area: 12200, rented: 8, idle: 6, rentRate: 50.0 },
-  { name: '金峰镇', x: 640, y: 400, lng: 119.490, lat: 25.860, total: 12, value: 399, area: 10600, rented: 4, idle: 6, rentRate: 33.3 },
-]
+  return COMPANY_ORDER.value.map(name => {
+    const coAssets = assets.filter(a => a.group === name)
+    const totalAssets = coAssets.length
+    const totalValue = Math.round(coAssets.reduce((s, a) => s + (Number(a.bookValue) || 0), 0))
+    const rentedCount = coAssets.filter(a => RENTED.has(a.status)).length
+    const idleCount = coAssets.filter(a => IDLE.has(a.status)).length
+    const occupiedCount = totalAssets - rentedCount - idleCount
+    const rentRate = totalAssets ? round1(rentedCount / totalAssets * 100) : 0
 
-const categories = ref([
-  { name: '房产类', total: 86, rented: 62, idle: 14, occupied: 10, valueYi: 18.6, unitCount: 92 },
-  { name: '土地类', total: 45, rented: 30, idle: 12, occupied: 3, valueYi: 12.4, unitCount: 45 },
-  { name: '经营类房屋建筑', total: 38, rented: 31, idle: 5, occupied: 2, valueYi: 15.2, unitCount: 38 },
-  { name: '农贸市场', total: 12, rented: 11, idle: 1, occupied: 0, valueYi: 1.8, unitCount: 156 },
-  { name: '运输设备', total: 18, rented: 4, idle: 2, occupied: 12, valueYi: 0.9, unitCount: 26 },
-  { name: '矿产资源类', total: 6, rented: 4, idle: 2, occupied: 0, valueYi: 3.6, unitCount: 6 },
-  { name: '公共设备类', total: 14, rented: 2, idle: 0, occupied: 12, valueYi: 1.2, unitCount: 34 },
-  { name: '长期股权投资', total: 4, rented: 0, idle: 0, occupied: 4, valueYi: 5.8, unitCount: 4 },
-  { name: '经营权类资产', total: 12, rented: 10, idle: 1, occupied: 1, valueYi: 2.4, unitCount: 12 },
-])
+    // 收缴：本公司资产 → 合同 → 收费台账年度口径
+    const coContractIds = new Set(contracts.filter(c => assetById[c.assetId]?.group === name).map(c => c.id))
+    const coFees = fees.filter(f => coContractIds.has(f.contractId))
+    const yearReceivable = coFees.reduce((s, f) => s + (Number(f.yearReceivable) || 0), 0)
+    const yearActual = coFees.reduce((s, f) => s + (Number(f.yearActual) || 0), 0)
+    const collectionRate = yearReceivable ? round1(yearActual / yearReceivable * 100) : 0
+
+    const rentedPct = totalAssets ? round1(rentedCount / totalAssets * 100) : 0
+    const idlePct = totalAssets ? round1(idleCount / totalAssets * 100) : 0
+    const unrentablePct = totalAssets ? round1(occupiedCount / totalAssets * 100) : 0
+
+    // 风险：预警任务 + 未办结督办
+    const risks = [
+      ...warningTasks.filter(t => t.group === name && t.status !== '已完成').slice(0, 3).map(t => ({
+        level: t.priority === '高' ? 'high' : (t.priority === '中' ? 'mid' : 'low'),
+        levelText: t.priority || '中',
+        text: `${t.name || t.type}`,
+        project: (t.asset || '').split(/\s+/).slice(1).join(' ') || t.type || '',
+      })),
+      ...orders.filter(o => o.group === name && o.status !== '已办结').slice(0, 2).map(o => ({
+        level: o.status === '已逾期' ? 'high' : 'mid',
+        levelText: o.status === '已逾期' ? '高' : '中',
+        text: `${o.type}·${o.subject || o.reason || ''}`.slice(0, 28),
+        project: o.asset || '',
+      })),
+    ].slice(0, 5)
+
+    // 项目收缴排行：按 projectName 分组（合同 → 资产 → 项目）
+    const projAgg = {}
+    contracts.filter(c => assetById[c.assetId]?.group === name).forEach(c => {
+      const a = assetById[c.assetId]
+      const key = a.projectName || '未挂项目'
+      if (!projAgg[key]) projAgg[key] = { project: key, receivable: 0, collected: 0 }
+      const f = feeByContract[c.id]
+      projAgg[key].receivable += Number(f?.yearReceivable || c.annualRent || 0)
+      projAgg[key].collected += Number(f?.yearActual || 0)
+    })
+    const collectionRank = Object.values(projAgg)
+      .map(r => ({
+        project: r.project,
+        receivable: round1(r.receivable),
+        collected: round1(r.collected),
+        rate: r.receivable ? round1(r.collected / r.receivable * 100) : 0,
+      }))
+      .sort((a, b) => b.collected - a.collected)
+      .slice(0, 5)
+
+    // 项目列表：资产按 projectName 归堆
+    const projAgg2 = {}
+    coAssets.forEach(a => {
+      const key = a.projectName || '未挂项目'
+      if (!projAgg2[key]) projAgg2[key] = { name: key, location: a.location || '', total: 0, rented: 0, idle: 0, assets: [] }
+      const p = projAgg2[key]
+      p.total++
+      if (RENTED.has(a.status)) p.rented++
+      if (IDLE.has(a.status)) p.idle++
+      p.assets.push({
+        name: a.name, category: a.assetCategory || a.type || '—',
+        area: Number(a.area) || 0, value: Number(a.bookValue) || 0,
+        status: statusLabel(a.status), tenant: a.tenant || '—',
+        rent: Number(a.annualRent) || 0,
+      })
+    })
+    const projects = Object.values(projAgg2).map(p => ({
+      ...p,
+      rentRate: p.total ? round1(p.rented / p.total * 100) : 0,
+    }))
+
+    return {
+      name,
+      subtitle: `${totalAssets} 宗资产 · 账面值 ${totalValue.toLocaleString()} 万元`,
+      totalAssets, totalValue, rentRate, collectionRate,
+      rentedPct, idlePct, unrentablePct,
+      riskCount: risks.length,
+      risks, collectionRank, projects,
+    }
+  })
+})
+
+const currentCompany = computed(() => companies.value.find(c => c.name === currentCompanyName.value) || null)
+const currentProject = computed(() => {
+  if (!currentCompany.value || !currentProjectName.value) return null
+  return currentCompany.value.projects.find(p => p.name === currentProjectName.value) || null
+})
+
+// 街道聚合：按 asset.location 匹配质心；气泡半径来自资产数量与价值
+const streets = computed(() => {
+  const agg = {}
+  assetStore.assets.forEach(a => {
+    const key = a.location || '未标注'
+    if (!agg[key]) agg[key] = { name: key, total: 0, value: 0, area: 0, rented: 0, idle: 0 }
+    const r = agg[key]
+    r.total++
+    r.value += Number(a.bookValue) || 0
+    r.area += Number(a.area) || 0
+    if (RENTED.has(a.status)) r.rented++
+    if (IDLE.has(a.status)) r.idle++
+  })
+  return Object.values(agg).map(r => {
+    const c = STREET_CENTROIDS[r.name] || DISTRICT_CENTER
+    return {
+      name: r.name,
+      lng: c.lng, lat: c.lat,
+      x: 0, y: 0,
+      total: r.total,
+      value: Math.round(r.value),
+      area: Math.round(r.area),
+      rented: r.rented,
+      idle: r.idle,
+      rentRate: r.total ? round1(r.rented / r.total * 100) : 0,
+    }
+  }).sort((a, b) => b.total - a.total)
+})
+
+// GIS 资产点位：只画有 location 且能匹配质心的资产；无 lnglat 字段，用街道质心兜底
+const assetBubbles = computed(() => {
+  const pts = []
+  assetStore.assets.forEach(a => {
+    const c = STREET_CENTROIDS[a.location]
+    if (!c) return
+    // 每宗资产在所属街道质心附近按 id 伪散开，避免完全重叠；不是真实经纬度
+    const salt = String(a.id || '').split('').reduce((s, ch) => s + ch.charCodeAt(0), 0)
+    pts.push({
+      id: a.id,
+      name: a.name,
+      lng: c.lng + ((salt % 100) - 50) * 0.0002,
+      lat: c.lat + (((salt / 100) | 0) % 100 - 50) * 0.0002,
+      value: Number(a.bookValue) || 0,
+      area: Number(a.area) || 0,
+      status: a.status,
+      group: a.group,
+      location: a.location,
+    })
+  })
+  return pts
+})
+
+const categories = computed(() => {
+  const agg = {}
+  assetStore.assets.forEach(a => {
+    const key = a.assetCategory || '未分类'
+    if (!agg[key]) agg[key] = { name: key, total: 0, rented: 0, idle: 0, occupied: 0, value: 0 }
+    const r = agg[key]
+    r.total++
+    r.value += Number(a.bookValue) || 0
+    if (RENTED.has(a.status)) r.rented++
+    else if (IDLE.has(a.status)) r.idle++
+    else r.occupied++
+  })
+  return Object.values(agg).map(r => ({
+    name: r.name,
+    total: r.total,
+    rented: r.rented,
+    idle: r.idle,
+    occupied: r.occupied,
+    valueYi: round2(r.value / 10000),
+    unitCount: r.total,
+  })).sort((a, b) => b.total - a.total)
+})
 
 const gisMapMode = ref('district')
 const gisMapPanelRef = ref(null)
@@ -557,14 +631,38 @@ let gisAmapPolygons = []
 let gisAmapMarkers = []
 let gisAmapLabels = []
 
-const companyMarkers = [
-  { name: '城投集团', lng: 119.525, lat: 25.960, total: 98, value: 28600, area: 62000, rented: 71, idle: 22, rentRate: 72.4 },
-  { name: '产投集团', lng: 119.548, lat: 25.940, total: 62, value: 19800, area: 48000, rented: 43, idle: 17, rentRate: 68.5 },
-  { name: '水投集团', lng: 119.510, lat: 25.900, total: 45, value: 11200, area: 38600, rented: 27, idle: 14, rentRate: 60.0 },
-  { name: '领航公司', lng: 119.560, lat: 25.870, total: 28, value: 7390, area: 17400, rented: 16, idle: 10, rentRate: 57.1 },
-]
+const companyMarkers = computed(() => {
+  // 近似：公司 GIS 落点用其资产最集中的街道质心；无公司专用经纬度字段
+  const agg = {}
+  assetStore.assets.forEach(a => {
+    if (!a.group) return
+    if (!agg[a.group]) agg[a.group] = { total: 0, value: 0, area: 0, rented: 0, idle: 0, byStreet: {} }
+    const r = agg[a.group]
+    r.total++
+    r.value += Number(a.bookValue) || 0
+    r.area += Number(a.area) || 0
+    if (RENTED.has(a.status)) r.rented++
+    if (IDLE.has(a.status)) r.idle++
+    r.byStreet[a.location] = (r.byStreet[a.location] || 0) + 1
+  })
+  return COMPANY_ORDER.value.filter(n => agg[n]).map(n => {
+    const r = agg[n]
+    const topStreet = Object.entries(r.byStreet).sort((a, b) => b[1] - a[1])[0]?.[0]
+    const c = STREET_CENTROIDS[topStreet] || DISTRICT_CENTER
+    return {
+      name: n,
+      lng: c.lng, lat: c.lat,
+      total: r.total,
+      value: Math.round(r.value),
+      area: Math.round(r.area),
+      rented: r.rented,
+      idle: r.idle,
+      rentRate: r.total ? round1(r.rented / r.total * 100) : 0,
+    }
+  })
+})
 
-const gisMarkers = computed(() => (gisMapMode.value === 'district' ? streets : companyMarkers))
+const gisMarkers = computed(() => (gisMapMode.value === 'district' ? streets.value : companyMarkers.value))
 
 function toggleGisMapMode() {
   gisMapMode.value = gisMapMode.value === 'district' ? 'company' : 'district'
@@ -599,113 +697,246 @@ document.addEventListener('fullscreenchange', () => {
   isPageFullscreen.value = !!document.fullscreenElement
 })
 
-const ownership = [
-  { label: '有证', count: 186, area: 152000, value: 52800, color: '#4ade80' },
-  { label: '无证', count: 47, area: 34000, value: 14190, color: '#f87171' },
-]
+const ownership = computed(() => {
+  const has = { label: '有证', count: 0, area: 0, value: 0, color: '#4ade80' }
+  const no = { label: '无证', count: 0, area: 0, value: 0, color: '#f87171' }
+  assetStore.assets.forEach(a => {
+    const cert = a.certStatus || ''
+    const bucket = cert === '已办证' ? has : no
+    bucket.count++
+    bucket.area += Number(a.area) || 0
+    bucket.value += Number(a.bookValue) || 0
+  })
+  has.area = Math.round(has.area); has.value = Math.round(has.value)
+  no.area = Math.round(no.area); no.value = Math.round(no.value)
+  return [has, no]
+})
 
-const mortgage = {
-  totalValue: 21600,
-  totalArea: 46800,
-  rate: 32.3,
-  byCompany: [
-    { name: '城投集团', value: 28 },
-    { name: '产投集团', value: 20 },
-    { name: '水投集团', value: 12 },
-    { name: '领航公司', value: 8 },
-  ],
-}
+// 抵押：由 finance.debtOverview 提供每公司抵押金额与被抵押资产实际面积
+const mortgage = computed(() => {
+  const rows = financeStore.debtOverview || []
+  const totalValue = Math.round(rows.reduce((s, r) => s + (r.mortgage || 0), 0))
+  const totalArea = Math.round(rows.reduce((s, r) => s + (r.mortgageArea || 0), 0))
+  const totalAssetValue = rows.reduce((s, r) => s + (r.assetValue || 0), 0)
+  const rate = totalAssetValue ? round1(totalValue / totalAssetValue * 100) : 0
+  return {
+    totalValue, totalArea, rate,
+    byCompany: rows.map(r => ({ name: r.company, value: Math.round(r.mortgage || 0) })),
+  }
+})
 
-const collectTypeData = [
-  { name: '房产类', amount: 420, area: 32000 },
-  { name: '土地类', amount: 268, area: 45600 },
-  { name: '经营类房屋', amount: 356, area: 28400 },
-  { name: '农贸市场', amount: 86, area: 4200 },
-  { name: '经营权类', amount: 116, area: 6800 },
-]
+const mortgageTotalCount = computed(() => mortgage.value.byCompany.reduce((s, r) => s + r.value, 0))
 
-const collectMonthData = {
-  months: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-  receivable: [102, 96, 118, 108, 124, 116, 132, 128, 110, 0, 0, 0],
-  received: [92, 88, 104, 99, 112, 101, 118, 106, 96, 0, 0, 0],
-}
+const collectTypeData = computed(() => {
+  const contractById = Object.fromEntries(contractStore.contracts.map(c => [c.id, c]))
+  const assetById = Object.fromEntries(assetStore.assets.map(a => [a.id, a]))
+  const agg = {}
+  contractStore.feeRecords.forEach(f => {
+    const c = contractById[f.contractId]
+    if (!c) return
+    const a = assetById[c.assetId]
+    const key = a?.assetCategory || '未分类'
+    if (!agg[key]) agg[key] = { name: key, amount: 0, area: 0 }
+    agg[key].amount += Number(f.yearActual) || 0
+    agg[key].area += Number(c.leaseArea) || Number(a?.area) || 0
+  })
+  return Object.values(agg).map(r => ({
+    name: r.name,
+    amount: round1(r.amount),
+    area: Math.round(r.area),
+  })).sort((a, b) => b.amount - a.amount).slice(0, 8)
+})
 
-const collectOverview = [
-  { label: '本月应收', value: '128.6', unit: '万元', color: '#1890ff' },
-  { label: '本月实收', value: '106.2', unit: '万元', color: '#4ade80' },
-  { label: '本月欠缴', value: '22.4', unit: '万元', color: '#f87171' },
-  { label: '上月收缴率', value: '84.6', unit: '%', color: '#facc15' },
-  { label: '本年欠缴率', value: '18.3', unit: '%', color: '#fb923c' },
-  { label: '本年欠缴', value: '234.2', unit: '万元', color: '#c084fc' },
-]
+const collectMonthData = computed(() => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const months = Array.from({ length: 12 }, (_, i) => `${i + 1}月`)
+  const receivable = Array(12).fill(0)
+  const received = Array(12).fill(0)
 
-const collectionRankRows = [
-  { company: '城投集团', rentRate: 72.4, assetCount: 98, income: 1286 },
-  { company: '产投集团', rentRate: 68.5, assetCount: 62, income: 964 },
-  { company: '水投集团', rentRate: 60.0, assetCount: 45, income: 618 },
-  { company: '领航公司', rentRate: 57.1, assetCount: 28, income: 402 },
-]
+  // 实收：逐笔流水按发生月份归集
+  contractStore.feeRecords.forEach(f => {
+    (f.payments || []).forEach(p => {
+      const d = new Date(p.date)
+      if (d.getFullYear() !== year) return
+      received[d.getMonth()] += Number(p.amount) || 0
+    })
+  })
+
+  // 应收：每份合同按 annualRent/12 摊到本年与其有效期 (startDate~endDate) 的交集月份
+  const contractFeeById = Object.fromEntries(contractStore.feeRecords.map(f => [f.contractId, f]))
+  contractStore.contracts.forEach(c => {
+    if (c.status === '已终止' || c.status === '退租') return
+    const s = new Date(c.startDate)
+    const e = new Date(c.endDate)
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return
+    const fee = contractFeeById[c.id]
+    const annual = Number(c.annualRent) || Number(fee?.yearReceivable) || 0
+    if (!annual) return
+    const monthly = annual / 12
+    for (let m = 0; m < 12; m++) {
+      const monthStart = new Date(year, m, 1)
+      const monthEnd = new Date(year, m + 1, 0)
+      if (monthEnd < s || monthStart > e) continue
+      // 覆盖整月按全月，部分覆盖按天数比例
+      const coverStart = s > monthStart ? s : monthStart
+      const coverEnd = e < monthEnd ? e : monthEnd
+      const days = Math.max(0, (coverEnd - coverStart) / 86400000 + 1)
+      const total = (monthEnd - monthStart) / 86400000 + 1
+      receivable[m] += monthly * (days / total)
+    }
+  })
+
+  return {
+    months,
+    receivable: receivable.map(v => round1(v)),
+    received: received.map(v => round1(v)),
+  }
+})
+
+const collectOverview = computed(() => {
+  const now = new Date()
+  const curMonth = now.getMonth()
+  const prevMonth = (curMonth + 11) % 12
+  const recv = collectMonthData.value.received
+  const recble = collectMonthData.value.receivable
+  const thisActual = round1(recv[curMonth] || 0)
+  const thisRecv = round1(recble[curMonth] || 0)
+  const thisArrears = round1(Math.max(0, thisRecv - thisActual))
+  const prevActual = round1(recv[prevMonth] || 0)
+  const prevRecv = round1(recble[prevMonth] || 0)
+  const prevRate = prevRecv ? round1(prevActual / prevRecv * 100) : 0
+  const yearArrears = round1(contractStore.feeRecords.reduce((s, f) => s + (Number(f.arrears) || 0), 0))
+  const yearRecvTotal = round1(recble.reduce((s, v) => s + v, 0))
+  const yearArrearsRate = yearRecvTotal ? round1(yearArrears / yearRecvTotal * 100) : 0
+  return [
+    { label: '本月应收', value: thisRecv.toFixed(1), unit: '万元', color: '#4C8DFF' },
+    { label: '本月实收', value: thisActual.toFixed(1), unit: '万元', color: '#4ade80' },
+    { label: '本月欠缴', value: thisArrears.toFixed(1), unit: '万元', color: '#f87171' },
+    { label: '上月收缴率', value: prevRate.toFixed(1), unit: '%', color: '#facc15' },
+    { label: '本年欠缴率', value: yearArrearsRate.toFixed(1), unit: '%', color: '#fb923c' },
+    { label: '本年欠缴', value: yearArrears.toFixed(1), unit: '万元', color: '#c084fc' },
+  ]
+})
+
+const collectionRankRows = computed(() => {
+  const assetById = Object.fromEntries(assetStore.assets.map(a => [a.id, a]))
+  const rows = COMPANY_ORDER.value.map(name => {
+    const coAssets = assetStore.assets.filter(a => a.group === name)
+    const total = coAssets.length
+    const rented = coAssets.filter(a => RENTED.has(a.status)).length
+    const rentRate = total ? round1(rented / total * 100) : 0
+    const coContractIds = new Set(contractStore.contracts.filter(c => assetById[c.assetId]?.group === name).map(c => c.id))
+    const income = round1(contractStore.feeRecords
+      .filter(f => coContractIds.has(f.contractId))
+      .reduce((s, f) => s + (Number(f.yearActual) || 0), 0))
+    return { company: name, rentRate, assetCount: total, income }
+  })
+  return rows.filter(r => r.assetCount > 0).sort((a, b) => b.income - a.income)
+})
 
 const ringCirc = 2 * Math.PI * 38
-const idleRate = 22.4
+const idleRate = computed(() => {
+  const total = assetStore.assets.length
+  const idle = assetStore.assets.filter(a => IDLE.has(a.status)).length
+  return total ? round1(idle / total * 100) : 0
+})
 
-const leaseCircles = [
-  { label: '招租资产', value: 168, unit: '宗', pct: 72, color: '#1890ff' },
-  { label: '已租资产', value: 156, unit: '宗', pct: 67, color: '#4ade80' },
-  { label: '已租面积', value: '12.4', unit: '万㎡', pct: 66, color: '#c084fc' },
-  { label: '项目总数', value: 12, unit: '个', pct: 100, color: '#facc15' },
-  { label: '执行中合同', value: 96, unit: '份', pct: 82, color: '#fb923c' },
-  { label: '本月到期合同', value: 7, unit: '份', pct: 8, color: '#f87171' },
-]
+const leaseCircles = computed(() => {
+  const assets = assetStore.assets
+  const totalAreaAll = assets.reduce((s, a) => s + (Number(a.area) || 0), 0)
+  const idleAssets = assets.filter(a => IDLE.has(a.status))
+  const rentedAssets = assets.filter(a => RENTED.has(a.status))
+  const leasedArea = rentedAssets.reduce((s, a) => s + (Number(a.area) || 0), 0)
+  const activeContracts = contractStore.contracts.filter(OPEN_CONTRACT)
+  const now = new Date()
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const expiringThisMonth = activeContracts.filter(c => String(c.endDate || '').slice(0, 7) === ym).length
+  const projectCount = new Set(assets.map(a => a.projectName).filter(Boolean)).size
+  const pct = (n, d) => d ? Math.min(100, Math.round(n / d * 100)) : 0
+  return [
+    { label: '招租资产', value: idleAssets.length, unit: '宗', pct: pct(idleAssets.length, assets.length), color: '#4C8DFF' },
+    { label: '已租资产', value: rentedAssets.length, unit: '宗', pct: pct(rentedAssets.length, assets.length), color: '#4ade80' },
+    { label: '已租面积', value: round1(leasedArea / 10000).toFixed(2), unit: '万㎡', pct: pct(leasedArea, totalAreaAll), color: '#c084fc' },
+    { label: '项目总数', value: projectCount, unit: '个', pct: 100, color: '#facc15' },
+    { label: '执行中合同', value: activeContracts.length, unit: '份', pct: pct(activeContracts.length, contractStore.contracts.length), color: '#fb923c' },
+    { label: '本月到期合同', value: expiringThisMonth, unit: '份', pct: pct(expiringThisMonth, Math.max(1, activeContracts.length)), color: '#f87171' },
+  ]
+})
 
-const leaseStats = [
-  { label: '出租率', value: '67.0%', pct: 67, color: '#4ade80' },
-  { label: '合同签约率', value: '92.3%', pct: 92.3, color: '#1890ff' },
-  { label: '租金收缴率', value: '81.7%', pct: 81.7, color: '#facc15' },
-  { label: '临期合同占比', value: '8.6%', pct: 8.6, color: '#fb923c' },
-  { label: '欠费合同占比', value: '14.2%', pct: 14.2, color: '#f87171' },
-]
+const leaseStats = computed(() => {
+  const assets = assetStore.assets
+  const allContracts = contractStore.contracts
+  const activeContracts = allContracts.filter(OPEN_CONTRACT)
+  const rented = assets.filter(a => RENTED.has(a.status)).length
+  const rentRate = assets.length ? round1(rented / assets.length * 100) : 0
+  // 近似：签约率 = 已挂合同资产数 / 已出租资产数（多份合同按去重计）
+  const rentedAssetIds = new Set(assets.filter(a => RENTED.has(a.status)).map(a => a.id))
+  const contractedAssetIds = new Set(activeContracts.map(c => c.assetId).filter(id => rentedAssetIds.has(id)))
+  const signRate = rentedAssetIds.size ? round1(contractedAssetIds.size / rentedAssetIds.size * 100) : 0
+  const totalReceivable = contractStore.feeRecords.reduce((s, f) => s + (Number(f.yearReceivable) || 0), 0)
+  const totalActual = contractStore.feeRecords.reduce((s, f) => s + (Number(f.yearActual) || 0), 0)
+  const collectRate = totalReceivable ? round1(totalActual / totalReceivable * 100) : 0
+  const nearExpiry = activeContracts.filter(c => {
+    const end = new Date(c.endDate)
+    if (isNaN(end.getTime())) return false
+    const days = (end - new Date()) / 86400000
+    return days > 0 && days <= 90
+  }).length
+  const nearExpiryPct = activeContracts.length ? round1(nearExpiry / activeContracts.length * 100) : 0
+  const arrearsContracts = allContracts.filter(c => (Number(c.arrears) || 0) > 0 || c.status === '欠缴').length
+  const arrearsPct = allContracts.length ? round1(arrearsContracts / allContracts.length * 100) : 0
+  return [
+    { label: '出租率', value: `${rentRate}%`, pct: rentRate, color: '#4ade80' },
+    { label: '合同签约率', value: `${signRate}%`, pct: signRate, color: '#4C8DFF' },
+    { label: '租金收缴率', value: `${collectRate}%`, pct: collectRate, color: '#facc15' },
+    { label: '临期合同占比', value: `${nearExpiryPct}%`, pct: nearExpiryPct, color: '#fb923c' },
+    { label: '欠费合同占比', value: `${arrearsPct}%`, pct: arrearsPct, color: '#f87171' },
+  ]
+})
 
-const assetList = [
-  { name: '城关商铺A-01', street: '吴航街道', category: '房产类', area: 320, value: 180, status: '出租', tenant: '福州长乐融辉贸易有限公司' },
-  { name: '城关商铺A-05', street: '吴航街道', category: '房产类', area: 280, value: 160, status: '闲置', tenant: '' },
-  { name: '航城厂房1#', street: '航城街道', category: '经营类房屋建筑', area: 2600, value: 780, status: '出租', tenant: '福建省长乐市鸿运纺织有限公司' },
-  { name: '航城厂房2#', street: '航城街道', category: '经营类房屋建筑', area: 2200, value: 660, status: '闲置', tenant: '' },
-  { name: '漳港办公楼2层', street: '漳港街道', category: '房产类', area: 850, value: 320, status: '出租', tenant: '长乐区鑫源投资有限公司' },
-  { name: '城西停车场', street: '首占镇', category: '土地类', area: 4200, value: 420, status: '出租', tenant: '福州某物业管理有限公司' },
-  { name: '农贸市场1号摊位', street: '吴航街道', category: '农贸市场', area: 45, value: 12, status: '出租', tenant: '陈某' },
-  { name: '工业区厂房A-02', street: '金峰镇', category: '经营类房屋建筑', area: 3100, value: 930, status: '出租', tenant: '福建某制造有限公司' },
-  { name: '营前仓库B-03', street: '营前街道', category: '房产类', area: 1500, value: 380, status: '占用', tenant: '' },
-  { name: '滨江商铺B-07', street: '航城街道', category: '房产类', area: 260, value: 150, status: '出租', tenant: '林某' },
-  { name: '文武砂鱼塘养殖基地', street: '文武砂街道', category: '土地类', area: 8600, value: 210, status: '出租', tenant: '某水产养殖合作社' },
-  { name: '松下镇冷链仓库', street: '松下镇', category: '经营类房屋建筑', area: 1800, value: 540, status: '闲置', tenant: '' },
-  { name: '公交车辆（闽A·D8217）', street: '吴航街道', category: '运输设备', area: 0, value: 65, status: '占用', tenant: '' },
-  { name: '首占商铺C-08', street: '首占镇', category: '房产类', area: 210, value: 120, status: '出租', tenant: '长乐吴航街道陈氏食品店' },
-]
+const assetList = computed(() => assetStore.assets.map(a => ({
+  name: a.name,
+  street: a.location || '',
+  category: a.assetCategory || a.type || '—',
+  area: Number(a.area) || 0,
+  value: Number(a.bookValue) || 0,
+  status: statusLabel(a.status),
+  tenant: a.tenant || '',
+})))
 
 const filteredList = computed(() => {
-  if (!listKeyword.value) return assetList
+  const list = assetList.value
+  if (!listKeyword.value) return list
   const kw = listKeyword.value
-  return assetList.filter(a => a.name.includes(kw) || a.street.includes(kw) || a.category.includes(kw))
+  return list.filter(a => a.name.includes(kw) || a.street.includes(kw) || a.category.includes(kw))
 })
 
 const displayKpis = computed(() => {
   if (drillLevel.value === 0) {
+    const assets = assetStore.assets
+    const totalValue = assets.reduce((s, a) => s + (Number(a.bookValue) || 0), 0)
+    const totalArea = assets.reduce((s, a) => s + (Number(a.area) || 0), 0)
+    const rented = assets.filter(a => RENTED.has(a.status)).length
+    const yearReceivable = contractStore.feeRecords.reduce((s, f) => s + (Number(f.yearReceivable) || 0), 0)
+    const yearActual = contractStore.feeRecords.reduce((s, f) => s + (Number(f.yearActual) || 0), 0)
+    const arrears = contractStore.feeRecords.reduce((s, f) => s + (Number(f.arrears) || 0), 0)
+    const idleArea = assets.filter(a => IDLE.has(a.status)).reduce((s, a) => s + (Number(a.area) || 0), 0)
     return [
-      { label: '资产总宗数', value: 233, unit: '宗', color: '#1890ff' },
-      { label: '资产总价值', value: '6,699', unit: '万元', color: '#4ade80' },
-      { label: '资产总面积', value: '18.6', unit: '万㎡', color: '#c084fc' },
-      { label: '出租资产', value: 156, unit: '宗', color: '#facc15' },
-      { label: '本年应收', value: '1,280', unit: '万元', color: '#fb923c' },
-      { label: '本年实收', value: '1,046', unit: '万元', color: '#f87171' },
-      { label: '欠缴总额', value: '234.2', unit: '万元', color: '#ff9f43' },
-      { label: '闲置面积', value: '4.17', unit: '万㎡', color: '#a78bfa' },
+      { label: '资产总宗数', value: assets.length, unit: '宗', color: '#4C8DFF' },
+      { label: '资产总价值', value: Math.round(totalValue).toLocaleString(), unit: '万元', color: '#4ade80' },
+      { label: '资产总面积', value: round1(totalArea / 10000).toFixed(2), unit: '万㎡', color: '#c084fc' },
+      { label: '出租资产', value: rented, unit: '宗', color: '#facc15' },
+      { label: '本年应收', value: Math.round(yearReceivable).toLocaleString(), unit: '万元', color: '#fb923c' },
+      { label: '本年实收', value: Math.round(yearActual).toLocaleString(), unit: '万元', color: '#f87171' },
+      { label: '欠缴总额', value: round1(arrears).toFixed(1), unit: '万元', color: '#ff9f43' },
+      { label: '闲置面积', value: round1(idleArea / 10000).toFixed(2), unit: '万㎡', color: '#a78bfa' },
     ]
   }
   if (drillLevel.value === 1 && currentCompany.value) {
     const co = currentCompany.value
     return [
-      { label: '资产总宗数', value: co.totalAssets, unit: '宗', color: '#1890ff' },
+      { label: '资产总宗数', value: co.totalAssets, unit: '宗', color: '#4C8DFF' },
       { label: '资产总价值', value: co.totalValue.toLocaleString(), unit: '万元', color: '#4ade80' },
       { label: '出租率', value: co.rentRate, unit: '%', color: '#facc15' },
       { label: '收缴率', value: co.collectionRate, unit: '%', color: '#fb923c' },
@@ -718,7 +949,7 @@ const displayKpis = computed(() => {
     const totalValue = p.assets.reduce((s, a) => s + a.value, 0)
     const totalRent = p.assets.reduce((s, a) => s + (a.rent || 0), 0)
     return [
-      { label: '资产总数', value: p.total, unit: '宗', color: '#1890ff' },
+      { label: '资产总数', value: p.total, unit: '宗', color: '#4C8DFF' },
       { label: '资产总价值', value: totalValue.toLocaleString(), unit: '万元', color: '#4ade80' },
       { label: '出租率', value: p.rentRate, unit: '%', color: '#facc15' },
       { label: '年租金收入', value: totalRent.toFixed(1), unit: '万元', color: '#fb923c' },
@@ -731,7 +962,7 @@ const companyKpis = computed(() => {
   if (!currentCompany.value) return []
   const co = currentCompany.value
   return [
-    { label: '资产总宗', value: co.totalAssets, unit: '宗', color: '#1890ff' },
+    { label: '资产总宗', value: co.totalAssets, unit: '宗', color: '#4C8DFF' },
     { label: '资产价值', value: co.totalValue.toLocaleString(), unit: '万元', color: '#4ade80' },
     { label: '出租率', value: co.rentRate, unit: '%', color: '#facc15' },
     { label: '收缴率', value: co.collectionRate, unit: '%', color: '#fb923c' },
@@ -744,7 +975,7 @@ const projectKpis = computed(() => {
   const totalValue = p.assets.reduce((s, a) => s + a.value, 0)
   const totalRent = p.assets.reduce((s, a) => s + (a.rent || 0), 0)
   return [
-    { label: '资产总数', value: p.total, unit: '宗', color: '#1890ff' },
+    { label: '资产总数', value: p.total, unit: '宗', color: '#4C8DFF' },
     { label: '资产价值', value: totalValue.toLocaleString(), unit: '万元', color: '#4ade80' },
     { label: '出租率', value: p.rentRate, unit: '%', color: '#facc15' },
     { label: '年租金', value: totalRent.toFixed(1), unit: '万元', color: '#fb923c' },
@@ -764,8 +995,8 @@ function selectCategory(c) {
 }
 
 function drillToCompany(co) {
-  currentCompany.value = co
-  currentProject.value = null
+  currentCompanyName.value = co.name
+  currentProjectName.value = null
   drillLevel.value = 1
   activeTab.value = 'overview'
   nextTick(() => {
@@ -774,18 +1005,18 @@ function drillToCompany(co) {
 }
 
 function drillToProject(p) {
-  currentProject.value = p
+  currentProjectName.value = p.name
   drillLevel.value = 2
 }
 
 function drillUp(level) {
   if (level === 0) {
     drillLevel.value = 0
-    currentCompany.value = null
-    currentProject.value = null
+    currentCompanyName.value = null
+    currentProjectName.value = null
   } else if (level === 1) {
     drillLevel.value = 1
-    currentProject.value = null
+    currentProjectName.value = null
   }
 }
 
@@ -799,23 +1030,76 @@ let rankChart = null, revenueChart = null, companyPieChart = null, clockTimer = 
 let mortgageChart = null, collectTypeChart = null, collectMonthChart = null
 
 const darkAxis = {
-  axisLine: { lineStyle: { color: '#dcdfe6' } },
-  axisLabel: { color: '#606266', fontSize: 11 },
+  axisLine: { lineStyle: { color: '#E2E8F0' } },
+  axisLabel: { color: '#606266', fontSize: 12 },
   splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } },
 }
+
+// 收益趋势：按 feeRecords.payments 实际发生年份汇总；无历史年份则为 0，不再编造系数
+const revenueChartYears = computed(() => {
+  const years = new Set()
+  const y = new Date().getFullYear()
+  years.add(String(y))
+  contractStore.feeRecords.forEach(f => {
+    (f.payments || []).forEach(p => {
+      const d = new Date(p.date)
+      if (!isNaN(d.getTime())) years.add(String(d.getFullYear()))
+    })
+  })
+  return [...years].sort()
+})
+const revenueChartRecv = computed(() => {
+  const agg = {}
+  contractStore.feeRecords.forEach(f => {
+    (f.payments || []).forEach(p => {
+      const d = new Date(p.date)
+      if (isNaN(d.getTime())) return
+      const y = String(d.getFullYear())
+      const planAmount = Number(p.planAmount ?? p.receivable ?? p.amount) || 0
+      agg[y] = (agg[y] || 0) + planAmount
+    })
+  })
+  // 无 planAmount 字段时，本年应收按 yearReceivable 汇总到当年
+  const thisYear = String(new Date().getFullYear())
+  if (!agg[thisYear]) {
+    const total = contractStore.feeRecords.reduce((s, f) => s + (Number(f.yearReceivable) || 0), 0)
+    if (total) agg[thisYear] = total
+  }
+  return revenueChartYears.value.map(y => round1(agg[y] || 0))
+})
+const revenueChartAct = computed(() => {
+  const agg = {}
+  contractStore.feeRecords.forEach(f => {
+    (f.payments || []).forEach(p => {
+      const d = new Date(p.date)
+      if (isNaN(d.getTime())) return
+      const y = String(d.getFullYear())
+      agg[y] = (agg[y] || 0) + (Number(p.amount) || 0)
+    })
+  })
+  return revenueChartYears.value.map(y => round1(agg[y] || 0))
+})
+const revenueChartRate = computed(() => {
+  return revenueChartRecv.value.map((r, i) => r ? round1(revenueChartAct.value[i] / r * 100) : 0)
+})
 
 function initCharts() {
   if (rankChartRef.value && !rankChart) {
     rankChart = echarts.init(rankChartRef.value)
-    const sorted = [...streets].sort((a, b) => a.total - b.total)
+    // 排行图只取前 10，避免街道/地址条目过多时纵轴标签互相压叠；再反转为升序，使最大值落在顶部
+    const sorted = [...streets.value].sort((a, b) => b.total - a.total).slice(0, 10).reverse()
+    const trunc = (v) => (v && v.length > 6 ? v.slice(0, 6) + '…' : v)
     rankChart.setOption({
-      grid: { left: 80, right: 30, top: 10, bottom: 20 },
+      grid: { left: 78, right: 34, top: 10, bottom: 20 },
       xAxis: { type: 'value', ...darkAxis },
-      yAxis: { type: 'category', data: sorted.map(s => s.name), ...darkAxis, splitLine: { show: false } },
+      yAxis: {
+        type: 'category', data: sorted.map(s => s.name), ...darkAxis, splitLine: { show: false },
+        axisLabel: { color: '#606266', fontSize: 12, interval: 0, formatter: trunc },
+      },
       series: [{
         type: 'bar', data: sorted.map(s => s.total), barWidth: 12,
-        itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#1890ff' }, { offset: 1, color: '#69c0ff' }]), borderRadius: [0, 6, 6, 0] },
-        label: { show: true, position: 'right', color: '#606266', fontSize: 11 },
+        itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#4C8DFF' }, { offset: 1, color: '#69c0ff' }]), borderRadius: [0, 6, 6, 0] },
+        label: { show: true, position: 'right', color: '#606266', fontSize: 12 },
       }],
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     })
@@ -824,14 +1108,14 @@ function initCharts() {
     revenueChart = echarts.init(revenueChartRef.value)
     revenueChart.setOption({
       grid: { left: 50, right: 20, top: 30, bottom: 25 },
-      legend: { textStyle: { color: '#606266', fontSize: 11 }, top: 0 },
-      xAxis: { type: 'category', data: ['2022', '2023', '2024', '2025', '2026'], ...darkAxis },
+      legend: { textStyle: { color: '#606266', fontSize: 12 }, top: 0 },
+      xAxis: { type: 'category', data: revenueChartYears.value, ...darkAxis },
       yAxis: { type: 'value', ...darkAxis },
       tooltip: { trigger: 'axis' },
       series: [
-        { name: '应收', type: 'bar', barWidth: 14, data: [860, 950, 1080, 1190, 1280], itemStyle: { color: '#1890ff', borderRadius: [4, 4, 0, 0] } },
-        { name: '实收', type: 'bar', barWidth: 14, data: [720, 830, 940, 1010, 1046], itemStyle: { color: '#52c41a', borderRadius: [4, 4, 0, 0] } },
-        { name: '收缴率', type: 'line', yAxisIndex: 0, data: [83.7, 87.4, 87.0, 84.9, 81.7], smooth: true, lineStyle: { color: '#faad14' }, itemStyle: { color: '#faad14' } },
+        { name: '应收', type: 'bar', barWidth: 14, data: revenueChartRecv.value, itemStyle: { color: '#4C8DFF', borderRadius: [4, 4, 0, 0] } },
+        { name: '实收', type: 'bar', barWidth: 14, data: revenueChartAct.value, itemStyle: { color: '#52c41a', borderRadius: [4, 4, 0, 0] } },
+        { name: '收缴率', type: 'line', yAxisIndex: 0, data: revenueChartRate.value, smooth: true, lineStyle: { color: '#E8912A' }, itemStyle: { color: '#E8912A' } },
       ],
     })
   }
@@ -844,14 +1128,14 @@ function initCompanyPieChart() {
   const co = currentCompany.value
   companyPieChart.setOption({
     tooltip: { trigger: 'item', formatter: '{b}: {c}宗 ({d}%)' },
-    legend: { textStyle: { color: '#606266', fontSize: 11 }, bottom: 0 },
+    legend: { textStyle: { color: '#606266', fontSize: 12 }, bottom: 0 },
     series: [{
       type: 'pie', radius: ['40%', '70%'], center: ['50%', '45%'],
       label: { color: '#303133', fontSize: 12 },
       data: [
         { value: Math.round(co.totalAssets * co.rentedPct / 100), name: '出租中', itemStyle: { color: '#52c41a' } },
-        { value: Math.round(co.totalAssets * co.idlePct / 100), name: '闲置中', itemStyle: { color: '#faad14' } },
-        { value: co.totalAssets - Math.round(co.totalAssets * co.rentedPct / 100) - Math.round(co.totalAssets * co.idlePct / 100), name: '不可租', itemStyle: { color: '#1890ff' } },
+        { value: Math.round(co.totalAssets * co.idlePct / 100), name: '闲置中', itemStyle: { color: '#E8912A' } },
+        { value: co.totalAssets - Math.round(co.totalAssets * co.rentedPct / 100) - Math.round(co.totalAssets * co.idlePct / 100), name: '不可租', itemStyle: { color: '#4C8DFF' } },
       ],
     }],
   })
@@ -861,18 +1145,16 @@ function initGisCharts() {
   if (mortgageChartRef.value && !mortgageChart) {
     mortgageChart = echarts.init(mortgageChartRef.value)
     mortgageChart.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c}宗 ({d}%)' },
-      legend: { textStyle: { color: '#606266', fontSize: 10 }, bottom: 0, itemWidth: 10, itemHeight: 10 },
+      tooltip: { trigger: 'item', formatter: '{b}: {c} 万元 ({d}%)' },
+      legend: { textStyle: { color: '#606266', fontSize: 12 }, bottom: 0, itemWidth: 10, itemHeight: 10 },
       series: [{
         type: 'pie', radius: ['52%', '74%'], center: ['50%', '42%'],
-        label: { show: true, position: 'center', formatter: '抵押总数\n68 宗', color: '#303133', fontSize: 13, lineHeight: 20 },
+        label: { show: true, position: 'center', formatter: () => `抵押总金额\n${mortgage.value.totalValue.toLocaleString()} 万元`, color: '#303133', fontSize: 13, lineHeight: 20 },
         emphasis: { label: { show: true } },
-        data: [
-          { value: 28, name: '城投集团', itemStyle: { color: '#1890ff' } },
-          { value: 20, name: '产投集团', itemStyle: { color: '#faad14' } },
-          { value: 12, name: '水投集团', itemStyle: { color: '#52c41a' } },
-          { value: 8, name: '领航公司', itemStyle: { color: '#fa8c16' } },
-        ],
+        data: (mortgage.value.byCompany.length ? mortgage.value.byCompany : [{ name: '暂无', value: 0 }]).map((d, i) => ({
+          value: d.value, name: d.name,
+          itemStyle: { color: ['#4C8DFF', '#E8912A', '#52c41a', '#fa8c16', '#2F54EB', '#13c2c2'][i % 6] },
+        })),
       }],
     })
   }
@@ -880,16 +1162,16 @@ function initGisCharts() {
     collectTypeChart = echarts.init(collectTypeChartRef.value)
     collectTypeChart.setOption({
       grid: { left: 45, right: 50, top: 26, bottom: 22 },
-      legend: { textStyle: { color: '#606266', fontSize: 10 }, top: 0, itemWidth: 10, itemHeight: 10 },
+      legend: { textStyle: { color: '#606266', fontSize: 12 }, top: 0, itemWidth: 10, itemHeight: 10 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      xAxis: { type: 'category', data: collectTypeData.map(d => d.name), ...darkAxis, axisLabel: { color: '#606266', fontSize: 10, interval: 0 } },
+      xAxis: { type: 'category', data: collectTypeData.value.map(d => d.name), ...darkAxis, axisLabel: { color: '#606266', fontSize: 12, interval: 0 } },
       yAxis: [
-        { type: 'value', name: '万元', nameTextStyle: { color: '#909399', fontSize: 10 }, ...darkAxis },
-        { type: 'value', name: '㎡', nameTextStyle: { color: '#909399', fontSize: 10 }, ...darkAxis, splitLine: { show: false } },
+        { type: 'value', name: '万元', nameTextStyle: { color: '#909399', fontSize: 12 }, ...darkAxis },
+        { type: 'value', name: '㎡', nameTextStyle: { color: '#909399', fontSize: 12 }, ...darkAxis, splitLine: { show: false } },
       ],
       series: [
-        { name: '收缴金额', type: 'bar', barWidth: 10, data: collectTypeData.map(d => d.amount), itemStyle: { color: '#1890ff', borderRadius: [3, 3, 0, 0] } },
-        { name: '收缴面积', type: 'bar', barWidth: 10, yAxisIndex: 1, data: collectTypeData.map(d => d.area), itemStyle: { color: '#722ed1', borderRadius: [3, 3, 0, 0] } },
+        { name: '收缴金额', type: 'bar', barWidth: 10, data: collectTypeData.value.map(d => d.amount), itemStyle: { color: '#4C8DFF', borderRadius: [3, 3, 0, 0] } },
+        { name: '收缴面积', type: 'bar', barWidth: 10, yAxisIndex: 1, data: collectTypeData.value.map(d => d.area), itemStyle: { color: '#722ed1', borderRadius: [3, 3, 0, 0] } },
       ],
     })
   }
@@ -897,13 +1179,13 @@ function initGisCharts() {
     collectMonthChart = echarts.init(collectMonthChartRef.value)
     collectMonthChart.setOption({
       grid: { left: 40, right: 15, top: 26, bottom: 22 },
-      legend: { textStyle: { color: '#606266', fontSize: 10 }, top: 0, itemWidth: 10, itemHeight: 10 },
+      legend: { textStyle: { color: '#606266', fontSize: 12 }, top: 0, itemWidth: 10, itemHeight: 10 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      xAxis: { type: 'category', data: collectMonthData.months, ...darkAxis, axisLabel: { color: '#606266', fontSize: 10, interval: 0 } },
+      xAxis: { type: 'category', data: collectMonthData.value.months, ...darkAxis, axisLabel: { color: '#606266', fontSize: 12, interval: 0 } },
       yAxis: { type: 'value', ...darkAxis },
       series: [
-        { name: '应收', type: 'bar', barWidth: 7, data: collectMonthData.receivable, itemStyle: { color: '#1890ff', borderRadius: [3, 3, 0, 0] } },
-        { name: '实收', type: 'bar', barWidth: 7, data: collectMonthData.received, itemStyle: { color: '#52c41a', borderRadius: [3, 3, 0, 0] } },
+        { name: '应收', type: 'bar', barWidth: 7, data: collectMonthData.value.receivable, itemStyle: { color: '#4C8DFF', borderRadius: [3, 3, 0, 0] } },
+        { name: '实收', type: 'bar', barWidth: 7, data: collectMonthData.value.received, itemStyle: { color: '#52c41a', borderRadius: [3, 3, 0, 0] } },
       ],
     })
   }
@@ -958,7 +1240,7 @@ function loadGisDistrictBoundary() {
       subList.forEach(sub => {
         const polyline = new AMap.Polygon({
           path: sub.boundaries,
-          fillColor: '#1890ff',
+          fillColor: '#4C8DFF',
           fillOpacity: 0.08,
           strokeColor: 'rgba(77,208,255,0.35)',
           strokeWeight: 1,
@@ -988,11 +1270,11 @@ function addGisMarkers() {
   const markers = gisMarkers.value
   markers.forEach(m => {
     const isCompany = gisMapMode.value === 'company'
-    const color = isCompany ? '#1890ff' : '#52c41a'
+    const color = isCompany ? '#4C8DFF' : '#52c41a'
     const labelContent = `
       <div style="position:relative;text-align:center;cursor:pointer;">
         <div style="width:12px;height:12px;border-radius:50%;background:${color};margin:0 auto;box-shadow:0 0 8px ${color};"></div>
-        <div style="position:absolute;top:-28px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(0,0,0,0.75);color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;">${m.name}</div>
+        <div style="position:absolute;top:-28px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(0,0,0,0.75);color:#fff;padding:2px 8px;border-radius:3px;font-size:12px;">${m.name}</div>
       </div>`
     const marker = new AMap.Marker({
       position: [m.lng, m.lat],
@@ -1057,27 +1339,27 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .bigscreen {
-  min-height: 100vh;
-  background: #f5f7fa;
-  padding: 16px 24px;
-  color: #303133;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-page);
+  color: var(--t-main);
 }
 .bigscreen:fullscreen {
-  min-height: 100vh;
-  padding: 20px 32px;
-  overflow-y: auto;
+  height: 100vh;
+  padding: 16px 24px;
+  overflow: hidden;
 }
 .bs-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  flex: none;
 }
 .bs-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: 4px;
-  background: linear-gradient(90deg, #1890ff, #40a9ff, #1890ff);
+  background: linear-gradient(90deg, var(--c-primary), var(--c-primary-dark), var(--c-primary));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1089,32 +1371,33 @@ onBeforeUnmount(() => {
   font-size: 14px;
 }
 .bc-item {
-  color: #606266;
+  color: var(--t-sub);
   cursor: pointer;
   transition: color 0.2s;
 }
 .bc-item:hover, .bc-item.active {
-  color: #1890ff;
+  color: var(--c-primary);
 }
 .bc-sep {
-  color: #c0c4cc;
+  color: var(--t-weak);
 }
 .bs-time {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 4px 14px;
-  background: linear-gradient(135deg, #e8f4ff 0%, #f0f7ff 100%);
-  border: 1px solid #d4e8ff;
+  background: var(--c-primary-light);
+  border: 1px solid var(--bd);
   border-radius: 20px;
-  color: #1890ff;
+  color: var(--c-primary);
   font-size: 13px;
   font-weight: 500;
+  font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.5px;
 }
 .bs-time-text {
-  color: #1890ff;
+  color: var(--c-primary);
 }
 .bs-header-ops {
   display: flex;
@@ -1122,64 +1405,68 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 .bs-fullscreen-btn {
-  background: #ecf5ff;
-  border-color: #b3d8ff;
-  color: #1890ff;
+  background: var(--c-primary-light);
+  border-color: var(--c-primary);
+  color: var(--c-primary);
 }
 .bs-fullscreen-btn:hover {
-  background: #1890ff;
-  border-color: #1890ff;
+  background: var(--c-primary);
+  border-color: var(--c-primary);
   color: #fff;
 }
 .bs-kpis {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  margin-bottom: 12px;
+  flex: none;
 }
 .bs-kpi {
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-md);
   padding: 12px 16px;
   text-align: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow);
 }
 .bs-kpi-value {
-  font-size: 26px;
+  font-family: var(--font-num);
+  font-size: 24px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1.25;
 }
 .bs-kpi-unit {
   font-size: 12px;
   font-weight: normal;
   margin-left: 4px;
-  color: #909399;
+  color: var(--t-weak);
 }
 .bs-kpi-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--t-weak);
   margin-top: 4px;
 }
 .bs-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  grid-auto-rows: minmax(200px, auto);
 }
 .bs-panel {
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-md);
   padding: 12px 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: var(--shadow);
+  min-height: 0;
 }
 .bs-panel-title {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--t-main);
   margin-bottom: 10px;
   padding-left: 8px;
-  border-left: 3px solid #1890ff;
+  border-left: 3px solid var(--c-primary);
   display: flex;
   align-items: center;
 }
@@ -1189,33 +1476,35 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 .cat-card {
-  background: #f5f7fa;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
+  background: var(--bg-th);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   padding: 8px 10px;
   cursor: pointer;
   transition: border-color 0.2s;
 }
 .cat-card:hover {
-  border-color: #1890ff;
+  border-color: var(--c-primary);
 }
 .cat-name {
   font-size: 13px;
-  color: #303133;
+  color: var(--t-main);
   margin-bottom: 6px;
 }
 .cat-nums {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  font-size: 11px;
-  color: #909399;
+  font-size: 12px;
+  color: var(--t-weak);
 }
 .cat-nums b {
-  color: #303133;
+  color: var(--t-main);
+  font-family: var(--font-num);
 }
 .bs-chart {
-  height: 220px;
+  width: 100%;
+  height: clamp(180px, 24vh, 260px);
 }
 .stat-rows {
   display: flex;
@@ -1231,12 +1520,12 @@ onBeforeUnmount(() => {
 .stat-label {
   width: 100px;
   font-size: 12px;
-  color: #606266;
+  color: var(--t-sub);
 }
 .stat-bar {
   flex: 1;
   height: 8px;
-  background: #e4e7ed;
+  background: var(--bd);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -1247,26 +1536,39 @@ onBeforeUnmount(() => {
 .stat-val {
   width: 60px;
   text-align: right;
+  font-family: var(--font-num);
   font-size: 13px;
   font-weight: 600;
-  color: #303133;
+  color: var(--t-main);
   font-variant-numeric: tabular-nums;
 }
+.bs-tabs {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .bs-tabs :deep(.el-tabs__header) {
+  flex: none;
   margin-bottom: 12px;
 }
+.bs-tabs :deep(.el-tabs__content) {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
 .bs-tabs :deep(.el-tabs__item) {
-  color: #606266;
+  color: var(--t-sub);
   font-size: 15px;
 }
 .bs-tabs :deep(.el-tabs__item.is-active) {
-  color: #1890ff;
+  color: var(--c-primary);
 }
 .bs-tabs :deep(.el-tabs__nav-wrap::after) {
-  background-color: #e4e7ed;
+  background-color: var(--bd);
 }
 .bs-tabs :deep(.el-tabs__active-bar) {
-  background-color: #1890ff;
+  background-color: var(--c-primary);
 }
 .dark-table :deep(.el-table) {
   background: transparent;
@@ -1274,20 +1576,20 @@ onBeforeUnmount(() => {
 .dark-table :deep(.el-table tr),
 .dark-table :deep(.el-table th.el-table__cell) {
   background: transparent;
-  color: #606266;
+  color: var(--t-sub);
 }
 .dark-table :deep(.el-table td.el-table__cell),
 .dark-table :deep(.el-table th.el-table__cell.is-leaf) {
-  border-color: #ebeef5;
+  border-color: var(--bd-split);
 }
 .dark-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
-  background: #fafafa;
+  background: var(--bg-th);
 }
 .dark-table :deep(.el-table__body tr:hover > td.el-table__cell) {
-  background: #ecf5ff !important;
+  background: var(--c-primary-light) !important;
 }
 .dark-table :deep(.el-table__inner-wrapper::before) {
-  background-color: #ebeef5;
+  background-color: var(--bd-split);
 }
 .dark-table :deep(.el-table__empty-block) {
   background: transparent;
@@ -1299,16 +1601,16 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 .company-card {
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-md);
   padding: 16px;
   cursor: pointer;
   transition: border-color 0.2s, transform 0.2s;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: var(--shadow);
 }
 .company-card:hover {
-  border-color: #1890ff;
+  border-color: var(--c-primary);
   transform: translateY(-2px);
 }
 .co-header {
@@ -1323,7 +1625,7 @@ onBeforeUnmount(() => {
 .co-name {
   font-size: 16px;
   font-weight: 700;
-  color: #303133;
+  color: var(--t-main);
 }
 .co-metrics {
   display: grid;
@@ -1335,14 +1637,15 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 .co-metric-label {
-  font-size: 11px;
-  color: #909399;
+  font-size: 12px;
+  color: var(--t-weak);
   display: block;
 }
 .co-metric-value {
+  font-family: var(--font-num);
   font-size: 18px;
   font-weight: 700;
-  color: #303133;
+  color: var(--t-main);
   font-variant-numeric: tabular-nums;
 }
 .co-bar-row {
@@ -1353,13 +1656,13 @@ onBeforeUnmount(() => {
 }
 .co-bar-label {
   width: 50px;
-  font-size: 11px;
-  color: #909399;
+  font-size: 12px;
+  color: var(--t-weak);
 }
 .co-bar {
   flex: 1;
   height: 6px;
-  background: #e4e7ed;
+  background: var(--bd);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -1370,8 +1673,9 @@ onBeforeUnmount(() => {
 .co-bar-pct {
   width: 40px;
   text-align: right;
-  font-size: 11px;
-  color: #606266;
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--t-sub);
   font-variant-numeric: tabular-nums;
 }
 .co-footer {
@@ -1380,11 +1684,11 @@ onBeforeUnmount(() => {
   align-items: center;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--bd-split);
 }
 .co-risk {
   font-size: 12px;
-  color: #f5222d;
+  color: var(--c-danger);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1393,7 +1697,7 @@ onBeforeUnmount(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #f5222d;
+  background: var(--c-danger);
   animation: blink 1.5s ease-in-out infinite;
 }
 @keyframes blink {
@@ -1402,11 +1706,17 @@ onBeforeUnmount(() => {
 }
 .co-enter {
   font-size: 12px;
-  color: #1890ff;
+  color: var(--c-primary);
 }
 
 .drill-content {
   animation: fadeIn 0.3s ease;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -1416,11 +1726,12 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
+  flex: none;
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-md);
   padding: 16px 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: var(--shadow);
 }
 .dh-left {
   display: flex;
@@ -1433,11 +1744,11 @@ onBeforeUnmount(() => {
 .dh-name {
   font-size: 20px;
   font-weight: 700;
-  color: #303133;
+  color: var(--t-main);
 }
 .dh-sub {
   font-size: 13px;
-  color: #909399;
+  color: var(--t-weak);
   margin-top: 2px;
 }
 .dh-kpis {
@@ -1448,26 +1759,27 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 .dh-kpi-value {
+  font-family: var(--font-num);
   font-size: 22px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .dh-kpi-unit {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: normal;
   margin-left: 3px;
-  color: #909399;
+  color: var(--t-weak);
 }
 .dh-kpi-label {
-  font-size: 11px;
-  color: #909399;
+  font-size: 12px;
+  color: var(--t-weak);
   margin-top: 2px;
 }
 .drill-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-top: 12px;
+  grid-auto-rows: minmax(200px, auto);
 }
 
 .risk-list {
@@ -1482,32 +1794,32 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: #f5f7fa;
-  border-radius: 6px;
+  background: var(--bg-th);
+  border-radius: var(--r-sm);
   font-size: 12px;
 }
 .risk-level {
   padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 11px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
 }
-.risk-high { background: rgba(245, 34, 45, 0.1); color: #f5222d; }
-.risk-mid { background: rgba(250, 173, 20, 0.1); color: #d48806; }
-.risk-low { background: rgba(24, 144, 255, 0.1); color: #1890ff; }
+.risk-high { background: rgba(217, 48, 38, 0.1); color: var(--c-danger); }
+.risk-mid { background: rgba(232, 145, 42, 0.12); color: var(--c-warning); }
+.risk-low { background: rgba(22, 104, 220, 0.1); color: var(--c-primary); }
 .risk-text {
   flex: 1;
-  color: #303133;
+  color: var(--t-main);
 }
 .risk-project {
-  color: #909399;
-  font-size: 11px;
+  color: var(--t-weak);
+  font-size: 12px;
   flex-shrink: 0;
 }
 .risk-empty {
   text-align: center;
-  color: #909399;
+  color: var(--t-weak);
   padding: 20px;
   font-size: 13px;
 }
@@ -1518,44 +1830,45 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 .project-card {
-  background: #f5f7fa;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
+  background: var(--bg-th);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   padding: 10px 12px;
   cursor: pointer;
   transition: border-color 0.2s;
 }
 .project-card:hover {
-  border-color: #1890ff;
+  border-color: var(--c-primary);
 }
 .pc-name {
   font-size: 13px;
   font-weight: 600;
-  color: #303133;
+  color: var(--t-main);
   margin-bottom: 6px;
 }
 .pc-nums {
   display: flex;
   gap: 8px;
-  font-size: 11px;
-  color: #909399;
+  font-size: 12px;
+  color: var(--t-weak);
   margin-bottom: 4px;
 }
 .pc-rate {
-  font-size: 11px;
-  color: #1890ff;
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--c-primary);
 }
 
 .cat-figs {
   margin-top: 4px;
   padding-top: 4px;
-  border-top: 1px dashed #dcdfe6;
+  border-top: 1px dashed var(--bd);
 }
 .gis-board {
   display: grid;
-  grid-template-columns: 340px 1fr 340px;
+  grid-template-columns: 340px minmax(0, 1fr) 340px;
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
 }
 .gis-col {
   display: flex;
@@ -1563,15 +1876,22 @@ onBeforeUnmount(() => {
   gap: 12px;
   min-width: 0;
 }
+.gis-center {
+  display: flex;
+  flex-direction: column;
+}
+.gis-center > .bs-panel {
+  min-height: 0;
+}
 .owner-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 .owner-block {
-  background: #f5f7fa;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
+  background: var(--bg-th);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   padding: 10px 12px;
 }
 .owner-head {
@@ -1583,11 +1903,12 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #606266;
+  color: var(--t-sub);
   line-height: 1.9;
 }
 .owner-row b {
-  color: #303133;
+  color: var(--t-main);
+  font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
 }
 .mortgage-wrap {
@@ -1607,9 +1928,9 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 .mn-item {
-  background: #f5f7fa;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
+  background: var(--bg-th);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   padding: 6px 10px;
   display: flex;
   justify-content: space-between;
@@ -1617,33 +1938,37 @@ onBeforeUnmount(() => {
 }
 .mn-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--t-weak);
 }
 .mn-value {
+  font-family: var(--font-num);
   font-size: 16px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .mn-value i {
   font-style: normal;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: normal;
-  color: #909399;
+  color: var(--t-weak);
   margin-left: 3px;
 }
 .gis-sub-title {
   font-size: 12px;
-  color: #606266;
+  color: var(--t-sub);
   margin: 4px 0 2px;
 }
 .gis-chart-sm {
   height: 150px;
 }
 .gis-map-panel {
+  flex: 2 1 auto;
+  display: flex;
+  flex-direction: column;
   padding: 12px 16px;
 }
 .gis-map-panel:fullscreen {
-  background: #fff;
+  background: var(--bg-card);
   overflow: auto;
 }
 .gis-map-ops {
@@ -1652,18 +1977,19 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 .gis-switch-btn {
-  background: #ecf5ff;
-  border-color: #b3d8ff;
-  color: #1890ff;
+  background: var(--c-primary-light);
+  border-color: var(--c-primary);
+  color: var(--c-primary);
 }
 .gis-switch-btn:hover {
-  background: #d9ecff;
-  border-color: #1890ff;
-  color: #1890ff;
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
 }
 .gis-amap-container {
+  flex: 1 1 auto;
   width: 100%;
-  height: 480px;
+  min-height: 340px;
 }
 .collect-overview {
   display: grid;
@@ -1671,27 +1997,28 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 .cov-item {
-  background: #f5f7fa;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
+  background: var(--bg-th);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-sm);
   padding: 10px 8px;
   text-align: center;
 }
 .cov-value {
+  font-family: var(--font-num);
   font-size: 20px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .cov-value i {
   font-style: normal;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: normal;
-  color: #909399;
+  color: var(--t-weak);
   margin-left: 3px;
 }
 .cov-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--t-weak);
   margin-top: 4px;
 }
 .rank-badge {
@@ -1701,10 +2028,11 @@ onBeforeUnmount(() => {
   line-height: 22px;
   border-radius: 50%;
   text-align: center;
+  font-family: var(--font-num);
   font-size: 12px;
   font-weight: 700;
   color: #fff;
-  background: #c0c4cc;
+  background: var(--t-weak);
 }
 .rb-1 { background: linear-gradient(135deg, #f5a623, #ff7a45); }
 .rb-2 { background: linear-gradient(135deg, #a0a6b0, #6b7280); }
@@ -1733,16 +2061,17 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 .lc-center b {
+  font-family: var(--font-num);
   font-size: 16px;
   font-variant-numeric: tabular-nums;
 }
 .lc-center span {
-  font-size: 10px;
-  color: #909399;
+  font-size: 12px;
+  color: var(--t-weak);
 }
 .lc-label {
   font-size: 12px;
-  color: #606266;
+  color: var(--t-sub);
   margin-top: 2px;
 }
 .idle-rate {
@@ -1751,17 +2080,18 @@ onBeforeUnmount(() => {
   gap: 10px;
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--bd-split);
 }
 .ir-label {
   font-size: 12px;
-  color: #606266;
+  color: var(--t-sub);
   flex: none;
 }
 .ir-value {
+  font-family: var(--font-num);
   font-size: 14px;
   font-weight: 700;
-  color: #d48806;
+  color: var(--c-warning);
   flex: none;
 }
 </style>

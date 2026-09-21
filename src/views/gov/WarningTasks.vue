@@ -1,6 +1,6 @@
 <template>
   <div class="warning-tasks">
-    <el-tabs v-model="activeTab" class="main-tabs">
+    <el-tabs v-model="activeTab" class="main-tabs fill">
       <el-tab-pane name="tasks">
         <template #label>
           <span>待办任务</span>
@@ -41,7 +41,7 @@
           </el-col>
         </el-row>
 
-        <el-table :data="filteredTasks" stripe style="width: 100%; margin-top: 16px">
+        <el-table :data="filteredTasks" stripe style="width: 100%">
           <el-table-column prop="id" label="任务编号" width="100" />
           <el-table-column prop="name" label="任务名称" min-width="180" />
           <el-table-column prop="group" label="所属集团" width="120" />
@@ -101,7 +101,7 @@
           </el-col>
         </el-row>
 
-        <el-table :data="filteredInventory" stripe style="width: 100%; margin-top: 16px">
+        <el-table :data="filteredInventory" stripe style="width: 100%">
           <el-table-column prop="id" label="盘点编号" width="100" />
           <el-table-column prop="name" label="盘点名称" min-width="180" />
           <el-table-column prop="group" label="所属集团" width="120" />
@@ -113,7 +113,7 @@
           <el-table-column label="进度" width="180">
             <template #default="{ row }">
               <el-progress :percentage="Math.round(row.doneCount / row.totalAssets * 100)" :status="row.status === '已完成' || row.status === '已审核' ? 'success' : undefined" />
-              <span style="font-size: 12px; color: #999">{{ row.doneCount }}/{{ row.totalAssets }}</span>
+              <span style="font-size: 12px; color: var(--t-weak)">{{ row.doneCount }}/{{ row.totalAssets }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="startDate" label="开始日期" width="120" />
@@ -271,12 +271,8 @@ function handleExportInventory() {
 </script>
 
 <style scoped>
-.warning-tasks {
-  padding: 0;
-}
-
 .filter-row {
-  margin-bottom: 0;
+  margin-bottom: 12px;
 }
 
 .main-tabs :deep(.el-tabs__content) {
