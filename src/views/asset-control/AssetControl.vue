@@ -313,9 +313,9 @@
                     v-for="room in floor.rooms"
                     :key="room.id"
                     class="room-cell"
-                    :class="{ active: selectedRoom && selectedRoom.id === room.id }"
+                    :class="{ active: selectedAsset && selectedAsset.id === room.id }"
                     :style="{ borderColor: statusColor(room.status) }"
-                    @click="openRoom(room)"
+                    @click="openAsset(room)"
                   >
                     <div class="room-top">
                       <span class="room-name">{{ room.name }}</span>
@@ -323,7 +323,7 @@
                     </div>
                     <div class="room-area">{{ room.area }} ㎡</div>
                     <div class="room-foot">
-                      <template v-if="room.status === '已出租'">
+                      <template v-if="room.tenant">
                         <span class="tenant">{{ room.tenant }}</span>
                       </template>
                       <template v-else-if="room.vacancyDays != null">
@@ -413,7 +413,7 @@
     </el-tabs>
 
     <!-- 资产全信息统一视图抽屉 -->
-    <AssetDetailDrawer v-model="roomDrawer" :asset="selectedRoom" />
+    <AssetDetailDrawer v-model="assetDrawer" :asset="selectedAsset" />
 
     <!-- 新增管控规则对话框 -->
     <el-dialog v-model="addDialogVisible" :title="isEdit ? '编辑管控规则' : '新增管控规则'" width="600px" destroy-on-close>
@@ -454,34 +454,60 @@ import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { OfficeBuilding, LocationInformation, Search } from '@element-plus/icons-vue'
 import { useProjectStore } from '../../store/project'
+import { useAssetStore } from '../../store/asset'
+import { useContractStore } from '../../store/contract'
+import { useMortgageStore } from '../../store/mortgage'
 import AssetDetailDrawer from '../../components/AssetDetailDrawer.vue'
 const projectStore = useProjectStore()
+const assetStore = useAssetStore()
+const contractStore = useContractStore()
+const mortgageStore = useMortgageStore()
 
 const activeTab = ref('pano')
 
 // ===== 空间管控看板 =====
 const statusList = ['已出租', '空置', '闲置', '自用']
-const statusColorMap = { '已出租': '#67c23a', '空置': '#e6a23c', '闲置': '#f56c6c', '自用': '#409eff' }
+const statusColorMap = { '已出租': '#67c23a', '部分出租': '#67c23a', '空置': '#e6a23c', '闲置': '#f56c6c', '自用': '#409eff' }
 function statusColor(s) { return statusColorMap[s] || '#909399' }
 function vacancyTagType(days) { return days >= 180 ? 'danger' : days >= 90 ? 'warning' : 'info' }
 function levelTagType(lv) { return { '项目': 'primary', '分区': 'success', '楼层': 'warning', '资产': 'info' }[lv] || 'info' }
+
+// 平铺资产挂进项目时可能只写了名字（新建分区/楼层），统一按名字归位
+const zoneOf = a => a.zoneName || '未分区'
+const floorOf = a => a.floorName || '未分层'
 
 const treeProps = { label: 'label', children: 'children' }
 const treeRef = ref(null)
 const treeFilter = ref('')
 
-const treeData = computed(() => projectStore.visibleProjects.map(b => ({
-  key: b.id, label: b.name, level: '项目', ref: b, type: 'project',
-  children: b.partitions.map(p => ({
-    key: p.id, label: p.name, level: '分区', ref: p, type: 'partition', project: b,
-    children: p.floors.map(f => ({
-      key: f.id, label: f.name, level: '楼层', ref: f, type: 'floor', project: b, partition: p,
-      children: f.rooms.map(r => ({
-        key: r.id, label: r.name, level: '资产', ref: r, type: 'room', statusDot: r.status, project: b, partition: p, floor: f
-      }))
-    }))
-  }))
-})))
+// 层级树按资产台账的真实归集口径生成：项目自带房间 + 从台账挂进来的平铺资产
+const treeData = computed(() => projectStore.visibleProjects.map(b => {
+  const byZone = new Map()
+  assetStore.getProjectAssets(b.id).forEach(a => {
+    if (!byZone.has(zoneOf(a))) byZone.set(zoneOf(a), [])
+    byZone.get(zoneOf(a)).push(a)
+  })
+  return {
+    key: b.id, label: b.name, level: '项目', ref: b, type: 'project',
+    children: [...byZone.entries()].map(([zName, zAssets]) => {
+      const byFloor = new Map()
+      zAssets.forEach(a => {
+        if (!byFloor.has(floorOf(a))) byFloor.set(floorOf(a), [])
+        byFloor.get(floorOf(a)).push(a)
+      })
+      return {
+        key: `${b.id}|${zName}`, label: zName, level: '分区', ref: { name: zName }, type: 'partition', project: b,
+        children: [...byFloor.entries()].map(([fName, fAssets]) => ({
+          key: `${b.id}|${zName}|${fName}`, label: fName, level: '楼层', ref: { name: fName }, type: 'floor', project: b, partition: { name: zName },
+          children: fAssets.map(a => ({
+            key: a.id, label: a.name, level: '资产', ref: a, type: 'asset', statusDot: a.status,
+            project: b, partition: { name: zName }, floor: { name: fName }
+          }))
+        }))
+      }
+    })
+  }
+}))
 
 watch(treeFilter, v => treeRef.value?.filter(v))
 function filterNode(value, data) {
@@ -490,48 +516,61 @@ function filterNode(value, data) {
 }
 
 const selectedNode = ref(null)
-const selectedRoom = ref(null)
-const roomDrawer = ref(false)
+const selectedAsset = ref(null)
+const assetDrawer = ref(false)
 
 function onNodeClick(data) {
   selectedNode.value = data
-  if (data.type === 'room') {
-    openRoom(data.ref)
+  if (data.type === 'asset') {
+    openAsset(data.ref)
   }
 }
 
-function openRoom(room) {
-  selectedRoom.value = room
-  roomDrawer.value = true
+function openAsset(asset) {
+  selectedAsset.value = asset
+  assetDrawer.value = true
 }
 
 const boardTitle = computed(() => {
   const n = selectedNode.value
   if (!n) return '全部项目'
   if (n.type === 'project') return n.ref.name
-  if (n.type === 'partition') return `${n.project.name} / ${n.ref.name}`
-  if (n.type === 'floor') return `${n.project.name} / ${n.partition.name} / ${n.ref.name}`
+  if (n.type === 'partition') return `${n.project.name} / ${n.label}`
+  if (n.type === 'floor') return `${n.project.name} / ${n.partition.name} / ${n.label}`
   return n.project.name
 })
 
-// 根据当前选中节点，计算要展示的楼层列表
+// 右侧楼层块：把当前范围内的资产按「分区 / 楼层」重新分块
 const currentFloors = computed(() => {
   const n = selectedNode.value
+  let pool
   if (!n) {
-    // 默认展示所有项目的所有楼层
-    return projectStore.visibleProjects.flatMap(b => b.partitions.flatMap(p => p.floors))
+    const ids = new Set(projectStore.visibleProjects.map(b => b.id))
+    pool = assetStore.visibleAssets.filter(a => ids.has(a.projectId))
+  } else if (n.type === 'project') {
+    pool = assetStore.getProjectAssets(n.key)
+  } else if (n.type === 'partition') {
+    pool = assetStore.getProjectAssets(n.project.id).filter(a => zoneOf(a) === n.label)
+  } else if (n.type === 'floor' || n.type === 'asset') {
+    pool = assetStore.getProjectAssets(n.project.id).filter(a => zoneOf(a) === n.partition.name && floorOf(a) === n.floor.name)
+  } else {
+    pool = []
   }
-  if (n.type === 'project') return n.ref.partitions.flatMap(p => p.floors)
-  if (n.type === 'partition') return n.ref.floors
-  if (n.type === 'floor') return [n.ref]
-  if (n.type === 'room') return [n.floor]
-  return []
+  const blocks = new Map()
+  pool.forEach(a => {
+    const key = `${zoneOf(a)} / ${floorOf(a)}`
+    if (!blocks.has(key)) blocks.set(key, { id: key, name: key, area: 0, rooms: [] })
+    const block = blocks.get(key)
+    block.rooms.push(a)
+    block.area += Number(a.area) || 0
+  })
+  return [...blocks.values()].map(b => ({ ...b, area: Math.round(b.area * 100) / 100 }))
 })
 
 const boardStats = computed(() => {
   const rooms = currentFloors.value.flatMap(f => f.rooms)
   const total = rooms.length
-  const rented = rooms.filter(r => r.status === '已出租').length
+  const rented = rooms.filter(r => r.status === '已出租' || r.status === '部分出租').length
   const vacant = rooms.filter(r => r.status === '空置' || r.status === '闲置').length
   const rate = total ? Math.round(rented / total * 10000) / 100 : 0
   return { total, rented, vacant, rate }
@@ -547,14 +586,21 @@ const panoAreaKw = ref('')
 
 const panoSelectedProjectId = ref(projectStore.visibleProjects[0]?.id || '')
 
+// 选中的项目可能被切号/删除掉，兜底回本公司第一个项目
+const activeProjectId = computed(() =>
+  projectStore.visibleProjects.some(b => b.id === panoSelectedProjectId.value)
+    ? panoSelectedProjectId.value
+    : (projectStore.visibleProjects[0]?.id || '')
+)
+
 const panoTreeRef = ref(null)
 const panoTreeFilter = ref('')
 watch(panoTreeFilter, v => panoTreeRef.value?.filter(v))
 
 const panoTreeData = computed(() => projectStore.visibleProjects.map(b => ({
   key: b.id, label: b.name, level: '项目', type: 'project',
-  children: b.partitions.map(p => ({
-    key: p.id, label: p.name, level: '分区', type: 'partition'
+  children: [...new Set(assetStore.getProjectAssets(b.id).map(a => zoneOf(a)))].map(z => ({
+    key: `${b.id}|${z}`, label: z, level: '分区', type: 'partition', projectId: b.id
   }))
 })))
 
@@ -562,8 +608,7 @@ function onPanoNodeClick(data) {
   if (data.type === 'project') {
     panoSelectedProjectId.value = data.key
   } else if (data.type === 'partition') {
-    const b = projectStore.visibleProjects.find(b => b.partitions.some(p => p.id === data.key))
-    if (b) panoSelectedProjectId.value = b.id
+    panoSelectedProjectId.value = data.projectId
   }
 }
 
@@ -572,21 +617,16 @@ function projectTypeTag(type) {
 }
 
 const currentPanoProject = computed(() => {
-  const b = projectStore.visibleProjects.find(x => x.id === panoSelectedProjectId.value) || projectStore.visibleProjects[0]
-  if (!b) return { name: '—', typeTag: '—', address: '—', image: '', cumIncome: 0, yearIncome: 0, lastMonthFeeRate: 0 }
-  return {
-    name: b.name, typeTag: projectTypeTag(b.type), address: b.address, image: b.image,
-    cumIncome: b.cumIncome || 0, yearIncome: b.yearIncome || 0, lastMonthFeeRate: b.rentalRate || 0
-  }
+  const b = projectStore.visibleProjects.find(x => x.id === activeProjectId.value)
+  if (!b) return { name: '—', typeTag: '—', address: '—', image: '' }
+  return { name: b.name, typeTag: projectTypeTag(b.type), address: b.address, image: b.image }
 })
 
-const currentPanoFloors = computed(() => {
-  const b = projectStore.visibleProjects.find(x => x.id === panoSelectedProjectId.value)
-  if (!b) return []
-  return [...new Set(b.partitions.flatMap(p => p.floors.map(f => f.name)))]
-})
+const currentPanoFloors = computed(() =>
+  [...new Set(assetStore.getProjectAssets(activeProjectId.value).map(a => floorOf(a)))]
+)
 
-watch(panoSelectedProjectId, () => {
+watch(activeProjectId, () => {
   const floors = currentPanoFloors.value
   if (!floors.includes(panoFloor.value)) panoFloor.value = floors[0] || ''
 }, { immediate: true })
@@ -612,46 +652,38 @@ const expiryBuckets = [
   { label: '到期180天以上', min: 181, max: Infinity, color: '#52c41a' }
 ]
 
-const extraStatuses = ['审批中', '处置中', '流转中', '调拨中']
-function hashIdx(id, mod) { let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0; return Math.abs(h) % mod }
+// 抵押看融资台账里是否还有未解押的记录，权证看资产自身的办证状态
+const activeMortgageAssetIds = computed(() => new Set(
+  mortgageStore.mortgages.filter(m => m.status === '抵押中').map(m => m.assetId)
+))
 
 const allPanoAssets = computed(() => {
-  const list = []
-  projectStore.visibleProjects.forEach((b, bi) => {
-    b.partitions.forEach(p => {
-      p.floors.forEach(f => {
-        f.rooms.forEach((r, ri) => {
-          let status
-          if (r.status === '已出租') status = '已租赁'
-          else if (r.status === '自用') status = '已占用'
-          else {
-            const h = hashIdx(r.id, 7)
-            if (h < 2) status = extraStatuses[h]
-            else status = '未租赁'
-          }
-          const isRented = status === '已租赁'
-          const isOccupied = status === '已占用'
-          const typeGuess = /设备|机房|配电/.test(r.name) ? '设备类' : /车位/.test(r.name) ? '车位类' : '房产类'
-          const mortgaged = hashIdx(r.id, 4) === 0
-          const propNo = r.hasPropertyRight ? `闽(202${3 + (bi % 2)})长乐区不动产权第${String(10000 + bi * 100 + ri).padStart(7, '0')}号` : '—'
-          list.push({
-            id: r.id, projectId: b.id, projectName: b.name,
-            projectTypeTag: projectTypeTag(b.type), projectAddress: b.address, projectImage: b.image,
-            zone: p.name, floor: f.name, assetNo: r.assetNo, name: r.name,
-            location: `${b.name}${p.name}${f.name}`, type: typeGuess, area: r.area,
-            status, mortgaged, propertyRight: r.hasPropertyRight, propertyNo: propNo,
-            used: isRented || isOccupied, rentable: !isOccupied && status !== '处置中',
-            tenant: r.tenant || null, expiry: r.leaseExpiry || null,
-            vacantDays: r.vacancyDays ?? null
-          })
-        })
-      })
+  const projects = new Map(projectStore.visibleProjects.map(b => [b.id, b]))
+  return assetStore.visibleAssets
+    .filter(a => a.projectId && projects.has(a.projectId))
+    .map(a => {
+      const b = projects.get(a.projectId)
+      const status = a.status === '已出租' || a.status === '部分出租' ? '已租赁'
+        : a.status === '自用' ? '已占用' : '未租赁'
+      return {
+        id: a.id, projectId: b.id, projectName: b.name,
+        projectTypeTag: projectTypeTag(b.type), projectAddress: b.address, projectImage: b.image,
+        zone: zoneOf(a), floor: floorOf(a), assetNo: a.assetNo || a.id, name: a.name,
+        location: a.location || `${b.name}${zoneOf(a)}${floorOf(a)}`,
+        type: a.assetCategory || '房产类', area: Number(a.area) || 0,
+        status,
+        mortgaged: activeMortgageAssetIds.value.has(a.id),
+        propertyRight: a.certStatus === '已办证', propertyNo: a.certDetail || '—',
+        used: status !== '未租赁', rentable: status !== '已占用',
+        tenant: a.tenant || null, expiry: a.leaseExpiry || null,
+        vacantDays: a.vacancyDays ?? null
+      }
     })
-  })
-  return list
 })
 
-const projectPanoAssets = computed(() => allPanoAssets.value.filter(a => a.projectId === panoSelectedProjectId.value))
+const projectPanoAssets = computed(() => allPanoAssets.value.filter(a => a.projectId === activeProjectId.value))
+
+const panoReceipts = computed(() => contractStore.projectReceipts(activeProjectId.value))
 
 const panoKpis = computed(() => {
   const list = projectPanoAssets.value
@@ -660,15 +692,16 @@ const panoKpis = computed(() => {
   const rented = list.filter(a => a.status === '已租赁').length
   const idle = list.filter(a => a.status === '未租赁').length
   const rate = total ? Math.round(rented / total * 1000) / 10 : 0
+  const r = panoReceipts.value
   return [
     { label: '资产总数', value: total, unit: '项' },
     { label: '资产面积', value: area.toFixed(2), unit: '㎡' },
     { label: '在租', value: rented, unit: '项' },
     { label: '闲置', value: idle, unit: '项' },
     { label: '出租率', value: rate, unit: '%' },
-    { label: '累计实收', value: currentPanoProject.value.cumIncome, unit: '万元' },
-    { label: '本年实收', value: currentPanoProject.value.yearIncome, unit: '万元' },
-    { label: '上月收费率', value: currentPanoProject.value.lastMonthFeeRate, unit: '%' }
+    { label: '累计实收', value: r.cumActual, unit: '万元' },
+    { label: '本年实收', value: r.yearActual, unit: '万元' },
+    { label: '上月收费率', value: r.lastMonthRate, unit: '%' }
   ]
 })
 
@@ -735,13 +768,8 @@ const typePieStyle = computed(() => {
   return { background: `conic-gradient(${stops.join(', ')})` }
 })
 
-const monthlyReceipts = [
-  { m: '10月', v: 21.6 }, { m: '11月', v: 24.3 }, { m: '12月', v: 28.9 },
-  { m: '1月', v: 26.2 }, { m: '2月', v: 18.4 }, { m: '3月', v: 30.5 },
-  { m: '4月', v: 27.8 }, { m: '5月', v: 25.1 }, { m: '6月', v: 32.4 },
-  { m: '7月', v: 29.6 }, { m: '8月', v: 26.8 }, { m: '9月', v: 21.8 }
-]
-const maxReceipt = Math.max(...monthlyReceipts.map(x => x.v))
+const monthlyReceipts = computed(() => panoReceipts.value.months)
+const maxReceipt = computed(() => Math.max(1, ...monthlyReceipts.value.map(x => x.v)))
 
 const listQ = ref({ assetNo: '', status: '', type: '', zone: '' })
 const listPage = ref(1)

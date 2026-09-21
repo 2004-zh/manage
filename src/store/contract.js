@@ -260,6 +260,12 @@ export const useContractStore = defineStore('contract', () => {
     syncAssetLeaseState(c.assetId, { action: '退租联动', billNo: contractId })
   }
 
+  function todayStr() {
+    const d = new Date()
+    const p = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  }
+
   function payFee(contractId, amount) {
     const fee = feeRecords.value.find(f => f.contractId === contractId)
     const c = getContractById(contractId)
@@ -273,7 +279,8 @@ export const useContractStore = defineStore('contract', () => {
       cumActual: paid,
       yearActual: (fee.yearActual || 0) + amount,
       arrears,
-      status
+      status,
+      payments: [...(fee.payments || []), { date: todayStr(), amount }]
     }
     updateContract(contractId, { arrears, status: arrears > 0 ? '欠缴' : c.status })
     const asset = useAssetStore().getAssetById(c.assetId)
@@ -296,6 +303,48 @@ export const useContractStore = defineStore('contract', () => {
     return { paid, arrears, status }
   }
 
+  /**
+   * 项目口径的实收归集：逐笔收缴流水 → 合同 → 资产 → 所属项目，
+   * 房间级资产与挂入项目的平铺资产都会算进来，看板不再用写死的柱状图。
+   */
+  function projectReceipts(projectId) {
+    const round = v => Math.round(v * 100) / 100
+    const assetIds = new Set(useAssetStore().getProjectAssets(projectId).map(a => a.id))
+    const contractIds = new Set(visibleContracts.value.filter(c => assetIds.has(c.assetId)).map(c => c.id))
+    const fees = feeRecords.value.filter(f => contractIds.has(f.contractId))
+
+    const now = new Date()
+    const ymKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const sumBy = (key) => fees.reduce((s, f) => s + (f.payments || []).reduce(
+      (p, x) => String(x.date || '').slice(0, 7) === key ? p + (Number(x.amount) || 0) : p, 0), 0)
+    const months = []
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.push({ m: `${d.getMonth() + 1}月`, v: round(sumBy(ymKey(d))) })
+    }
+    // 台账的项目总览柱状图轴是固定 1-12 月，需按自然年对齐，不能复用滚动窗口
+    const yearMonths = Array.from({ length: 12 }, (_, i) =>
+      round(sumBy(ymKey(new Date(now.getFullYear(), i, 1)))))
+
+    const yearReceivable = round(fees.reduce((s, f) => s + (f.yearReceivable || 0), 0))
+    const monthlyPlan = yearReceivable / 12
+    const lastMonth = months[months.length - 2]
+    const lastMonthActual = lastMonth ? lastMonth.v : 0
+    return {
+      cumActual: round(fees.reduce((s, f) => s + (f.cumActual || 0), 0)),
+      yearActual: round(fees.reduce((s, f) => s + (f.yearActual || 0), 0)),
+      yearReceivable,
+      months,
+      yearMonths,
+      monthlyPlan: round(monthlyPlan),
+      lastMonthActual,
+      lastMonthArrears: round(Math.max(0, monthlyPlan - lastMonthActual)),
+      lastMonthRate: monthlyPlan > 0 && lastMonth
+        ? Math.min(100, Math.round(lastMonth.v / monthlyPlan * 1000) / 10)
+        : 0
+    }
+  }
+
   return {
     contracts,
     feeRecords,
@@ -313,6 +362,7 @@ export const useContractStore = defineStore('contract', () => {
     renewContract,
     terminateContract,
     payFee,
+    projectReceipts,
     syncAssetLeaseState
   }
 })

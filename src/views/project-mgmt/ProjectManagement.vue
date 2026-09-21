@@ -69,6 +69,10 @@
             </div>
             <span class="rate-text">出租率 {{ p.rentalRate }}%</span>
           </div>
+          <div class="card-actions">
+            <el-button type="primary" link size="small" @click.stop="openAttach(p)">挂入已有资产</el-button>
+            <span class="attach-count">已挂入 {{ attachedCount(p.id) }} 项</span>
+          </div>
         </div>
       </el-card>
     </div>
@@ -184,6 +188,55 @@
         <el-button type="primary" @click="submitCreate">确认创建</el-button>
       </template>
     </el-dialog>
+
+    <!-- 挂入已有资产 -->
+    <el-dialog v-model="attachVisible" :title="`挂入已有资产 · ${attachProject?.name || ''}`" width="920px" destroy-on-close top="5vh">
+      <el-tabs v-model="attachTab">
+        <el-tab-pane label="从台账挑选" name="pick">
+          <div class="attach-target">
+            <span class="attach-label">目标分区</span>
+            <el-select v-model="attachTarget.zoneName" filterable allow-create default-first-option placeholder="选择或输入新分区名" style="width:220px">
+              <el-option v-for="z in zoneOptions" :key="z" :label="z" :value="z" />
+            </el-select>
+            <span class="attach-label">目标楼层</span>
+            <el-select v-model="attachTarget.floorName" filterable allow-create default-first-option placeholder="选择或输入新楼层名" style="width:180px">
+              <el-option v-for="f in floorOptions" :key="f" :label="f" :value="f" />
+            </el-select>
+            <el-input v-model="attachKw" placeholder="搜索资产名称/编号/坐落" clearable style="width:240px" :prefix-icon="Search" />
+          </div>
+          <el-table :data="candidates" size="small" border max-height="380" @selection-change="v => pickSel = v">
+            <el-table-column type="selection" width="42" />
+            <el-table-column prop="id" label="资产编号" width="100" />
+            <el-table-column prop="name" label="资产名称" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="type" label="类型" width="90" />
+            <el-table-column prop="area" label="面积(㎡)" width="95" align="right" />
+            <el-table-column prop="status" label="状态" width="85" />
+            <el-table-column prop="location" label="坐落" min-width="140" show-overflow-tooltip />
+          </el-table>
+          <div class="attach-tip">列表只显示本公司名下、还没归属任何项目的资产；挂入后项目总览与资产管控看板立即按这一口径统计。</div>
+        </el-tab-pane>
+
+        <el-tab-pane :label="`本项目已挂入(${attachedList.length})`" name="attached">
+          <el-table :data="attachedList" size="small" border max-height="380" @selection-change="v => detachSel = v">
+            <el-table-column type="selection" width="42" />
+            <el-table-column prop="id" label="资产编号" width="100" />
+            <el-table-column prop="name" label="资产名称" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="zoneName" label="分区" width="120" />
+            <el-table-column prop="floorName" label="楼层" width="90" />
+            <el-table-column prop="area" label="面积(㎡)" width="95" align="right" />
+            <el-table-column prop="status" label="状态" width="85" />
+          </el-table>
+          <el-empty v-if="!attachedList.length" description="该项目还没有挂入外部资产" :image-size="60" />
+          <div class="attach-tip">移出只解除项目归属，资产本身不会被删除，仍保留在台账里。</div>
+        </el-tab-pane>
+      </el-tabs>
+
+      <template #footer>
+        <el-button @click="attachVisible = false">关闭</el-button>
+        <el-button v-if="attachTab === 'pick'" type="primary" @click="doAttach">确认挂入{{ pickSel.length ? `(${pickSel.length})` : '' }}</el-button>
+        <el-button v-else type="danger" @click="doDetach">移出所选{{ detachSel.length ? `(${detachSel.length})` : '' }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -193,10 +246,12 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search, Location, OfficeBuilding } from '@element-plus/icons-vue'
 import { useProjectStore } from '../../store/project'
+import { useAssetStore } from '../../store/asset'
 import { useUserStore } from '../../store/user'
 
 const router = useRouter()
 const projectStore = useProjectStore()
+const assetStore = useAssetStore()
 const userStore = useUserStore()
 // 新建项目只能落在本集团名下
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
@@ -222,19 +277,27 @@ const filteredProjects = computed(() => {
       if (!p.name.toLowerCase().includes(kw) && !p.address.toLowerCase().includes(kw)) return false
     }
     return true
-  })
+  // 卡片数字取资产台账的真实归集口径（项目自带房间 + 挂进来的平铺资产），
+  // 种子项目里写死的那套统计字段不再参与展示
+  }).map(p => ({ ...p, ...assetStore.projectStats(p.id) }))
 })
 
-const totalAssets = computed(() => projects.value.reduce((s, p) => s + p.totalAssets, 0))
-const totalRented = computed(() => projects.value.reduce((s, p) => s + p.rentedCount, 0))
-const totalIdle = computed(() => projects.value.reduce((s, p) => s + p.idleCount, 0))
-const overallRate = computed(() => totalAssets.value ? Math.round(totalRented.value / totalAssets.value * 1000) / 10 : 0)
+const statTotals = computed(() => {
+  const rows = projects.value.map(p => assetStore.projectStats(p.id))
+  const total = rows.reduce((s, r) => s + r.totalAssets, 0)
+  const rented = rows.reduce((s, r) => s + r.rentedCount, 0)
+  return {
+    totalAssets: total,
+    totalIdle: rows.reduce((s, r) => s + r.idleCount, 0),
+    overallRate: total ? Math.round(rented / total * 1000) / 10 : 0
+  }
+})
 
 const kpiList = computed(() => [
   { label: '项目数', value: projects.value.length, unit: '个', color: '#1890ff' },
-  { label: '资产总宗数', value: totalAssets.value, unit: '宗', color: '#722ed1' },
-  { label: '资产利用率', value: overallRate.value, unit: '%', color: '#52c41a' },
-  { label: '闲置宗数', value: totalIdle.value, unit: '宗', color: '#f5222d' }
+  { label: '资产总宗数', value: statTotals.value.totalAssets, unit: '宗', color: '#722ed1' },
+  { label: '资产利用率', value: statTotals.value.overallRate, unit: '%', color: '#52c41a' },
+  { label: '闲置宗数', value: statTotals.value.totalIdle, unit: '宗', color: '#f5222d' }
 ])
 
 function formatArea(v) {
@@ -372,8 +435,91 @@ function submitCreate() {
       partitions: form.partitions
     })
     createDialogVisible.value = false
-    ElMessage.success(`项目「${project.name}」创建成功，共 ${project.totalAssets} 个资产已同步到资产登记和资产管控`)
+    const stats = assetStore.projectStats(project.id)
+    ElMessage.success(`项目「${project.name}」创建成功，共 ${stats.totalAssets} 项资产，可在卡片上点「挂入已有资产」继续归集`)
   })
+}
+
+// ===== 挂入已有资产 =====
+const attachVisible = ref(false)
+const attachTab = ref('pick')
+const attachProject = ref(null)
+const attachKw = ref('')
+const pickSel = ref([])
+const detachSel = ref([])
+const attachTarget = reactive({ zoneName: '', floorName: '' })
+
+const candidates = computed(() => {
+  const kw = attachKw.value.trim()
+  const list = assetStore.unattachedAssets
+  if (!kw) return list
+  return list.filter(a => [a.name, a.id, a.assetNo, a.location].filter(Boolean).join(' ').includes(kw))
+})
+
+const attachedList = computed(() => attachProject.value ? assetStore.attachedAssetsOf(attachProject.value.id) : [])
+
+function attachedCount(projectId) {
+  return assetStore.attachedAssetsOf(projectId).length
+}
+
+const zoneOptions = computed(() => {
+  const p = attachProject.value
+  return p ? [...new Set(p.partitions.map(x => x.name))] : []
+})
+
+const floorOptions = computed(() => {
+  const p = attachProject.value
+  if (!p) return []
+  const part = p.partitions.find(x => x.name === attachTarget.zoneName)
+  if (part) return [...new Set(part.floors.map(f => f.name))]
+  return [...new Set(p.partitions.flatMap(x => x.floors.map(f => f.name)))]
+})
+
+function openAttach(p) {
+  attachProject.value = p
+  attachTab.value = 'pick'
+  attachKw.value = ''
+  pickSel.value = []
+  detachSel.value = []
+  attachTarget.zoneName = p.partitions[0]?.name || ''
+  attachTarget.floorName = p.partitions[0]?.floors[0]?.name || ''
+  attachVisible.value = true
+}
+
+function doAttach() {
+  if (!attachTarget.zoneName || !attachTarget.floorName) {
+    ElMessage.warning('请选择或填写分区与楼层')
+    return
+  }
+  if (!pickSel.value.length) {
+    ElMessage.warning('请先勾选要挂入的资产')
+    return
+  }
+  const part = attachProject.value.partitions.find(x => x.name === attachTarget.zoneName)
+  let ok = 0
+  pickSel.value.forEach(a => {
+    if (assetStore.attachToProject(a.id, {
+      projectId: attachProject.value.id,
+      partitionId: part ? part.id : '',
+      zoneName: attachTarget.zoneName,
+      floorName: attachTarget.floorName
+    })) ok++
+  })
+  pickSel.value = []
+  ElMessage.success(`已把 ${ok} 项资产挂入「${attachProject.value.name} / ${attachTarget.zoneName} / ${attachTarget.floorName}」`)
+}
+
+function doDetach() {
+  if (!detachSel.value.length) {
+    ElMessage.warning('请先勾选要移出的资产')
+    return
+  }
+  let ok = 0
+  detachSel.value.forEach(a => {
+    if (assetStore.detachFromProject(a.id)) ok++
+  })
+  detachSel.value = []
+  ElMessage.success(`已移出 ${ok} 项资产，它们回到未归属状态，可重新挂到别的项目`)
 }
 </script>
 
@@ -411,6 +557,38 @@ function submitCreate() {
 .kpi-value {
   font-size: 28px;
   font-weight: 700;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.attach-count {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.attach-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.attach-label {
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+}
+
+.attach-tip {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-color-secondary);
 }
 
 .kpi-unit {

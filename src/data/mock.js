@@ -187,12 +187,14 @@ export function leaseSummary(asset) {
 }
 
 // ===== 收费台账 =====
+// payments 是逐笔收缴流水，看板的「近一年每月实收」与「上月收费率」都由它汇总而来；
+// 运行期在收费大厅缴费时会继续追加，cumActual / yearActual 是它的累计口径。
 export const feeRecords = [
-  { id: 1, contractId: 'HT-2023-018', assetName: '吴航街道商业街 A-01 商铺', tenant: '福州××商业管理有限公司', cumReceivable: 63, cumActual: 52.5, yearReceivable: 21, yearActual: 10.5, arrears: 10.5, status: '欠缴' },
-  { id: 2, contractId: 'HT-2025-006', assetName: '航城商务楼 3F', tenant: '福建××科技有限公司', cumReceivable: 156, cumActual: 117, yearReceivable: 156, yearActual: 117, arrears: 0, status: '正常' },
-  { id: 3, contractId: 'HT-2024-007', assetName: '营前标准厂房 2#', tenant: '长乐××物流有限公司', cumReceivable: 136.5, cumActual: 130, yearReceivable: 58.5, yearActual: 52, arrears: 0, status: '正常' },
-  { id: 4, contractId: 'HT-2024-012', assetName: '首占新区保障房 1# 楼', tenant: '长乐××物业管理有限公司', cumReceivable: 144, cumActual: 136.8, yearReceivable: 48, yearActual: 45.6, arrears: 0, status: '正常' },
-  { id: 5, contractId: 'HT-2024-015', assetName: '吴航农贸市场', tenant: '长乐××市场管理有限公司', cumReceivable: 136, cumActual: 129.2, yearReceivable: 68, yearActual: 64.6, arrears: 0, status: '正常' }
+  { id: 1, contractId: 'HT-2023-018', assetName: '吴航街道商业街 A-01 商铺', tenant: '福州××商业管理有限公司', cumReceivable: 63, cumActual: 52.5, yearReceivable: 21, yearActual: 10.5, arrears: 10.5, status: '欠缴', payments: [{ date: '2025-10-05', amount: 21 }, { date: '2025-11-05', amount: 21 }, { date: '2026-03-05', amount: 3.5 }, { date: '2026-06-05', amount: 3.5 }, { date: '2026-09-05', amount: 3.5 }] },
+  { id: 2, contractId: 'HT-2025-006', assetName: '航城商务楼 3F', tenant: '福建××科技有限公司', cumReceivable: 156, cumActual: 117, yearReceivable: 156, yearActual: 117, arrears: 0, status: '正常', payments: [{ date: '2026-01-10', amount: 39 }, { date: '2026-04-10', amount: 39 }, { date: '2026-07-10', amount: 39 }] },
+  { id: 3, contractId: 'HT-2024-007', assetName: '营前标准厂房 2#', tenant: '长乐××物流有限公司', cumReceivable: 136.5, cumActual: 130, yearReceivable: 58.5, yearActual: 52, arrears: 0, status: '正常', payments: [{ date: '2025-10-08', amount: 39 }, { date: '2025-11-08', amount: 39 }, { date: '2026-02-08', amount: 26 }, { date: '2026-05-08', amount: 26 }] },
+  { id: 4, contractId: 'HT-2024-012', assetName: '首占新区保障房 1# 楼', tenant: '长乐××物业管理有限公司', cumReceivable: 144, cumActual: 136.8, yearReceivable: 48, yearActual: 45.6, arrears: 0, status: '正常', payments: [{ date: '2025-10-15', amount: 45.6 }, { date: '2025-11-15', amount: 45.6 }, { date: '2026-03-15', amount: 15.2 }, { date: '2026-06-15', amount: 15.2 }, { date: '2026-09-15', amount: 15.2 }] },
+  { id: 5, contractId: 'HT-2024-015', assetName: '吴航农贸市场', tenant: '长乐××市场管理有限公司', cumReceivable: 136, cumActual: 129.2, yearReceivable: 68, yearActual: 64.6, arrears: 0, status: '正常', payments: [{ date: '2025-10-20', amount: 32.3 }, { date: '2025-11-20', amount: 32.3 }, { date: '2026-01-20', amount: 21.5 }, { date: '2026-04-20', amount: 21.5 }, { date: '2026-07-20', amount: 21.6 }] }
 ]
 
 // ===== 资产变更留痕（历史基线，运行期变更由 changeLog store 追加）=====

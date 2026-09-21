@@ -747,6 +747,7 @@ import * as echarts from 'echarts'
 import AssetDetailDrawer from '../../components/AssetDetailDrawer.vue'
 import { useAssetStore } from '../../store/asset'
 import { useProjectStore } from '../../store/project'
+import { useContractStore } from '../../store/contract'
 import { useUserStore } from '../../store/user'
 import { ASSET_CATEGORIES, deriveAssetCategory } from '../../data/assetCategory'
 
@@ -754,6 +755,7 @@ const route = useRoute()
 const router = useRouter()
 const assetStore = useAssetStore()
 const projectStore = useProjectStore()
+const contractStore = useContractStore()
 const userStore = useUserStore()
 // 新增/导入的资产归属登录账号所在公司，不再一律写死城投集团
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
@@ -1274,21 +1276,25 @@ const codeRoomStatus = (s) => {
 }
 
 const codeProjects = computed(() => projectStore.visibleProjects.map(b => {
-  const floors = [...new Set(b.partitions.flatMap(p => p.floors.map(f => f.name)))]
-  const rooms = b.partitions.flatMap(p => p.floors.flatMap(f => f.rooms.map(r => ({
-    code: r.assetNo || r.id,
-    assetId: r.id,
-    roomNo: r.name,
-    name: `${b.name} ${f.name} ${r.name}`,
-    floor: f.name,
-    area: r.area || 0,
-    status: codeRoomStatus(r.status),
-    idleDays: r.vacancyDays ?? (codeRoomStatus(r.status) === '未租赁' ? 60 : 0),
-    tenant: r.tenant || '',
-    rent: r.monthlyRent || 0
-  }))))
+  const rooms = assetStore.getProjectAssets(b.id).map(a => {
+    const status = codeRoomStatus(a.status)
+    return {
+      code: a.assetNo || a.id,
+      assetId: a.id,
+      roomNo: a.name,
+      name: [b.name, a.zoneName, a.floorName, a.name].filter(Boolean).join(' '),
+      floor: a.floorName || '未分层',
+      area: Number(a.area) || 0,
+      status,
+      idleDays: a.vacancyDays ?? (status === '未租赁' ? 60 : 0),
+      tenant: a.tenant || '',
+      rent: a.monthlyRent || (a.annualRent ? Math.round(a.annualRent * 10000 / 12) : 0)
+    }
+  })
+  const floors = [...new Set(rooms.map(r => r.floor))]
   const leased = rooms.filter(r => r.status === '已租赁').length
   const utilization = rooms.length ? Math.round(leased / rooms.length * 10000) / 100 : 0
+  const receipts = contractStore.projectReceipts(b.id)
   return {
     key: b.id,
     name: b.name,
@@ -1301,16 +1307,16 @@ const codeProjects = computed(() => projectStore.visibleProjects.map(b => {
     bizStatus: leased === 0 ? '未租赁' : leased === rooms.length ? '整体租赁' : '部分租赁',
     utilization,
     idleArea: Math.round(rooms.filter(r => r.status === '未租赁').reduce((s, r) => s + r.area, 0) * 100) / 100,
-    cumIncome: b.cumIncome || 0,
-    yearIncome: b.yearIncome || 0,
+    cumIncome: receipts.cumActual,
+    yearIncome: receipts.yearActual,
     rentRate: utilization,
-    feeRate: 0,
+    feeRate: receipts.lastMonthRate,
     leasedCount: leased,
     totalCount: rooms.length,
-    pendingFee: 0,
-    arrears: 0,
+    pendingFee: receipts.monthlyPlan,
+    arrears: receipts.lastMonthArrears,
     useDonut: [leased, rooms.length - leased],
-    monthly: Array.from({ length: 12 }, () => Math.round((b.yearIncome || 0) / 12 * 10) / 10),
+    monthly: receipts.yearMonths,
     photo: 'linear-gradient(135deg, #8ea6c8, #c7d3e4)',
     buildings: [{ name: b.name, floors, rooms }]
   }
@@ -1335,7 +1341,7 @@ const activeBuildingObj = computed(() => curProject.value.buildings.find(b => b.
 watch([codeAssetKey, activeBuilding], () => {
   const b = curProject.value.buildings.find(x => x.name === activeBuilding.value) || curProject.value.buildings[0]
   activeBuilding.value = b.name
-  if (!b.floors.includes(activeFloor.value)) activeFloor.value = b.floors[0]
+  if (!b.floors.includes(activeFloor.value)) activeFloor.value = b.floors[0] || ''
 }, { immediate: true })
 
 const floorRooms = computed(() => activeBuildingObj.value.rooms.filter(r =>

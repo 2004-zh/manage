@@ -464,10 +464,14 @@ import {
   Plus
 } from '@element-plus/icons-vue'
 import { useProjectStore } from '../../store/project'
+import { useAssetStore } from '../../store/asset'
+import { useContractStore } from '../../store/contract'
 
 const route = useRoute()
 const isRegionMode = computed(() => route.name === 'EntRegionDivision')
 const projectStore = useProjectStore()
+const assetStore = useAssetStore()
+const contractStore = useContractStore()
 
 const drillLevel = ref(0)
 const currentTown = ref(null)
@@ -725,7 +729,11 @@ const townProjectMap = {
 
 const allProjects = computed(() => {
   const list = projectStore.visibleProjects || []
-  return list.filter(b => b.id !== 'BLD-001')
+  // 宗数/面积/出租率/收入统一从资产与实收流水算，种子里的假统计不再上屏
+  return list.filter(b => b.id !== 'BLD-001').map(b => {
+    const r = contractStore.projectReceipts(b.id)
+    return { ...b, ...assetStore.projectStats(b.id), cumIncome: r.cumActual, yearIncome: r.yearActual }
+  })
 })
 
 const currentTownProjects = computed(() => {

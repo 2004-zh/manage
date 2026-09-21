@@ -21,6 +21,8 @@ function roomToAsset(r, b, p, f) {
     certStatus: r.hasPropertyRight ? '已办证' : '未办证',
     certDetail: r.hasPropertyRight ? `闽(2023)长乐区不动产权第${r.id.replace(/\D/g, '').padStart(7, '0')}号` : '',
     group: b.group,
+    projectId: b.id,
+    partitionId: p.id,
     projectName: b.name,
     zoneName: p.name,
     floorName: f.name,
@@ -79,6 +81,72 @@ export const useAssetStore = defineStore('asset', () => {
     if (!user || user.endpoint !== 'ent') return assets.value
     return assets.value.filter(a => a.group === user.org)
   })
+
+  // ===== 项目口径 =====
+  // 房间级资产由项目层级派生，平铺资产靠 projectId 标签挂进来，两条路归到同一份索引，
+  // 项目管理 / 资产管控 / 地图 / 台账读同一份数，不再各自遍历项目结构。
+  const projectIndex = computed(() => {
+    const map = new Map()
+    assets.value.forEach(a => {
+      if (!a.projectId) return
+      if (!map.has(a.projectId)) map.set(a.projectId, [])
+      map.get(a.projectId).push(a)
+    })
+    return map
+  })
+
+  function getProjectAssets(projectId) {
+    return projectIndex.value.get(projectId) || []
+  }
+
+  function projectStats(projectId) {
+    const list = getProjectAssets(projectId)
+    const totalAssets = list.length
+    const totalArea = Math.round(list.reduce((s, a) => s + (Number(a.area) || 0), 0) * 100) / 100
+    const rentedCount = list.filter(a => a.status === '已出租' || a.status === '部分出租').length
+    const idleCount = list.filter(a => a.status === '闲置' || a.status === '空置').length
+    const rentalRate = totalAssets ? Math.round(rentedCount / totalAssets * 10000) / 100 : 0
+    return { totalAssets, totalArea, rentedCount, idleCount, rentalRate }
+  }
+
+  // 本公司名下、还没挂到任何项目下的平铺资产，供「挂入已有资产」挑选
+  const unattachedAssets = computed(() => visibleAssets.value.filter(a => !a.projectId))
+
+  // 项目下"挂进来"的那部分（不含项目结构自带的房间级资产），只认 baseAssets 里的平铺记录
+  function attachedAssetsOf(projectId) {
+    return baseAssets.value.filter(a => a.projectId === projectId)
+  }
+
+  function isBaseAsset(id) {
+    return baseAssets.value.some(a => a.id === id)
+  }
+
+  /**
+   * 把一条平铺资产挂进项目的某个分区/楼层：只打标签、不搬记录，
+   * 台账里仍是一条，账面价值/结构/装修等登记字段也不会丢。
+   * 企业端不允许把别家集团的资产挂到本公司项目下。
+   */
+  function attachToProject(assetId, target, meta = {}) {
+    const project = useProjectStore().getProjectById(target.projectId)
+    const asset = getAssetById(assetId)
+    if (!project || !asset || !isBaseAsset(assetId)) return false
+    const org = useUserStore().user
+    if (org && org.endpoint === 'ent' && asset.group !== org.org) return false
+    return updateAsset(assetId, {
+      projectId: project.id,
+      partitionId: target.partitionId || '',
+      projectName: project.name,
+      zoneName: target.zoneName,
+      floorName: target.floorName
+    }, { module: '项目管理', action: '资产挂入项目', remark: meta.remark || `挂入「${project.name} ${target.zoneName} ${target.floorName}」` })
+  }
+
+  function detachFromProject(assetId, meta = {}) {
+    if (!isBaseAsset(assetId)) return false
+    return updateAsset(assetId, {
+      projectId: '', partitionId: '', projectName: '', zoneName: '', floorName: ''
+    }, { module: '项目管理', action: '资产移出项目', remark: meta.remark || '从项目总览移出' })
+  }
 
   // 缓存恢复后：① 按 id 补齐后续版本新增的种子资产（$patch 会用旧数组整体覆盖 baseAssets）；
   // ② 一次性还原旧版本被压错的资产分类。用户自行登记的资产与主动删除的记录都不动。
@@ -247,6 +315,12 @@ export const useAssetStore = defineStore('asset', () => {
     assets,
     allAssets,
     visibleAssets,
+    getProjectAssets,
+    attachedAssetsOf,
+    projectStats,
+    unattachedAssets,
+    attachToProject,
+    detachFromProject,
     certRecords,
     getAssetsByCompany,
     addAsset,
