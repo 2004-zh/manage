@@ -68,6 +68,7 @@
 
         <el-table :data="pagedReleases" border stripe>
           <el-table-column label="资产信息" align="center">
+            <el-table-column prop="assetName" label="资产名称" min-width="160" show-overflow-tooltip />
             <el-table-column prop="assetType" label="资产类型" width="110" />
             <el-table-column prop="assetLocation" label="资产座落" min-width="180" show-overflow-tooltip />
             <el-table-column prop="region" label="省市区" width="160" show-overflow-tooltip />
@@ -560,14 +561,17 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Filter, Search } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
+import { useLeaseStore } from '../../store/lease'
 
 const router = useRouter()
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
+const leaseStore = useLeaseStore()
 
 const activeTab = ref('release')
 const statusFilter = ref('')
@@ -598,23 +602,15 @@ const idleAssetOptions = computed(() =>
     .filter(a => a.area > 0 && a.status !== '自用')
 )
 
-// 招租公告
-const publishList = ref([
-  { noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', area: 3600, startPrice: 65000, publishDate: '2026-08-15', deadline: '2026-09-15', registrantCount: 5, status: '报名中' },
-  { noticeNo: 'GG-2026-002', assetName: '江田镇仓储用地', area: 12000, startPrice: 25000, publishDate: '2026-08-20', deadline: '2026-09-20', registrantCount: 3, status: '报名中' },
-  { noticeNo: 'GG-2026-003', assetName: '吴航街道商业街 A-03', area: 180, startPrice: 12000, publishDate: '2026-07-01', deadline: '2026-08-01', registrantCount: 8, status: '已截止' },
-  { noticeNo: 'GG-2026-004', assetName: '玉田镇旧工业厂房', area: 2400, startPrice: 18000, publishDate: '2026-06-10', deadline: '2026-07-10', registrantCount: 4, status: '已截止' },
-])
-
-// 报名管理
-const registrantList = ref([
-  { regNo: 'BM-2026-001', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '福建恒通纺织有限公司', contactPhone: '138****5678', registerDate: '2026-08-18', qualification: '已通过' },
-  { regNo: 'BM-2026-002', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '长乐鑫达机械加工厂', contactPhone: '139****1234', registerDate: '2026-08-20', qualification: '已通过' },
-  { regNo: 'BM-2026-003', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', registrant: '福州瑞丰物流有限公司', contactPhone: '137****9876', registerDate: '2026-08-22', qualification: '待审核' },
-  { regNo: 'BM-2026-004', noticeNo: 'GG-2026-002', assetName: '江田镇仓储用地', registrant: '长乐盛达仓储公司', contactPhone: '135****4321', registerDate: '2026-08-25', qualification: '已通过' },
-  { regNo: 'BM-2026-005', noticeNo: 'GG-2026-002', assetName: '江田镇仓储用地', registrant: '福建中远物流', contactPhone: '136****7890', registerDate: '2026-08-28', qualification: '待审核' },
-  { regNo: 'BM-2026-006', noticeNo: 'GG-2026-003', assetName: '吴航街道商业街 A-03', registrant: '陈小明', contactPhone: '158****2468', registerDate: '2026-07-05', qualification: '已通过' },
-])
+// 六张列表全部由 lease store 持有（可持久化、跨页面共享），页面只做筛选与展示
+const {
+  notices: publishList,
+  registrants: registrantList,
+  bids: bidList,
+  results: resultList,
+  rentRecords: records,
+  releases: releaseRecords
+} = storeToRefs(leaseStore)
 
 const filteredRegistrants = computed(() => {
   return registrantList.value.filter(r => {
@@ -623,27 +619,6 @@ const filteredRegistrants = computed(() => {
     return assetMatch && regMatch
   })
 })
-
-// 竞价管理
-const bidList = ref([
-  { bidNo: 'JJ-2026-001', noticeNo: 'GG-2026-003', assetName: '吴航街道商业街 A-03', startPrice: 12000, currentPrice: 18500, bidCount: 12, bidderCount: 8, status: '已结束' },
-  { bidNo: 'JJ-2026-002', noticeNo: 'GG-2026-004', assetName: '玉田镇旧工业厂房', startPrice: 18000, currentPrice: 22000, bidCount: 6, bidderCount: 4, status: '已结束' },
-  { bidNo: 'JJ-2026-003', noticeNo: 'GG-2026-001', assetName: '营前标准厂房 2#', startPrice: 65000, currentPrice: 78000, bidCount: 3, bidderCount: 3, status: '进行中' },
-])
-
-// 结果公示
-const resultList = ref([
-  { resultNo: 'GS-2026-001', noticeNo: 'GG-2026-003', assetId: 'CT-003', assetName: '吴航街道商业街 A-03', area: 180, winner: '陈小明', dealPrice: 18500, premiumRate: 54.2, publishDate: '2026-08-05', status: '已公示', contractId: '' },
-  { resultNo: 'GS-2026-002', noticeNo: 'GG-2026-004', assetId: 'CT-006', assetName: '玉田镇旧工业厂房', area: 2400, winner: '福建恒通纺织有限公司', dealPrice: 22000, premiumRate: 22.2, publishDate: '2026-07-15', status: '已公示', contractId: '' },
-])
-
-// 全部记录
-const records = ref([
-  { id: 1, rentNo: 'ZC-2026-001', assetName: '城关旧厂房1#', area: 1800, startPrice: 15000, method: '公开竞价', startDate: '2026-02-01', endDate: '2026-03-01', status: '已成交', bidders: '3家', dealPrice: 18500 },
-  { id: 2, rentNo: 'ZC-2026-002', assetName: '航城商铺A-08', area: 120, startPrice: 3500, method: '挂牌出租', startDate: '2026-03-01', endDate: '2026-03-31', status: '招租中', bidders: null, dealPrice: null },
-  { id: 3, rentNo: 'ZC-2026-003', assetName: '营前仓库C-01', area: 600, startPrice: 8000, method: '公开竞价', startDate: '2026-01-10', endDate: '2026-02-10', status: '已流拍', bidders: '0家', dealPrice: null },
-  { id: 4, rentNo: 'ZC-2026-004', assetName: '漳港商铺E-02', area: 95, startPrice: 2800, method: '协议出租', startDate: '2026-03-15', endDate: '2026-04-15', status: '待审批', bidders: null, dealPrice: null },
-])
 
 const filteredRecords = computed(() => {
   if (!statusFilter.value) return records.value
@@ -677,30 +652,26 @@ function handleCreate() {
     return
   }
   const asset = pickedRentOption.value
-  const nextNo = publishList.value.reduce((max, n) => {
-    const num = Number(String(n.noticeNo).split('-').pop())
-    return Number.isFinite(num) && num > max ? num : max
-  }, 0) + 1
-  const newNotice = {
-    noticeNo: `GG-2026-${String(nextNo).padStart(3, '0')}`,
+  const { notice, release } = leaseStore.publishRent({
     assetId: asset.id,
-    assetName: asset.name,
-    area: leaseArea,
-    totalArea: asset.totalArea,
-    partial: asset.status === '部分出租' || leaseArea < asset.area,
+    leaseArea,
+    method: createForm.value.method,
     startPrice: createForm.value.startPrice,
-    publishDate: new Date().toISOString().slice(0, 10),
+    startDate: range[0],
     deadline: range[1],
-    registrantCount: 0,
-    status: '报名中'
+    noticeContent: createForm.value.noticeContent,
+    remark: createForm.value.remark
+  }) || {}
+  if (!notice) {
+    ElMessage.error('未在台账中找到该资产，招租未发布')
+    return
   }
-  publishList.value.unshift(newNotice)
   showCreate.value = false
   const left = Math.round((asset.area - leaseArea) * 100) / 100
   ElMessage.success(
     left > 0
-      ? `招租公告已发布，本次招租 ${leaseArea.toLocaleString()} ㎡，该资产仍有 ${left.toLocaleString()} ㎡ 可继续招租`
-      : '招租公告已发布，系统已推送至公开平台'
+      ? `${notice.noticeNo} 已发布，同时生成招商发布记录「${release.assetName}」，该资产仍有 ${left.toLocaleString()} ㎡ 可继续招租`
+      : `${notice.noticeNo} 已发布，同时生成招商发布记录，系统已推送至公开平台`
   )
   Object.assign(createForm.value, { assetId: '', leaseArea: 0, method: '公开竞价', startPrice: 0, dateRange: null, noticeContent: '', remark: '' })
 }
@@ -851,7 +822,10 @@ function handleSignContract(row) {
       source: `招租${row.resultNo}`
     })
     const summary = contractStore.getLeaseSummary(asset)
-    asset.status = summary.availableArea > 0 ? '部分出租' : '已出租'
+    // 直接改 assets 里的对象是无效的（那是 computed 每次新建的临时对象），必须走统一写入口回写
+    assetStore.updateAsset(asset.id,
+      { status: summary.availableArea > 0 ? '部分出租' : '已出租' },
+      { module: '招商租赁', action: '招租成交联动', billNo: newId, remark: `招租结果 ${row.resultNo} 签约后回写出租状态` })
     row.status = '已签约'
     row.contractId = newId
     ElMessage.success(`合同 ${newId} 已生成，请前往合同管理完成电子签章`)
@@ -868,22 +842,6 @@ function viewResultDetail(row) {
 }
 
 const releaseCompanies = ['城投集团', '产投集团', '水投集团', '领航公司']
-const placeholderImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC'
-
-function mockImgs(count, prefix) {
-  return Array.from({ length: count }, (_, i) => ({ name: `${prefix}${i + 1}.png`, url: placeholderImg }))
-}
-
-const releaseRecords = ref([
-  { id: 1, assetId: 'CT-003', assetNo: 'CT-003', assetName: '营前标准厂房 2#', assetType: '厂房', assetLocation: '福州市长乐区营前街道工业园区2号', region: '福建省/福州市/长乐区', area: 3600, company: '城投集团', leaseType: '长期（3年以上）', method: '公开竞价', rentType: '价格', rent: 65000, remark: '标准厂房整栋招租', period: '2026-08-15 ~ 2026-09-15', createTime: '2026-08-15 09:30', enabled: true, recommend: true, dealt: false, intro: '标准钢结构厂房，层高9米，配套行车及办公区，适合智能制造、仓储物流企业入驻。', usageReq: '限工业生产及仓储用途，不得存放易燃易爆物品，需通过环评审批。', listImg: mockImgs(1, '列表图'), carouselImg: mockImgs(2, '轮播图') },
-  { id: 2, assetId: 'CT-101', assetNo: 'CT-101', assetName: '江田闲置用地 1#', assetType: '仓储/土地', assetLocation: '福州市长乐区江田镇临港路西侧', region: '福建省/福州市/长乐区', area: 12000, company: '产投集团', leaseType: '中期（1-3年）', method: '挂牌出租', rentType: '价格', rent: 25000, remark: '临港仓储用地', period: '2026-08-20 ~ 2026-09-20', createTime: '2026-08-20 10:05', enabled: true, recommend: false, dealt: false, intro: '已平整仓储用地，紧邻疏港公路，水电齐全，适合露天仓储及物流周转。', usageReq: '限仓储物流用途，禁止建设永久性建筑，需服从园区统一管理。', listImg: mockImgs(1, '列表图'), carouselImg: mockImgs(1, '轮播图') },
-  { id: 3, assetId: 'CT-005', assetNo: 'CT-005', assetName: '吴航街道商业街 A-03', assetType: '商铺', assetLocation: '福州市长乐区吴航街道商业街A区3号', region: '福建省/福州市/长乐区', area: 180, company: '城投集团', leaseType: '中期（1-3年）', method: '公开竞价', rentType: '价格', rent: 18500, remark: '临街旺铺，已成交', period: '2026-07-01 ~ 2026-08-01', createTime: '2026-07-01 08:40', enabled: false, recommend: false, dealt: true, intro: '商业街核心位置临街商铺，人流密集，展示面宽，适合品牌零售及餐饮。', usageReq: '限商业经营用途，餐饮业态需配备油烟净化设施。', listImg: mockImgs(1, '列表图'), carouselImg: mockImgs(2, '轮播图') },
-  { id: 4, assetId: 'CT-006', assetNo: 'CT-006', assetName: '玉田镇旧工业厂房', assetType: '厂房', assetLocation: '福州市长乐区玉田镇旧工业区9号', region: '福建省/福州市/长乐区', area: 2400, company: '领航公司', leaseType: '长期（3年以上）', method: '协议出租', rentType: '价格', rent: 22000, remark: '旧厂房改造招租', period: '2026-06-10 ~ 2026-07-10', createTime: '2026-06-10 14:20', enabled: false, recommend: false, dealt: true, intro: '旧工业厂房，结构完好，场地开阔，适合文创改造或轻型加工。', usageReq: '用途需符合园区转型规划，改造方案须报集团审批。', listImg: mockImgs(1, '列表图'), carouselImg: mockImgs(1, '轮播图') },
-  { id: 5, assetId: 'CT-021', assetNo: 'CT-021', assetName: '航城商铺A-08', assetType: '商铺', assetLocation: '福州市长乐区航城街道商务路A区8号', region: '福建省/福州市/长乐区', area: 120, company: '城投集团', leaseType: '短期（1年以内）', method: '挂牌出租', rentType: '价格', rent: 3500, remark: '社区底商', period: '2026-03-01 ~ 2026-03-31', createTime: '2026-03-01 09:00', enabled: true, recommend: false, dealt: false, intro: '成熟社区底商，紧邻公交站点，适合便利店、快递驿站等便民业态。', usageReq: '限便民商业业态，不得经营产生噪音污染的项目。', listImg: mockImgs(1, '列表图'), carouselImg: mockImgs(1, '轮播图') },
-  { id: 6, assetId: 'CT-034', assetNo: 'CT-034', assetName: '营前仓库C-01', assetType: '仓储', assetLocation: '福州市长乐区营前街道仓前路C区1号', region: '福建省/福州市/长乐区', area: 600, company: '水投集团', leaseType: '中期（1-3年）', method: '公开竞价', rentType: '面议', rent: 0, remark: '租金面议', period: '2026-01-10 ~ 2026-02-10', createTime: '2026-01-10 11:15', enabled: true, recommend: false, dealt: false, intro: '普通货物仓库，带装卸平台，库区道路宽敞，货车进出方便。', usageReq: '限普通货物仓储，禁止存放危化品及生鲜冷冻货物。', listImg: mockImgs(1, '列表图'), carouselImg: mockImgs(2, '轮播图') },
-  { id: 7, assetId: 'CT-042', assetNo: 'CT-042', assetName: '漳港商铺E-02', assetType: '商铺', assetLocation: '福州市长乐区漳港街道海滨路E区2号', region: '福建省/福州市/长乐区', area: 95, company: '产投集团', leaseType: '短期（1年以内）', method: '协议出租', rentType: '价格', rent: 2800, remark: '海滨旅游商铺', period: '2026-03-15 ~ 2026-04-15', createTime: '2026-03-15 16:45', enabled: true, recommend: true, dealt: false, intro: '海滨旅游商圈商铺，旺季客流量大，适合海鲜餐饮及旅游商品经营。', usageReq: '限旅游配套商业业态，需配合景区统一营销活动。', listImg: mockImgs(1, '列表图'), carouselImg: mockImgs(1, '轮播图') },
-  { id: 8, assetId: 'CT-015', assetNo: 'CT-015', assetName: '梅花镇综合楼', assetType: '写字楼', assetLocation: '福州市长乐区梅花镇海滨路66号', region: '福建省/福州市/长乐区', area: 800, company: '领航公司', leaseType: '长期（3年以上）', method: '挂牌出租', rentType: '面议', rent: 0, remark: '整栋综合楼招租', period: '2026-05-06 ~ 2026-06-06', createTime: '2026-05-06 10:30', enabled: false, recommend: false, dealt: false, intro: '滨海综合楼整栋招租，可作酒店、办公或文旅综合体使用，视野开阔。', usageReq: '整体承租，业态需符合乡镇文旅发展规划。', listImg: mockImgs(1, '列表图'), carouselImg: mockImgs(2, '轮播图') }
-])
 
 const releaseFilters = ref({ keyword: '', company: '', status: '' })
 const releaseShowFilter = ref(true)
@@ -1063,9 +1021,8 @@ function saveRelease() {
 
 function deleteRelease(row) {
   ElMessageBox.confirm(`确定删除"${row.assetName}"的招租发布吗？`, '删除确认', { type: 'warning' }).then(() => {
-    const idx = releaseRecords.value.findIndex(r => r.id === row.id)
-    if (idx >= 0) releaseRecords.value.splice(idx, 1)
-    ElMessage.success('删除成功')
+    if (leaseStore.removeRelease(row.id)) ElMessage.success('删除成功')
+    else ElMessage.warning('记录已不存在，请刷新列表')
   }).catch(() => {})
 }
 
