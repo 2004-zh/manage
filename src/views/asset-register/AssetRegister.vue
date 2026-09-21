@@ -108,6 +108,16 @@
                 <el-option label="综合用房" value="综合用房" />
                 <el-option label="仓储/土地" value="仓储/土地" />
                 <el-option label="农贸市场" value="农贸市场" />
+                <el-option label="车辆" value="车辆" />
+                <el-option label="船舶" value="船舶" />
+                <el-option label="车位" value="车位" />
+                <el-option label="公共设备" value="公共设备" />
+                <el-option label="股权" value="股权" />
+                <el-option label="采矿权" value="采矿权" />
+                <el-option label="探矿权" value="探矿权" />
+                <el-option label="特种行业" value="特种行业" />
+                <el-option label="特许经营权" value="特许经营权" />
+                <el-option label="特殊动植物" value="特殊动植物" />
               </el-select>
             </el-form-item>
           </el-col>

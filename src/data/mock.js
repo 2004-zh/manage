@@ -63,8 +63,31 @@ const detailedAssets = [
   { id: 'CT-008', name: '梅花镇综合楼', location: '梅花镇', type: '综合用房', status: '自用', area: 1500, bookValue: 720, annualRent: null, certStatus: '已办证', certDetail: '闽(2020)长乐区不动产权第0067890号', group: '领航公司', assetCategory: '房产类', propertyRight: '两证齐全', assetUsage: '写字楼', sourceType: '自建', acquisitionMethod: '自建' }
 ]
 
+// 台账另有 7 个分类页签（运输设备/矿产资源/公共设备/长期股权投资/特殊特种行业/经营权/特殊动植物），
+// 房产类种子覆盖不到，这里补一批非房产类资产，保证每个页签都有可查的数据。
+const specialtyAssets = [
+  { id: 'CT-201', name: '城投集团公务车 闽A·D1234', location: '吴航街道', type: '车辆', status: '自用', area: 0, bookValue: 28, annualRent: null, certStatus: '已办证', certDetail: '闽(2022)机动车登记证书第0123456号', group: '城投集团', assetCategory: '运输设备', propertyRight: '两证齐全', assetUsage: '车辆', sourceType: '购入', acquisitionMethod: '自购' },
+  { id: 'CT-202', name: '漳港港区货运车 闽A·T5678', location: '漳港街道', type: '车辆', status: '已出租', area: 0, bookValue: 35, annualRent: 9, certStatus: '已办证', certDetail: '闽(2021)机动车登记证书第0234567号', group: '产投集团', assetCategory: '运输设备', propertyRight: '有不动产证', assetUsage: '车辆', sourceType: '购入', acquisitionMethod: '自购' },
+  { id: 'CT-203', name: '梅花镇渔业执法船“长渔01”', location: '梅花镇', type: '船舶', status: '自用', area: 0, bookValue: 120, annualRent: null, certStatus: '已办证', certDetail: '闽(2020)船舶登记第0345678号', group: '水投集团', assetCategory: '运输设备', propertyRight: '两证齐全', assetUsage: '船舶', sourceType: '自建', acquisitionMethod: '自建' },
+  { id: 'CT-204', name: '吴航街道地下车位（12 个）', location: '吴航街道', type: '车位', status: '闲置', area: 420, bookValue: 96, annualRent: null, certStatus: '未办证（办理中）', certDetail: '', group: '城投集团', assetCategory: '运输设备', propertyRight: '无证', assetUsage: '车位', sourceType: '划入', acquisitionMethod: '划拨' },
+  { id: 'CT-205', name: '航城街道建筑用砂矿采矿权', location: '航城街道', type: '采矿权', status: '已出租', area: 0, bookValue: 860, annualRent: 45, certStatus: '已办证', certDetail: '闽C采许(2021)第0456789号', group: '城投集团', assetCategory: '矿产资源类', propertyRight: '有不动产证', assetUsage: '矿权', sourceType: '划拨', acquisitionMethod: '划拨' },
+  { id: 'CT-206', name: '江田镇地热探矿权', location: '江田镇', type: '探矿权', status: '闲置', area: 0, bookValue: 210, annualRent: null, certStatus: '未办证（未启动）', certDetail: '', group: '产投集团', assetCategory: '矿产资源类', propertyRight: '无证', assetUsage: '矿权', sourceType: '划入', acquisitionMethod: '划拨' },
+  { id: 'CT-207', name: '城区垃圾分类转运站设备（3 座）', location: '首占新区', type: '公共设备', status: '自用', area: 360, bookValue: 240, annualRent: null, certStatus: '已办证', certDetail: '闽(2022)长乐区公共设施登记第0567890号', group: '城投集团', assetCategory: '公共设备类', propertyRight: '两证齐全', assetUsage: '公共设施', sourceType: '自筹建设', acquisitionMethod: '自建' },
+  { id: 'CT-208', name: '智慧停车充电桩批次一（48 台）', location: '航城街道', type: '公共设备', status: '已出租', area: 0, bookValue: 150, annualRent: 18, certStatus: '已办证', certDetail: '闽(2023)长乐区公共设施登记第0678901号', group: '领航公司', assetCategory: '公共设备类', propertyRight: '有证', assetUsage: '公共设施', sourceType: '投资建设', acquisitionMethod: '自建' },
+  { id: 'CT-209', name: '首占新区社区健身器材一批', location: '首占新区', type: '公共设备', status: '自用', area: 0, bookValue: 26, annualRent: null, certStatus: '未办证（办理中）', certDetail: '', group: '水投集团', assetCategory: '公共设备类', propertyRight: '无证', assetUsage: '公共设施', sourceType: '移交资产', acquisitionMethod: '划拨' },
+  { id: 'CT-210', name: '福州长乐汇通建设股份有限公司 12% 股权', location: '长乐区', type: '股权', status: '自用', area: 0, bookValue: 1500, annualRent: null, certStatus: '已办证', certDetail: '股权登记证第0789012号', group: '城投集团', assetCategory: '长期股权投资类', propertyRight: '两证齐全', assetUsage: '股权', sourceType: '股权合作', acquisitionMethod: '自购' },
+  { id: 'CT-211', name: '长乐农商联合银行 3.5% 股权', location: '吴航街道', type: '股权', status: '自用', area: 0, bookValue: 980, annualRent: null, certStatus: '已办证', certDetail: '股权登记证第0890123号', group: '产投集团', assetCategory: '长期股权投资类', propertyRight: '有证', assetUsage: '股权', sourceType: '股权合作', acquisitionMethod: '自购' },
+  { id: 'CT-212', name: '区间供水项目公司 20% 股权（待退出）', location: '文武砂街道', type: '股权', status: '闲置', area: 0, bookValue: 600, annualRent: null, certStatus: '未办证（办理中）', certDetail: '', group: '水投集团', assetCategory: '长期股权投资类', propertyRight: '无证', assetUsage: '股权', sourceType: '股权合作', acquisitionMethod: '自购' },
+  { id: 'CT-213', name: '玉田镇公益性公墓及殡葬服务设施', location: '玉田镇', type: '特种行业', status: '自用', area: 5200, bookValue: 430, annualRent: null, certStatus: '已办证', certDetail: '闽(2019)长乐区特种行业许可第0901234号', group: '城投集团', assetCategory: '特殊特种行业类', propertyRight: '两证齐全', assetUsage: '特种设施', sourceType: '投资建设', acquisitionMethod: '自建' },
+  { id: 'CT-214', name: '文武砂危化品专用仓库', location: '文武砂街道', type: '特种行业', status: '已出租', area: 1800, bookValue: 260, annualRent: 32, certStatus: '已办证', certDetail: '闽(2020)长乐区特种行业许可第1012345号', group: '水投集团', assetCategory: '特殊特种行业类', propertyRight: '有不动产证', assetUsage: '仓储', sourceType: '自建', acquisitionMethod: '自建' },
+  { id: 'CT-215', name: '城区户外广告设置经营权（3 年期）', location: '吴航街道', type: '特许经营权', status: '已出租', area: 0, bookValue: 180, annualRent: 60, certStatus: '已办证', certDetail: '长城管广字(2024)第1123456号', group: '领航公司', assetCategory: '经营权类资产', propertyRight: '有证', assetUsage: '广告位', sourceType: '移交资产', acquisitionMethod: '划拨' },
+  { id: 'CT-216', name: '鹤上镇公交线路运营权', location: '鹤上镇', type: '特许经营权', status: '已出租', area: 0, bookValue: 320, annualRent: 88, certStatus: '已办证', certDetail: '闽交运字(2023)第1234567号', group: '城投集团', assetCategory: '经营权类资产', propertyRight: '两证齐全', assetUsage: '运营权', sourceType: '划入', acquisitionMethod: '划拨' },
+  { id: 'CT-217', name: '潭头镇珍稀苗木繁育基地（12 亩）', location: '古槐镇', type: '特殊动植物', status: '已出租', area: 8000, bookValue: 75, annualRent: 6, certStatus: '未办证（办理中）', certDetail: '', group: '产投集团', assetCategory: '特殊动植物类', propertyRight: '无证', assetUsage: '林地', sourceType: '托管', acquisitionMethod: '划拨' },
+  { id: 'CT-218', name: '文武砂对虾育苗棚及种质资源', location: '文武砂街道', type: '特殊动植物', status: '闲置', area: 2600, bookValue: 48, annualRent: null, certStatus: '未办证（未启动）', certDetail: '', group: '水投集团', assetCategory: '特殊动植物类', propertyRight: '无证', assetUsage: '养殖设施', sourceType: '自建', acquisitionMethod: '自建' }
+]
+
 function generateAssets() {
-  const assets = [...detailedAssets]
+  const assets = [...detailedAssets, ...specialtyAssets]
   const rentedLocations = ['吴航街道', '航城街道', '营前街道', '首占新区', '鹤上镇', '古槐镇', '文武砂街道', '漳港街道', '湖南镇', '文武砂街道']
   const rentedTypes = ['商铺', '写字楼', '厂房', '保障房', '仓储', '综合用房', '农贸市场', '写字楼', '商铺', '厂房']
   const rentedNames = ['街铺', '办公楼', '标准厂房', '综合楼', '仓储中心', '商务楼', '市场', '创业园', '商铺', '加工车间']

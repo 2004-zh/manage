@@ -71,11 +71,14 @@ export const useAssetStore = defineStore('asset', () => {
 
   const allAssets = computed(() => assets.value)
 
-  // 旧版本 localStorage 给种子资产统一压过 '房产类'，会把它们钉在错误的页签上。
-  // 升级到「分类在 store 里一次定死」后，用一次性纠正把种子行的分类还原成当前种子值；
-  // 用户自己登记的资产（不在种子里）原样保留。
+  // 缓存恢复后：① 按 id 补齐后续版本新增的种子资产（$patch 会用旧数组整体覆盖 baseAssets）；
+  // ② 一次性还原旧版本被压错的资产分类。用户自行登记的资产与主动删除的记录都不动。
   const SEED_CATEGORY_FIX = 'ams:seed-category-fixed-v2'
-  function onSeedCategoryMigrated() {
+  function syncSeedsAfterHydrate() {
+    const known = new Set(baseAssets.value.map(a => a.id))
+    const missing = initialAssets.filter(a => !known.has(a.id))
+    if (missing.length) baseAssets.value = [...baseAssets.value, ...missing]
+
     if (localStorage.getItem(SEED_CATEGORY_FIX)) return
     const seedCategory = new Map(initialAssets.map(a => [a.id, a.assetCategory]))
     baseAssets.value = baseAssets.value.map(a =>
@@ -109,8 +112,17 @@ export const useAssetStore = defineStore('asset', () => {
     return assets.value.filter(a => a.group === companyName)
   }
 
+  function nextAssetId() {
+    // 种子里有 CT-2xx 段落，取现有最大号 +1 而不是数组长度，避免新增资产撞号
+    const max = baseAssets.value.reduce((m, a) => {
+      const n = /^CT-(\d+)$/.exec(a.id)
+      return n ? Math.max(m, Number(n[1])) : m
+    }, 0)
+    return `CT-${String(max + 1).padStart(3, '0')}`
+  }
+
   function addAsset(asset, meta = {}) {
-    const newId = `CT-${String(baseAssets.value.length + 1).padStart(3, '0')}`
+    const newId = nextAssetId()
     const newAsset = { ...asset, id: newId }
     baseAssets.value.push(newAsset)
     useAuditStore().recordEvent({
@@ -222,7 +234,7 @@ export const useAssetStore = defineStore('asset', () => {
     baseAssets,
     overrides,
     removedIds,
-    onHydrated: onSeedCategoryMigrated,
+    onHydrated: syncSeedsAfterHydrate,
     assets,
     allAssets,
     certRecords,

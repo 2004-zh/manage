@@ -97,11 +97,7 @@
         </el-form-item>
         <el-form-item label="资产类型">
           <el-select v-model="searchForm.type" placeholder="请选择" clearable style="width: 120px">
-            <el-option label="保障房" value="保障房" />
-            <el-option label="商铺" value="商铺" />
-            <el-option label="写字楼" value="写字楼" />
-            <el-option label="厂房" value="厂房" />
-            <el-option label="农贸市场" value="农贸市场" />
+            <el-option v-for="t in assetTypeOptions" :key="t" :label="t" :value="t" />
           </el-select>
         </el-form-item>
         <el-form-item label="资产状态">
@@ -553,11 +549,14 @@
           <el-col :span="12">
             <el-form-item label="资产类型" prop="type">
               <el-select v-model="assetForm.type" placeholder="请选择" style="width: 100%">
-                <el-option label="保障房" value="保障房" />
-                <el-option label="商铺" value="商铺" />
-                <el-option label="写字楼" value="写字楼" />
-                <el-option label="厂房" value="厂房" />
-                <el-option label="农贸市场" value="农贸市场" />
+                <el-option v-for="t in assetTypeOptions" :key="t" :label="t" :value="t" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="资产分类" prop="assetCategory">
+              <el-select v-model="assetForm.assetCategory" placeholder="请选择" style="width: 100%">
+                <el-option v-for="c in assetCategories" :key="c" :label="c" :value="c" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -838,6 +837,7 @@ const assetForm = reactive({
   code: '',
   name: '',
   type: '',
+  assetCategory: '房产类',
   status: '闲置',
   area: 0,
   rentPrice: 0,
@@ -846,10 +846,16 @@ const assetForm = reactive({
   remark: ''
 })
 
+const assetTypeOptions = [
+  '保障房', '商铺', '写字楼', '厂房', '综合用房', '仓储/土地', '农贸市场',
+  '车辆', '船舶', '车位', '公共设备', '股权', '采矿权', '探矿权', '特种行业', '特许经营权', '特殊动植物'
+]
+
 const assetRules = {
   code: [{ required: true, message: '请输入资产编码', trigger: 'blur' }],
   name: [{ required: true, message: '请输入资产名称', trigger: 'blur' }],
   type: [{ required: true, message: '请选择资产类型', trigger: 'change' }],
+  assetCategory: [{ required: true, message: '请选择资产分类', trigger: 'change' }],
   status: [{ required: true, message: '请选择资产状态', trigger: 'change' }],
   area: [{ required: true, message: '请输入面积', trigger: 'blur' }]
 }
@@ -942,14 +948,14 @@ const handleReset = () => {
 const handleAdd = () => {
   isEdit.value = false
   editingId.value = null
-  Object.assign(assetForm, { code: '', name: '', type: '', status: '闲置', area: 0, rentPrice: 0, location: '', owner: '', remark: '' })
+  Object.assign(assetForm, { code: '', name: '', type: '', assetCategory: activeCategory.value, status: '闲置', area: 0, rentPrice: 0, location: '', owner: '', remark: '' })
   formDialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   isEdit.value = true
   editingId.value = row.id
-  Object.assign(assetForm, { ...row })
+  Object.assign(assetForm, { ...row, assetCategory: row.category })
   formDialogVisible.value = true
 }
 
@@ -984,7 +990,7 @@ const toAssetPayload = () => ({
   owner: assetForm.owner,
   remark: assetForm.remark || '',
   code: (assetForm.code || '').trim(),
-  assetCategory: deriveAssetCategory(assetForm.type),
+  assetCategory: assetForm.assetCategory,
   group: assetForm.owner || '城投集团',
   sourceType: '划入',
   bookValue: 0
