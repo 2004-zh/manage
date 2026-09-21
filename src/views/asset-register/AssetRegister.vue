@@ -27,12 +27,10 @@
             <el-option label="维修中" value="维修中" />
           </el-select>
         </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.group" placeholder="所属公司" clearable>
-            <el-option v-for="g in groups" :key="g" :label="g" :value="g" />
-          </el-select>
+        <el-col :span="6">
+          <div class="scope-tag">产权公司锁定为「{{ currentCompany }}」，列表仅显示本公司资产</div>
         </el-col>
-        <el-col :span="3">
+        <el-col :span="4">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
         </el-col>
@@ -81,9 +79,8 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="产权公司" required>
-              <el-select v-model="form.group" placeholder="请选择" style="width:100%">
-                <el-option v-for="g in groups" :key="g" :label="g" :value="g" />
-              </el-select>
+              <el-input :model-value="currentCompany" disabled />
+              <div class="field-tip">按登录账号自动归属，如需登记其他公司资产请用对应公司账号登录</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -288,20 +285,23 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
+import { useUserStore } from '../../store/user'
 import { ASSET_CATEGORIES } from '../../data/assetCategory'
 
 const assetStore = useAssetStore()
+const userStore = useUserStore()
 
 // 与资产台账页签共用同一套分类词表，登记选什么就能在台账哪个页签找到
 const assetCategories = ASSET_CATEGORIES
-const groups = ['城投集团', '产投集团', '水投集团', '领航公司']
+// 企业端按登录账号隔离数据：产权公司不由用户挑，登记进来就是本公司的资产
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
 const page = ref(1)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const detailVisible = ref(false)
 const currentRow = ref(null)
 
-const filters = ref({ keyword: '', assetType: '', status: '', group: '' })
+const filters = ref({ keyword: '', assetType: '', status: '' })
 
 const defaultForm = { group: '', name: '', assetCategory: '', type: '', assetUsage: '', assetNature: '', location: '', area: 0, rentArea: 0, unitPrice: 0, bookValue: 0, floor: '', roomNo: '', orientation: '', buildYear: '', structureType: '', decoration: '', sourceType: '' }
 const form = ref({ ...defaultForm })
@@ -314,6 +314,7 @@ const evalTotal = computed(() => {
 
 const filteredAssets = computed(() => {
   return assetStore.assets.filter(a => {
+    if (a.group !== currentCompany.value) return false
     if (filters.value.keyword) {
       const kw = filters.value.keyword
       const searchable = [a.name, a.id, a.assetNo, a.projectName, a.zoneName, a.floorName, a.location].filter(Boolean).join(' ')
@@ -321,7 +322,6 @@ const filteredAssets = computed(() => {
     }
     if (filters.value.assetType && a.assetCategory !== filters.value.assetType) return false
     if (filters.value.status && a.status !== filters.value.status) return false
-    if (filters.value.group && a.group !== filters.value.group) return false
     return true
   })
 })
@@ -333,13 +333,13 @@ const getStatusType = (status) => {
 
 function showRegisterForm() {
   isEdit.value = false
-  form.value = { ...defaultForm }
+  form.value = { ...defaultForm, group: currentCompany.value }
   dialogVisible.value = true
 }
 
 function editAsset(row) {
   isEdit.value = true
-  form.value = { ...row, group: row.group, name: row.name, assetCategory: row.assetCategory, type: row.type, assetUsage: row.assetUsage || '', assetNature: '', location: row.location, area: row.area, rentArea: row.rentArea ?? row.area, unitPrice: row.unitPrice ?? 0, bookValue: row.bookValue ?? 0, floor: '', roomNo: '', orientation: '', buildYear: '', structureType: '', decoration: '', sourceType: row.sourceType || '' }
+  form.value = { ...row, group: currentCompany.value, name: row.name, assetCategory: row.assetCategory, type: row.type, assetUsage: row.assetUsage || '', assetNature: '', location: row.location, area: row.area, rentArea: row.rentArea ?? row.area, unitPrice: row.unitPrice ?? 0, bookValue: row.bookValue ?? 0, floor: '', roomNo: '', orientation: '', buildYear: '', structureType: '', decoration: '', sourceType: row.sourceType || '' }
   dialogVisible.value = true
 }
 
@@ -367,6 +367,7 @@ function saveAsset() {
   } else {
     assetStore.addAsset({
       ...form.value,
+      group: currentCompany.value,
       status: '闲置',
       certStatus: '未办证',
       certDetail: '',
@@ -384,7 +385,7 @@ function saveAsset() {
 }
 
 function handleSearch() { page.value = 1 }
-function resetFilters() { filters.value = { keyword: '', assetType: '', status: '', group: '' } }
+function resetFilters() { filters.value = { keyword: '', assetType: '', status: '' } }
 const importDialogVisible = ref(false)
 const importFile = ref(null)
 
@@ -397,8 +398,8 @@ function onImportFileChange(file) {
 }
 function submitImport() {
   const mockImport = [
-    { name: '导入资产-1', assetCategory: '房产类', type: '商铺', area: 120, location: '城关', status: '闲置', certStatus: '未办证', certDetail: '', leaseStatus: '未出租', isLeased: '否', partialLease: '不支持', group: '城投集团', bookValue: 0, annualRent: null, propertyRight: '无证', acquisitionMethod: '自建' },
-    { name: '导入资产-2', assetCategory: '土地类', type: '商业用地', area: 500, location: '航城', status: '闲置', certStatus: '未办证', certDetail: '', leaseStatus: '未出租', isLeased: '否', partialLease: '不支持', group: '产投集团', bookValue: 0, annualRent: null, propertyRight: '无证', acquisitionMethod: '划拨' }
+    { name: '导入资产-1', assetCategory: '房产类', type: '商铺', area: 120, location: '城关', status: '闲置', certStatus: '未办证', certDetail: '', leaseStatus: '未出租', isLeased: '否', partialLease: '不支持', group: currentCompany.value, bookValue: 0, annualRent: null, propertyRight: '无证', acquisitionMethod: '自建' },
+    { name: '导入资产-2', assetCategory: '土地类', type: '商业用地', area: 500, location: '航城', status: '闲置', certStatus: '未办证', certDetail: '', leaseStatus: '未出租', isLeased: '否', partialLease: '不支持', group: currentCompany.value, bookValue: 0, annualRent: null, propertyRight: '无证', acquisitionMethod: '划拨' }
   ]
   mockImport.forEach(a => assetStore.addAsset(a))
   importDialogVisible.value = false
@@ -424,4 +425,6 @@ function handleExport() {
 .page-container { height: 100%; }
 .asset-form .el-divider { margin: 20px 0 16px; }
 .pagination-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
+.scope-tag { line-height: 32px; font-size: 13px; color: var(--el-text-color-regular); }
+.field-tip { width: 100%; font-size: 12px; line-height: 1.6; color: var(--el-text-color-secondary); }
 </style>

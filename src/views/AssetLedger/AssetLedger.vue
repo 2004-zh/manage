@@ -747,12 +747,16 @@ import * as echarts from 'echarts'
 import AssetDetailDrawer from '../../components/AssetDetailDrawer.vue'
 import { useAssetStore } from '../../store/asset'
 import { useProjectStore } from '../../store/project'
+import { useUserStore } from '../../store/user'
 import { ASSET_CATEGORIES, deriveAssetCategory } from '../../data/assetCategory'
 
 const route = useRoute()
 const router = useRouter()
 const assetStore = useAssetStore()
 const projectStore = useProjectStore()
+const userStore = useUserStore()
+// 新增/导入的资产归属登录账号所在公司，不再一律写死城投集团
+const currentCompany = computed(() => userStore.user?.org || '城投集团')
 const isCodeMode = computed(() => route.name === 'EntOneAssetOneCode')
 
 const searchForm = reactive({
@@ -991,7 +995,7 @@ const toAssetPayload = () => ({
   remark: assetForm.remark || '',
   code: (assetForm.code || '').trim(),
   assetCategory: assetForm.assetCategory,
-  group: assetForm.owner || '城投集团',
+  group: assetForm.owner || currentCompany.value,
   sourceType: '划入',
   bookValue: 0
 })
@@ -1061,7 +1065,7 @@ const handleImportSubmit = () => {
           owner: cols[7] ? cols[7].trim() : '',
           remark: '',
           assetCategory: deriveAssetCategory(type),
-          group: (cols[7] || '').trim() || '城投集团',
+          group: (cols[7] || '').trim() || currentCompany.value,
           sourceType: '划入',
           bookValue: 0
         })
