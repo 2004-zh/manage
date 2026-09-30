@@ -1,9 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useUserStore } from './user'
+import { auditHistorySeeds } from '../data/mock'
 
 const MAX_CHANGE = 3000
 const MAX_OPLOG = 2000
+
+// 上线前的历史履历，编号单独用 HS- 段，避免与运行期 CR- 流水撞号
+const historySeeds = auditHistorySeeds.map((s, i) => ({ ...s, id: `HS-${String(i + 1).padStart(3, '0')}` }))
 
 // 字段中文名：留痕要能被人读懂，不能只存字段名
 export const FIELD_LABELS = {
@@ -48,7 +52,16 @@ export const FIELD_LABELS = {
   voucherNo: '凭证号',
   invoiceNo: '发票号',
   taxAmount: '税额(万元)',
-  orderStatus: '督办状态'
+  orderStatus: '督办状态',
+  // 证件层与产权登记侧字段（资产主数据不含这些键，标签不冲突）
+  certNo: '证号',
+  issuer: '发证机关',
+  validUntil: '有效期至',
+  files: '证件附件',
+  certType: '权证类型',
+  projectType: '项目类型',
+  propType: '产权类型',
+  ratioType: '产权比例方式'
 }
 
 function pad(n) { return String(n).padStart(2, '0') }
@@ -115,7 +128,7 @@ export const useAuditStore = defineStore('audit', () => {
    * 对比 before/after 两个对象，把所有发生变化的字段各写一条留痕。
    * 这是"任何写操作统一留痕"的落点：调用方只需给出前后快照。
    */
-  function recordDiff({ assetId, assetName, group, module, action, before, after, billNo, remark, fields }) {
+  function recordDiff({ assetId, assetName, group, module, action, before, after, billNo, remark, fields, labels }) {
     if (!before || !after) return []
     const keys = fields || Object.keys(after)
     const out = []
@@ -127,7 +140,7 @@ export const useAuditStore = defineStore('audit', () => {
       if (display(b) === display(a)) return
       out.push(recordChange({
         assetId, assetName, group, module, action,
-        field: k, before: b, after: a, billNo, remark
+        field: k, fieldLabel: labels?.[k], before: b, after: a, billNo, remark
       }))
     })
     return out
@@ -188,6 +201,18 @@ export const useAuditStore = defineStore('audit', () => {
   function clearChanges() { changeRecords.value = [] }
   function clearOpLogs() { opLogs.value = [] }
 
+  /**
+   * 上线前的历史基线：登记、签约、用途变更这些动作发生在系统启用之前，
+   * 运行期的 recordDiff 记不到它们，这里按资产真实履历补种一次（按 key 去重，重复调用安全）。
+   */
+  function seedHistory() {
+    const has = new Set(changeRecords.value.map(r => r.seedKey).filter(Boolean))
+    const add = historySeeds.filter(s => !has.has(s.seedKey))
+    if (!add.length) return
+    changeRecords.value = [...changeRecords.value, ...add].sort((a, b) => (a.time < b.time ? 1 : -1))
+  }
+  seedHistory()
+
   return {
     changeRecords,
     opLogs,
@@ -203,6 +228,7 @@ export const useAuditStore = defineStore('audit', () => {
     getByModule,
     getByGroup,
     getIdleToLeased,
+    onHydrated: seedHistory,
     clearChanges,
     clearOpLogs
   }

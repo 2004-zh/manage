@@ -6,7 +6,6 @@ import { useAuditStore } from './audit'
 import { usePartyStore } from './party'
 import { useRevitalizeStore } from './revitalize'
 import { useNotifyStore } from './notify'
-import { useChangeLogStore } from './changeLog'
 import { useUserStore } from './user'
 import { useFinanceStore } from './finance'
 
@@ -66,10 +65,11 @@ export const useContractStore = defineStore('contract', () => {
       const before = contracts.value[idx]
       contracts.value[idx] = { ...before, ...updates }
       if (updates.status && updates.status !== before.status && (updates.status === '退租' || updates.status === '已终止')) {
-        useChangeLogStore().record({
-          assetId: before.assetId, assetName: before.assetName, module: '合同',
-          type: updates.status === '退租' ? '合同退租' : '合同终止',
-          before: before.status, after: `${before.id} ${updates.status}`
+        useAuditStore().recordChange({
+          assetId: before.assetId, assetName: before.assetName, module: '合同管理',
+          action: updates.status === '退租' ? '合同退租' : '合同终止',
+          field: 'status', before: before.status, after: updates.status,
+          billNo: before.id, remark: `合同 ${before.id} 状态改为${updates.status}`
         })
       }
     }
@@ -247,11 +247,6 @@ export const useContractStore = defineStore('contract', () => {
       rent: contract.annualRent || 0
     }, { target: asset?.group || 'ent', bizType: 'contract', bizId: contract.id, route: '/ent/contract-approval' })
 
-    // 变更记录页目前读 changeLog，双写保证两侧都看得到
-    useChangeLogStore().record({
-      assetId: contract.assetId, assetName: contract.assetName, module: '合同', type: '合同签约',
-      before: '—', after: `${contract.id} ${contract.tenant}`
-    })
     return contract
   }
 
@@ -275,10 +270,6 @@ export const useContractStore = defineStore('contract', () => {
       remark: `续租 ${months} 个月`
     })
     syncAssetLeaseState(c.assetId, { action: '续租联动', billNo: contractId })
-    useChangeLogStore().record({
-      assetId: c.assetId, assetName: c.assetName, module: '合同', type: '合同续租',
-      before: `${contractId} 到期 ${oldEnd}`, after: `延长至 ${newEnd}`
-    })
     return newEnd
   }
 

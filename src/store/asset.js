@@ -4,7 +4,6 @@ import { chengtouAssets as initialAssets, SEED_IMPORT_TS } from '../data/mock'
 import { resolveAssetCategory } from '../data/assetCategory'
 import { useProjectStore } from './project'
 import { useAuditStore } from './audit'
-import { useChangeLogStore } from './changeLog'
 import { useUserStore } from './user'
 
 function roomToAsset(r, b, p, f) {
@@ -243,11 +242,6 @@ export const useAssetStore = defineStore('asset', () => {
       remark: meta.remark || `新增资产：${newAsset.name}`,
       detail: `面积 ${newAsset.area || 0}㎡ / 原值 ${newAsset.bookValue || 0}万元`
     })
-    // 变更记录页目前读 changeLog，双写保证两侧都看得到
-    useChangeLogStore().record({
-      assetId: newId, assetName: newAsset.name, module: '资产', type: '入库登记',
-      before: '—', after: newAsset.sourceType ? `${newAsset.sourceType}入库` : '新增资产'
-    })
     return newAsset
   }
 
@@ -288,19 +282,6 @@ export const useAssetStore = defineStore('asset', () => {
       remark: meta.remark,
       fields: Object.keys(updates)
     })
-
-    const changed = Object.keys(updates).filter(k => beforeSnap[k] !== updates[k])
-    if (changed.length) {
-      const statusChanged = changed.includes('status')
-      useChangeLogStore().record({
-        assetId: id, assetName: after.name || beforeSnap.name, module: '资产',
-        type: statusChanged ? '状态变更' : '信息变更',
-        before: statusChanged ? beforeSnap.status : changed.join('、'),
-        after: statusChanged
-          ? (updates.status ?? after.status)
-          : changed.map(k => `${k}→${updates[k] ?? '空'}`).join('；')
-      })
-    }
     return true
   }
 
@@ -325,10 +306,6 @@ export const useAssetStore = defineStore('asset', () => {
       billNo: meta.billNo,
       remark: meta.remark || `删除资产：${before.name}`,
       detail: `面积 ${before.area || 0}㎡ / 原值 ${before.bookValue || 0}万元`
-    })
-    useChangeLogStore().record({
-      assetId: id, assetName: before.name, module: '资产', type: '资产删除',
-      before: '在库', after: '已删除'
     })
     return true
   }

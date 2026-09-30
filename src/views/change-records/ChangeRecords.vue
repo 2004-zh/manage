@@ -151,6 +151,10 @@
             <el-tag :type="getApprovalTag(currentRow.approvalStatus)" size="small">{{ currentRow.approvalStatus }}</el-tag>
           </div></div>
           <div class="cell" style="grid-column: span 3"><div class="label">资产名称</div><div class="value">{{ currentRow.assetName }}</div></div>
+          <div class="cell"><div class="label">资产编号</div><div class="value hl">{{ currentRow.assetNo }}</div></div>
+          <div class="cell"><div class="label">资产类型</div><div class="value">{{ currentRow.assetType }}</div></div>
+          <div class="cell"><div class="label">台账状态</div><div class="value">{{ currentRow.assetStatus }}</div></div>
+          <div class="cell" style="grid-column: span 3"><div class="label">资产坐落</div><div class="value">{{ currentRow.location }}</div></div>
           <div class="cell"><div class="label">流转方向</div><div class="value">{{ currentRow.direction }}</div></div>
           <div class="cell"><div class="label">权属类型</div><div class="value">{{ currentRow.ownershipType }}</div></div>
           <div class="cell"><div class="label">流转类型</div><div class="value">{{ currentRow.flowType }}</div></div>
@@ -159,6 +163,11 @@
           <div class="cell"><div class="label">申请人</div><div class="value">{{ currentRow.applicant.name }} {{ currentRow.applicant.phone }}</div></div>
           <div class="cell"><div class="label">审批截至时间</div><div class="value">{{ currentRow.approvalDeadline }}</div></div>
           <div class="cell"><div class="label">审批完成时间</div><div class="value">{{ currentRow.approvalFinish || '—' }}</div></div>
+          <div class="cell"><div class="label">金额（万元）</div><div class="value">{{ currentRow.amount || '—' }}</div></div>
+          <div class="cell" style="grid-column: span 3"><div class="label">流转附件</div><div class="value">
+            <span v-if="!currentRow.files?.length">无</span>
+            <el-tag v-for="f in currentRow.files" :key="f" size="small" style="margin-right:6px">{{ f }}</el-tag>
+          </div></div>
           <div class="cell" style="grid-column: span 3"><div class="label">变更内容</div><div class="value">{{ currentRow.changeContent }}</div></div>
           <div class="cell"><div class="label">变更前</div><div class="value">{{ currentRow.beforeChange }}</div></div>
           <div class="cell"><div class="label">变更后</div><div class="value">{{ currentRow.afterChange }}</div></div>
@@ -210,7 +219,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="原产权公司">
-              <el-select v-model="flowForm.originCompany" placeholder="请选择原产权公司" style="width:100%">
+              <el-select v-model="flowForm.originCompany" placeholder="选资产后自动带出" style="width:100%">
+                <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="现产权公司" :required="flowForm.direction === '外部流转'">
+              <el-select v-model="flowForm.targetCompany" :placeholder="flowForm.direction === '外部流转' ? '外部流转必选' : '内部流转保持原单位'" style="width:100%" clearable>
                 <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
               </el-select>
             </el-form-item>
@@ -247,13 +263,16 @@
           <el-input v-model="flowForm.remark" type="textarea" :rows="2" maxlength="255" show-word-limit placeholder="请输入备注" />
         </el-form-item>
         <el-form-item label="附件">
-          <el-upload drag action="#" :auto-upload="false" :limit="5" style="width:100%">
+          <el-upload drag action="#" :auto-upload="false" :show-file-list="false" :limit="5" :on-change="onFlowFileChange" style="width:100%">
             <el-icon :size="40"><UploadFilled /></el-icon>
             <div>将文件拖到此处，或<em>点击上传</em></div>
             <template #tip>
-              <div style="color:#999;font-size:12px">支持上传权属证明、协议等材料，最多5个文件</div>
+              <div style="color:#999;font-size:12px">支持上传权属证明、协议等材料，最多5个文件；演示环境登记附件名称</div>
             </template>
           </el-upload>
+          <div v-if="flowForm.files.length" class="attached-list">
+            <el-tag v-for="(fn, i) in flowForm.files" :key="i" closable size="small" @close="flowForm.files.splice(i, 1)">{{ fn }}</el-tag>
+          </div>
         </el-form-item>
       </el-form>
 
@@ -334,12 +353,10 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { MoreFilled, UploadFilled } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
-import { useChangeLogStore } from '../../store/changeLog'
 import { useAuditStore } from '../../store/audit'
 import { useUserStore } from '../../store/user'
 
 const assetStore = useAssetStore()
-const changeLogStore = useChangeLogStore()
 const auditStore = useAuditStore()
 const userStore = useUserStore()
 
@@ -371,20 +388,46 @@ const applicantOptions = [
 
 const filters = ref({ keyword: '', direction: '', ownershipType: '', approvalStatus: '', flowType: '', oldOwner: '', changeType: '', dateRange: null })
 
-const changeRecords = ref([
-  { id: 1, changeNo: 'BG2026001', assetName: '城投大厦A座1201室', assetNo: 'ZC-1001', assetType: '办公楼', location: '长乐区吴航街道城投大厦A座12层', assetStatus: '自用', changeType: '信息变更', changeContent: '资产名称变更', beforeChange: '城投大厦A座12层办公区', afterChange: '城投大厦A座1201室', changePerson: '张伟', changeTime: '2026-09-15', direction: '内部流转', ownershipType: '产权和经营权', beforeCompany: '城投经营公司', afterCompany: '城投经营公司', flowType: '直接划拨', applicant: { name: '张伟', phone: '13800001111' }, approvalStatus: '已通过', approvalDeadline: '2026-09-18 17:00', approvalFinish: '2026-09-16 10:20', remark: '名称规范化调整', oldOwner: '城投集团' },
-  { id: 2, changeNo: 'BG2026002', assetName: '阳光花园1号楼101室', assetNo: 'ZC-1002', assetType: '住宅', location: '长乐区航城街道阳光花园1号楼', assetStatus: '已出租', changeType: '状态变更', changeContent: '资产使用状态变更', beforeChange: '闲置', afterChange: '已出租', changePerson: '李娜', changeTime: '2026-09-12', direction: '内部流转', ownershipType: '经营权', beforeCompany: '产投经营公司', afterCompany: '产投经营公司', flowType: '直接划拨', applicant: { name: '李娜', phone: '13900002222' }, approvalStatus: '已通过', approvalDeadline: '2026-09-15 17:00', approvalFinish: '2026-09-13 09:40', remark: '', oldOwner: '产投集团' },
-  { id: 3, changeNo: 'BG2026003', assetName: '万达广场商铺A101', assetNo: 'ZC-1003', assetType: '商铺', location: '长乐区吴航街道万达广场A101', assetStatus: '已出租', changeType: '权属变更', changeContent: '产权单位变更', beforeChange: '城投集团', afterChange: '产投集团', changePerson: '王磊', changeTime: '2026-09-10', direction: '内部流转', ownershipType: '产权和经营权', beforeCompany: '城投经营公司', afterCompany: '产投经营公司', flowType: '直接划拨', applicant: { name: '王磊', phone: '13700003333' }, approvalStatus: '审批中', approvalDeadline: '2026-09-20 17:00', approvalFinish: '', remark: '待集团复核', oldOwner: '城投集团' },
-  { id: 4, changeNo: 'BG2026004', assetName: '国贸写字楼A座1501', assetNo: 'ZC-1004', assetType: '办公楼', location: '长乐区营前街道国贸写字楼A座15层', assetStatus: '已出租', changeType: '信息变更', changeContent: '面积信息变更', beforeChange: '260㎡', afterChange: '280㎡', changePerson: '赵敏', changeTime: '2026-09-08', direction: '内部流转', ownershipType: '产权', beforeCompany: '水投经营公司', afterCompany: '水投经营公司', flowType: '直接划拨', applicant: { name: '赵敏', phone: '13600004444' }, approvalStatus: '已通过', approvalDeadline: '2026-09-10 17:00', approvalFinish: '2026-09-09 15:00', remark: '实测面积补正', oldOwner: '水投集团' },
-  { id: 5, changeNo: 'BG2026005', assetName: '高新技术产业园厂房C1', assetNo: 'ZC-1005', assetType: '厂房', location: '长乐区古槐镇高新技术产业园C1', assetStatus: '维修中', changeType: '状态变更', changeContent: '资产维修状态变更', beforeChange: '已出租', afterChange: '维修中', changePerson: '孙强', changeTime: '2026-09-05', direction: '外部流转', ownershipType: '经营权', beforeCompany: '领航经营公司', afterCompany: '城投经营公司', flowType: '协议转让', applicant: { name: '孙强', phone: '13500005555' }, approvalStatus: '已拒绝', approvalDeadline: '2026-09-08 17:00', approvalFinish: '2026-09-07 11:30', remark: '维修责任未明确', oldOwner: '领航公司' },
-  { id: 6, changeNo: 'BG2026006', assetName: '朝阳农贸市场1号厅', assetNo: 'ZC-1006', assetType: '市场', location: '长乐区吴航街道朝阳农贸市场', assetStatus: '已出租', changeType: '信息变更', changeContent: '租金价格变更', beforeChange: '30000元/月', afterChange: '35000元/月', changePerson: '周芳', changeTime: '2026-08-28', direction: '内部流转', ownershipType: '经营权', beforeCompany: '城投经营公司', afterCompany: '城投经营公司', flowType: '直接划拨', applicant: { name: '张伟', phone: '13800001111' }, approvalStatus: '待审批', approvalDeadline: '2026-09-05 17:00', approvalFinish: '', remark: '随市场行情调整', oldOwner: '城投集团' },
-  { id: 7, changeNo: 'BG2026007', assetName: '滨江商铺B区203', assetNo: 'ZC-1007', assetType: '商铺', location: '长乐区航城街道滨江商铺B区203', assetStatus: '已出租', changeType: '权属变更', changeContent: '管理单位变更', beforeChange: '水投集团', afterChange: '城投集团', changePerson: '吴涛', changeTime: '2026-08-20', direction: '内部流转', ownershipType: '产权和经营权', beforeCompany: '水投经营公司', afterCompany: '城投经营公司', flowType: '无偿划转', applicant: { name: '李娜', phone: '13900002222' }, approvalStatus: '已通过', approvalDeadline: '2026-08-25 17:00', approvalFinish: '2026-08-23 16:40', remark: '', oldOwner: '水投集团' },
-  { id: 8, changeNo: 'BG2026008', assetName: '领航科技楼5层', assetNo: 'ZC-1008', assetType: '办公楼', location: '长乐区首占新区领航科技楼5层', assetStatus: '闲置', changeType: '状态变更', changeContent: '资产使用状态变更', beforeChange: '已出租', afterChange: '闲置', changePerson: '郑洁', changeTime: '2026-08-15', direction: '外部流转', ownershipType: '经营权', beforeCompany: '领航经营公司', afterCompany: '产投经营公司', flowType: '公开竞价', applicant: { name: '王磊', phone: '13700003333' }, approvalStatus: '审批中', approvalDeadline: '2026-08-30 17:00', approvalFinish: '', remark: '租约到期收回', oldOwner: '领航公司' },
-  { id: 9, changeNo: 'BG2026009', assetName: '城南仓储物流中心', assetNo: 'ZC-1009', assetType: '仓库', location: '长乐区鹤上镇城南路88号', assetStatus: '已出租', changeType: '信息变更', changeContent: '坐落地址变更', beforeChange: '城南路88号', afterChange: '城南路88号附1号', changePerson: '陈刚', changeTime: '2026-08-10', direction: '内部流转', ownershipType: '产权', beforeCompany: '城投经营公司', afterCompany: '城投经营公司', flowType: '直接划拨', applicant: { name: '赵敏', phone: '13600004444' }, approvalStatus: '已通过', approvalDeadline: '2026-08-14 17:00', approvalFinish: '2026-08-12 10:10', remark: '门牌号行政区划调整', oldOwner: '区国资中心' },
-  { id: 10, changeNo: 'BG2026010', assetName: '东区保障房3号楼', assetNo: 'ZC-1010', assetType: '住宅', location: '长乐区首占新区东区保障房3号楼', assetStatus: '已出租', changeType: '权属变更', changeContent: '产权归属变更', beforeChange: '产投集团', afterChange: '城投集团', changePerson: '刘洋', changeTime: '2026-08-05', direction: '内部流转', ownershipType: '产权和经营权', beforeCompany: '产投经营公司', afterCompany: '城投经营公司', flowType: '直接划拨', applicant: { name: '孙强', phone: '13500005555' }, approvalStatus: '待审批', approvalDeadline: '2026-08-20 17:00', approvalFinish: '', remark: '保障房统一归口管理', oldOwner: '产投集团' },
-  { id: 11, changeNo: 'BG2026011', assetName: '漳港海鲜市场摊位区', assetNo: 'ZC-1011', assetType: '市场', location: '长乐区漳港街道海鲜市场', assetStatus: '已出租', changeType: '权属变更', changeContent: '经营权流转', beforeChange: '领航公司', afterChange: '水投集团', changePerson: '周芳', changeTime: '2026-07-28', direction: '外部流转', ownershipType: '经营权', beforeCompany: '领航经营公司', afterCompany: '水投经营公司', flowType: '协议转让', applicant: { name: '张伟', phone: '13800001111' }, approvalStatus: '已通过', approvalDeadline: '2026-08-02 17:00', approvalFinish: '2026-07-31 14:25', remark: '', oldOwner: '领航公司' },
-  { id: 12, changeNo: 'BG2026012', assetName: '玉田镇旧工业厂房', assetNo: 'ZC-1012', assetType: '厂房', location: '长乐区玉田镇旧工业厂房', assetStatus: '闲置', changeType: '状态变更', changeContent: '资产盘活状态变更', beforeChange: '闲置', afterChange: '待改造', changePerson: '吴涛', changeTime: '2026-07-20', direction: '内部流转', ownershipType: '产权和经营权', beforeCompany: '产投经营公司', afterCompany: '产投经营公司', flowType: '直接划拨', applicant: { name: '李娜', phone: '13900002222' }, approvalStatus: '已拒绝', approvalDeadline: '2026-07-26 17:00', approvalFinish: '2026-07-24 09:15', remark: '改造方案未通过评审', oldOwner: '产投集团' }
-])
+// 权属流转种子：只描述流转动作本身，资产名称/类型/坐落/状态/原产权单位一律按 assetNo
+// 回查台账得到，保证这里的编号与资产主数据（CT-xxx）永远一致。
+const flowSeeds = [
+  { id: 1, changeNo: 'BG2026001', assetNo: 'CT-001', changeType: '信息变更', changeContent: '资产名称变更', beforeChange: '吴航商业街A区一层商铺', afterChange: '吴航街道商业街 A-01 商铺', changePerson: '张伟', changeTime: '2026-09-15', direction: '内部流转', ownershipType: '产权和经营权', flowType: '直接划拨', applicant: '张伟', approvalStatus: '已通过', approvalDeadline: '2026-09-18 17:00', approvalFinish: '2026-09-16 10:20', remark: '名称规范化调整' },
+  { id: 2, changeNo: 'BG2026002', assetNo: 'CT-002', changeType: '状态变更', changeContent: '资产使用状态变更', beforeChange: '闲置', afterChange: '已出租', changePerson: '李娜', changeTime: '2026-09-12', direction: '内部流转', ownershipType: '经营权', flowType: '直接划拨', applicant: '李娜', approvalStatus: '已通过', approvalDeadline: '2026-09-15 17:00', approvalFinish: '2026-09-13 09:40', remark: '' },
+  { id: 3, changeNo: 'BG2026003', assetNo: 'CT-003', changeType: '权属变更', changeContent: '产权单位变更', changePerson: '王磊', changeTime: '2026-09-10', direction: '外部流转', ownershipType: '产权和经营权', flowType: '协议转让', applicant: '王磊', approvalStatus: '审批中', approvalDeadline: '2026-09-20 17:00', approvalFinish: '', remark: '待集团复核', targetGroup: '产投集团' },
+  { id: 4, changeNo: 'BG2026004', assetNo: 'CT-004', changeType: '信息变更', changeContent: '面积信息变更', beforeChange: '4600㎡', afterChange: '4800㎡', changePerson: '赵敏', changeTime: '2026-09-08', direction: '内部流转', ownershipType: '产权', flowType: '直接划拨', applicant: '赵敏', approvalStatus: '已通过', approvalDeadline: '2026-09-10 17:00', approvalFinish: '2026-09-09 15:00', remark: '实测面积补正' },
+  { id: 5, changeNo: 'BG2026005', assetNo: 'CT-005', changeType: '状态变更', changeContent: '租约到期收回', beforeChange: '已出租', afterChange: '闲置', changePerson: '孙强', changeTime: '2026-09-05', direction: '内部流转', ownershipType: '经营权', flowType: '直接划拨', applicant: '孙强', approvalStatus: '已通过', approvalDeadline: '2026-09-08 17:00', approvalFinish: '2026-09-07 11:30', remark: '收回后纳入待盘活清单' },
+  { id: 6, changeNo: 'BG2026006', assetNo: 'CT-006', changeType: '信息变更', changeContent: '账面原值补正', beforeChange: '860万元', afterChange: '890万元', changePerson: '周芳', changeTime: '2026-08-28', direction: '内部流转', ownershipType: '产权', flowType: '直接划拨', applicant: '周芳', approvalStatus: '待审批', approvalDeadline: '2026-09-05 17:00', approvalFinish: '', remark: '历史造价重估待复核' },
+  { id: 7, changeNo: 'BG2026007', assetNo: 'CT-007', changeType: '权属变更', changeContent: '管理单位变更', changePerson: '吴涛', changeTime: '2026-08-20', direction: '外部流转', ownershipType: '产权和经营权', flowType: '无偿划转', applicant: '吴涛', approvalStatus: '审批中', approvalDeadline: '2026-08-25 17:00', approvalFinish: '', remark: '划转方案集团审议中', targetGroup: '城投集团' },
+  { id: 8, changeNo: 'BG2026008', assetNo: 'CT-008', changeType: '状态变更', changeContent: '自用房产申请对外出租', beforeChange: '自用', afterChange: '已出租', changePerson: '郑洁', changeTime: '2026-08-15', direction: '外部流转', ownershipType: '经营权', flowType: '公开竞价', applicant: '郑洁', approvalStatus: '已拒绝', approvalDeadline: '2026-08-30 17:00', approvalFinish: '2026-08-23 16:40', remark: '保留办公用房，不予外租', targetGroup: '产投集团' },
+  { id: 9, changeNo: 'BG2026009', assetNo: 'CT-097', changeType: '状态变更', changeContent: '闲置资产招租转化', beforeChange: '闲置', afterChange: '已出租', changePerson: '陈刚', changeTime: '2026-08-10', direction: '内部流转', ownershipType: '经营权', flowType: '公开竞价', applicant: '陈刚', approvalStatus: '待审批', approvalDeadline: '2026-08-14 17:00', approvalFinish: '', remark: '招租方案已上报待批' },
+  { id: 10, changeNo: 'BG2026010', assetNo: 'CT-098', changeType: '信息变更', changeContent: '权属材料补充', beforeChange: '缺宗地图', afterChange: '已补宗地图', changePerson: '刘洋', changeTime: '2026-08-05', direction: '内部流转', ownershipType: '产权', flowType: '直接划拨', applicant: '刘洋', approvalStatus: '已通过', approvalDeadline: '2026-08-20 17:00', approvalFinish: '2026-08-12 10:10', remark: '历史用地材料归档' },
+  { id: 11, changeNo: 'BG2026011', assetNo: 'CT-118', changeType: '状态变更', changeContent: '自用转经营性出租', beforeChange: '自用', afterChange: '已出租', changePerson: '周芳', changeTime: '2026-07-28', direction: '外部流转', ownershipType: '经营权', flowType: '协议转让', applicant: '周芳', approvalStatus: '已拒绝', approvalDeadline: '2026-08-02 17:00', approvalFinish: '2026-07-31 14:25', remark: '涉密办公用房不参与经营性出租', targetGroup: '水投集团' },
+  { id: 12, changeNo: 'BG2026012', assetNo: 'CT-121', changeType: '信息变更', changeContent: '账面价值年度重估', beforeChange: '按原值列示', afterChange: '按重估值列示', changePerson: '吴涛', changeTime: '2026-07-20', direction: '内部流转', ownershipType: '产权和经营权', flowType: '直接划拨', applicant: '吴涛', approvalStatus: '已通过', approvalDeadline: '2026-07-26 17:00', approvalFinish: '2026-07-24 09:15', remark: '年度清产核资结果' }
+]
+
+/** 流转行与运行期留痕共用一套字段：资产事实全部回查台账，原/现产权单位按归属集团补全 */
+function buildFlowRow(s) {
+  const a = assetStore.getAssetById(s.assetNo)
+  const origin = a?.group || s.beforeCompany || '—'
+  const target = s.targetGroup || origin
+  return {
+    ...s,
+    assetName: a?.name || s.assetNo,
+    assetType: a?.type || a?.assetCategory || '—',
+    location: a?.location || '—',
+    assetStatus: a?.status || '—',
+    beforeChange: s.beforeChange || origin,
+    afterChange: s.afterChange || target,
+    beforeCompany: origin,
+    afterCompany: target,
+    applicant: applicantOptions.find(p => p.name === s.applicant) || { name: s.applicant, phone: '—' },
+    oldOwner: origin,
+    files: s.files || []
+  }
+}
+
+const changeRecords = ref(flowSeeds.map(buildFlowRow))
+
 
 const getChangeTypeTag = (type) => {
   const map = { '信息变更': 'primary', '状态变更': 'warning', '权属变更': 'danger' }
@@ -401,6 +444,7 @@ const runtimeChangeRows = computed(() =>
   auditStore.changeRecords
     .filter(r => r.module !== '流转')
     .map(r => {
+      const a = assetStore.getAssetById(r.assetId)
       const changeType = r.field === 'status' || r.field === 'leaseStatus' || r.field === 'inventoryState'
         ? '状态变更'
         : (r.field === 'group' || r.action?.includes('权属') || r.action?.includes('流转') || r.action?.includes('划转'))
@@ -409,11 +453,11 @@ const runtimeChangeRows = computed(() =>
       return {
         id: r.id,
         changeNo: r.id,
-        assetName: r.assetName || r.assetId || '—',
+        assetName: r.assetName || a?.name || r.assetId || '—',
         assetNo: r.assetId || '—',
-        assetType: '—',
-        location: '—',
-        assetStatus: '—',
+        assetType: a?.type || a?.assetCategory || '—',
+        location: a?.location || '—',
+        assetStatus: a?.status || '—',
         changeType,
         changeContent: r.fieldLabel ? `${r.module}·${r.action}（${r.fieldLabel}）` : `${r.module}·${r.action}`,
         beforeChange: r.before,
@@ -453,6 +497,11 @@ const filteredData = computed(() => {
     }
     return true
   })
+    // 两段数据时间交错，统一按变更时间倒序；同日按编号倒序（越晚登记编号越大）
+    .sort((l, r) => {
+      if (l.changeTime !== r.changeTime) return l.changeTime < r.changeTime ? 1 : -1
+      return l.changeNo < r.changeNo ? 1 : -1
+    })
 })
 
 const pagedData = computed(() => {
@@ -502,8 +551,8 @@ const flowAssetPickerVisible = ref(false)
 const editingRow = ref(null)
 
 const defaultFlowForm = {
-  direction: '', ownershipType: '', originCompany: '', flowType: '', applicant: '',
-  approvalDeadline: '', amount: 0, reason: '', remark: ''
+  direction: '', ownershipType: '', originCompany: '', targetCompany: '', flowType: '', applicant: '',
+  approvalDeadline: '', amount: 0, reason: '', remark: '', files: []
 }
 const flowForm = ref({ ...defaultFlowForm, assets: [] })
 
@@ -512,7 +561,9 @@ const flowAssetPool = computed(() =>
     assetNo: a.id,
     assetName: a.name,
     location: a.location || '—',
-    assetType: a.type || a.assetCategory || '—'
+    assetType: a.type || a.assetCategory || '—',
+    assetStatus: a.status || '—',
+    group: a.group || '—'
   }))
 )
 
@@ -526,18 +577,26 @@ function showFlowDialog(row = null) {
   if (row) {
     flowForm.value = {
       direction: row.direction, ownershipType: row.ownershipType, originCompany: row.beforeCompany,
-      flowType: row.flowType, applicant: row.applicant.name, approvalDeadline: row.approvalDeadline.slice(0, 10),
-      amount: 0, reason: row.changeContent, remark: row.remark, assets: []
+      targetCompany: row.afterCompany, flowType: row.flowType, applicant: row.applicant.name,
+      approvalDeadline: row.approvalDeadline.slice(0, 10),
+      amount: row.amount || 0, reason: row.changeContent, remark: row.remark,
+      files: [...(row.files || [])], assets: []
     }
   } else {
-    flowForm.value = { ...defaultFlowForm, assets: [] }
+    flowForm.value = { ...defaultFlowForm, assets: [], files: [] }
   }
   flowDialogVisible.value = true
 }
 
 function addFlowAsset(row) {
   flowForm.value.assets.push({ ...row })
+  // 原产权单位跟着资产走，第一宗资产确定后自动带出，避免手工填错
+  if (!flowForm.value.originCompany) flowForm.value.originCompany = row.group
   ElMessage.success(`已添加资产：${row.assetName}`)
+}
+
+function onFlowFileChange(file, fileList) {
+  flowForm.value.files = fileList.slice(0, 5).map(f => f.name)
 }
 
 function submitFlow() {
@@ -546,50 +605,72 @@ function submitFlow() {
     ElMessage.warning('请填写必填项')
     return
   }
+  // 内部流转不改变归属，只有外部流转才必须落到具体的现产权单位
+  if (f.direction === '外部流转' && !f.targetCompany) {
+    ElMessage.warning('外部流转请选择现产权单位')
+    return
+  }
   if (editingRow.value) {
     const target = changeRecords.value.find(r => r.id === editingRow.value.id)
     if (target) {
       Object.assign(target, {
         direction: f.direction, ownershipType: f.ownershipType, flowType: f.flowType,
-        beforeCompany: f.originCompany || target.beforeCompany, remark: f.remark
+        beforeCompany: f.originCompany || target.beforeCompany,
+        afterCompany: f.direction === '外部流转' ? f.targetCompany : (f.originCompany || target.beforeCompany),
+        amount: f.amount, remark: f.remark, files: [...f.files]
+      })
+      auditStore.recordEvent({
+        assetId: target.assetNo, assetName: target.assetName, group: target.oldOwner,
+        module: '流转', action: '权属流转修改', billNo: target.changeNo,
+        remark: f.reason,
+        detail: `${target.flowType} · ${target.direction} · ${target.beforeCompany}→${target.afterCompany}`
       })
     }
     ElMessage.success('权属流转记录已更新')
-  } else {
-    changeRecords.value.unshift({
-      id: Date.now(),
-      changeNo: `BG2026${String(changeRecords.value.length + 1).padStart(3, '0')}`,
-      assetName: f.assets[0] ? f.assets[0].assetName : '（多宗资产）',
-      assetNo: f.assets[0] ? f.assets[0].assetNo : '—',
-      assetType: f.assets[0] ? f.assets[0].assetType : '—',
-      location: f.assets[0] ? f.assets[0].location : '—',
-      assetStatus: '闲置',
-      changeType: '权属变更',
-      changeContent: f.reason,
-      beforeChange: f.originCompany || '—',
-      afterChange: f.originCompany || '—',
-      changePerson: f.applicant,
-      changeTime: new Date().toISOString().slice(0, 10),
-      direction: f.direction,
-      ownershipType: f.ownershipType,
-      beforeCompany: f.originCompany || '—',
-      afterCompany: f.originCompany || '—',
-      flowType: f.flowType,
-      applicant: applicantOptions.find(p => p.name === f.applicant) || { name: f.applicant, phone: '—' },
-      approvalStatus: '待审批',
-      approvalDeadline: `${f.approvalDeadline} 17:00`,
-      approvalFinish: '',
-      remark: f.remark,
-      oldOwner: f.originCompany || '—'
-    })
-    ElMessage.success('权属流转保存成功')
-    f.assets.forEach(a => {
-      changeLogStore.record({
-        assetId: a.assetNo, assetName: a.assetName, module: '流转', type: '权属变更',
-        before: f.originCompany || '—', after: `${f.flowType} · ${f.direction} · ${f.ownershipType}`
-      })
-    })
+    flowDialogVisible.value = false
+    return
   }
+  if (!f.assets.length) {
+    ElMessage.warning('请至少选择一宗流转资产')
+    return
+  }
+  const stamp = Date.now()
+  const todayText = new Date().toISOString().slice(0, 10)
+  // 一宗资产一条流转记录：编号、名称、坐落、原产权单位全部回查台账，不与主数据打架
+  const rows = f.assets.map((a, i) => buildFlowRow({
+    id: stamp + i,
+    changeNo: `BG2026${String(changeRecords.value.length + i + 1).padStart(3, '0')}`,
+    assetNo: a.assetNo,
+    changeType: '权属变更',
+    changeContent: f.reason,
+    changePerson: f.applicant,
+    changeTime: todayText,
+    direction: f.direction,
+    ownershipType: f.ownershipType,
+    flowType: f.flowType,
+    applicant: f.applicant,
+    approvalStatus: '待审批',
+    approvalDeadline: `${f.approvalDeadline} 17:00`,
+    approvalFinish: '',
+    remark: f.remark,
+    targetGroup: f.direction === '外部流转' ? f.targetCompany : '',
+    beforeCompany: f.originCompany,
+    amount: f.amount,
+    files: [...f.files]
+  }))
+  changeRecords.value.unshift(...rows)
+  rows.forEach(row => auditStore.recordEvent({
+    assetId: row.assetNo,
+    assetName: row.assetName,
+    group: row.oldOwner,
+    module: '流转',
+    action: '权属流转申请',
+    billNo: row.changeNo,
+    remark: f.reason,
+    detail: `${row.flowType} · ${row.direction} · ${row.ownershipType} · ${row.beforeCompany}→${row.afterCompany}`
+      + `${row.amount ? ` · 金额 ${row.amount} 万元` : ''}${row.files.length ? ` · 附件 ${row.files.join('、')}` : ''}`
+  }))
+  ElMessage.success(`权属流转已提交，共 ${rows.length} 宗资产，审批截至 ${f.approvalDeadline}`)
   flowDialogVisible.value = false
 }
 
@@ -646,5 +727,11 @@ function handleCommand(cmd, row) {
 <style scoped>
 .filter-bar :deep(.el-row) {
   row-gap: 12px;
+}
+.attached-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 </style>

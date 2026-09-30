@@ -17,6 +17,7 @@
         <el-option label="合同临期" value="合同临期" />
         <el-option label="闲置超期" value="闲置超期" />
         <el-option label="未办证" value="未办证" />
+        <el-option label="证件到期" value="证件到期" />
         <el-option label="闲置盘活" value="闲置盘活" />
         <el-option label="督办逾期" value="督办逾期" />
       </el-select>
@@ -97,6 +98,7 @@
             <el-option label="合同临期" value="合同临期" />
             <el-option label="闲置超期" value="闲置超期" />
             <el-option label="未办证" value="未办证" />
+            <el-option label="证件到期" value="证件到期" />
             <el-option label="闲置盘活" value="闲置盘活" />
           </el-select>
         </el-form-item>
@@ -208,7 +210,7 @@ const levelCards = computed(() => ['一般', '较急', '紧急', '特别紧急']
   count: localTasks.value.filter(t => t.level === l && t.status !== '已完成').length
 })))
 
-const typeTagMap = { '欠费催缴': 'danger', '合同临期': 'warning', '闲置超期': 'warning', '未办证': 'info', '闲置盘活': '' }
+const typeTagMap = { '欠费催缴': 'danger', '合同临期': 'warning', '闲置超期': 'warning', '未办证': 'info', '证件到期': 'warning', '闲置盘活': '' }
 const priorityTagMap = { '高': 'danger', '中': 'warning', '低': 'info' }
 const statusTagMap = { '待处理': 'warning', '进行中': '', '已完成': 'success' }
 

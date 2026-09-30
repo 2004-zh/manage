@@ -260,14 +260,12 @@ import { ref, computed, watch, nextTick } from 'vue'
 import QRCode from 'qrcode'
 import { useAssetStore } from '../store/asset'
 import { useContractStore } from '../store/contract'
-import { useChangeLogStore } from '../store/changeLog'
 import { useAuditStore } from '../store/audit'
 import { useCredentialStore } from '../store/credential'
 import { useFinanceStore } from '../store/finance'
 
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
-const changeLogStore = useChangeLogStore()
 const auditStore = useAuditStore()
 const credentialStore = useCredentialStore()
 const financeStore = useFinanceStore()
@@ -448,16 +446,16 @@ const urgeRows = computed(() => assetContracts.value
     result: '待催缴'
   })))
 
-// 巡查/盘点：变更留痕里的巡查类动作，没有则空表
+// 巡查/盘点：业务留痕里的巡查类动作，没有则空表
 const inspectionRows = computed(() => {
   if (!assetId.value) return []
-  return changeLogStore.entriesOfAsset(assetId.value)
-    .filter(e => /巡查|盘点|检查|清查/.test(`${e.module || ''}${e.type || ''}`))
-    .map(e => ({
-      inspector: e.operator || '—',
-      inspectDate: e.date || '—',
-      result: /正常|无差异|一致/.test(String(e.after || '')) ? '正常' : '有差异',
-      remark: `${e.type}：${e.before} → ${e.after}`
+  return auditStore.getByAsset(assetId.value)
+    .filter(r => /巡查|盘点|检查|清查/.test(`${r.module || ''}${r.action || ''}`))
+    .map(r => ({
+      inspector: r.operator || '—',
+      inspectDate: (r.time || '').slice(0, 10) || '—',
+      result: /正常|无差异|一致/.test(String(r.after || '')) ? '正常' : '有差异',
+      remark: `${r.action}：${r.before} → ${r.after}${r.remark ? `（${r.remark}）` : ''}`
     }))
 })
 
@@ -485,7 +483,8 @@ const filingRows = computed(() => {
     filingType: c.type,
     filingDate: c.issueDate || '—',
     authority: c.issuer || '—',
-    status: c.status || '有效'
+    // 时效由到期日实时推导，证件层不再存状态字段
+    status: c.validity
   }))
   if (a.certDetail) {
     rows.unshift({ filingType: '不动产权属登记', filingDate: '—', authority: '长乐区不动产登记中心', status: '已登记' })
