@@ -6,6 +6,8 @@ import { useAssetStore } from './asset'
 import { useMortgageStore } from './mortgage'
 import { useAuditStore } from './audit'
 import { useUserStore } from './user'
+import { useNotifyStore } from './notify'
+import { usePartyStore } from './party'
 
 const COMPANIES = ['城投集团', '产投集团', '水投集团', '领航公司']
 
@@ -35,11 +37,11 @@ const SEED_INVOICES = [
 ]
 
 const SEED_EXPENSES = [
-  { expenseNo: 'FY-2026-001', assetName: '城关商铺A-01', expenseType: '维修费', amount: 2.5, occurDate: '2026-08-10', supplier: '长乐区建安装修工程队', expenseVoucher: 'PZ-2026-08-050' },
-  { expenseNo: 'FY-2026-002', assetName: '航城厂房1#', expenseType: '水电费', amount: 1.8, occurDate: '2026-08-15', supplier: '国网福建省长乐区供电公司', expenseVoucher: '' },
-  { expenseNo: 'FY-2026-003', assetName: '漳港办公楼2层', expenseType: '物业费', amount: 0.6, occurDate: '2026-08-20', supplier: '长乐航城物业管理有限公司', expenseVoucher: '' },
-  { expenseNo: 'FY-2026-004', assetName: '营前仓库B-03', expenseType: '保险费', amount: 0.35, occurDate: '2026-07-01', supplier: '中国人民财产保险长乐支公司', expenseVoucher: 'PZ-2026-07-012' },
-  { expenseNo: 'FY-2026-005', assetName: '城关旧厂房3#', expenseType: '折旧费', amount: 12, occurDate: '2026-08-31', supplier: '-', expenseVoucher: '' }
+  { expenseNo: 'FY-2026-001', assetName: '吴航街道商业街 A-01 商铺', expenseType: '维修费', amount: 2.5, occurDate: '2026-08-10', supplier: '长乐区建安装修工程队', expenseVoucher: 'PZ-2026-08-050' },
+  { expenseNo: 'FY-2026-002', assetName: '营前标准厂房 2#', expenseType: '水电费', amount: 1.8, occurDate: '2026-08-15', supplier: '国网福建省长乐区供电公司', expenseVoucher: '' },
+  { expenseNo: 'FY-2026-003', assetName: '航城商务楼 3F', expenseType: '物业费', amount: 0.6, occurDate: '2026-08-20', supplier: '长乐航城物业管理有限公司', expenseVoucher: '' },
+  { expenseNo: 'FY-2026-004', assetName: '江田镇仓储用地', expenseType: '保险费', amount: 0.35, occurDate: '2026-07-01', supplier: '中国人民财产保险长乐支公司', expenseVoucher: 'PZ-2026-07-012' },
+  { expenseNo: 'FY-2026-005', assetName: '玉田镇旧工业厂房', expenseType: '折旧费', amount: 12, occurDate: '2026-08-31', supplier: '-', expenseVoucher: '' }
 ]
 
 const SEED_ACCOUNTS = [
@@ -66,14 +68,14 @@ const SEED_INVOICE_RATES = [
 ]
 
 const SEED_TAX_RECORDS = [
-  { id: 1, taxNo: 'TAX20240901', taxType: '房产税', relatedAsset: '滨江科技园A座8层', taxBase: 8000000, taxRate: '1.2%', taxAmount: 96000, deadline: '2024-10-31', payStatus: '待缴纳' },
-  { id: 2, taxNo: 'TAX20240902', taxType: '增值税', relatedAsset: '滨江科技园A座8层', taxBase: 58000, taxRate: '9%', taxAmount: 5220, deadline: '2024-10-15', payStatus: '已缴纳' },
-  { id: 3, taxNo: 'TAX20240903', taxType: '印花税', relatedAsset: 'HT20240201', taxBase: 2160000, taxRate: '0.1%', taxAmount: 2160, deadline: '2024-09-30', payStatus: '已逾期' },
-  { id: 4, taxNo: 'TAX20240904', taxType: '土地使用税', relatedAsset: '余杭区仓储中心3号库', taxBase: 12000, taxRate: '6元/㎡', taxAmount: 72000, deadline: '2024-12-31', payStatus: '待缴纳' },
-  { id: 5, taxNo: 'TAX20240905', taxType: '房产税', relatedAsset: '西湖区文三路商铺', taxBase: 3200000, taxRate: '1.2%', taxAmount: 38400, deadline: '2024-10-31', payStatus: '待缴纳' },
-  { id: 6, taxNo: 'TAX20240906', taxType: '增值税', relatedAsset: '西湖区文三路商铺', taxBase: 22000, taxRate: '9%', taxAmount: 1980, deadline: '2024-10-15', payStatus: '已缴纳' },
-  { id: 7, taxNo: 'TAX20240907', taxType: '印花税', relatedAsset: 'HT20230801', taxBase: 1740000, taxRate: '0.1%', taxAmount: 1740, deadline: '2024-08-31', payStatus: '已逾期' },
-  { id: 8, taxNo: 'TAX20240908', taxType: '房产税', relatedAsset: '余杭区仓储中心3号库', taxBase: 5400000, taxRate: '1.2%', taxAmount: 64800, deadline: '2024-10-31', payStatus: '待缴纳' }
+  { id: 1, taxNo: 'TAX20240901', taxType: '房产税', relatedAsset: '吴航街道商业街 A-01 商铺', taxBase: 8000000, taxRate: '1.2%', taxAmount: 96000, deadline: '2024-10-31', payStatus: '待缴纳' },
+  { id: 2, taxNo: 'TAX20240902', taxType: '增值税', relatedAsset: '吴航街道商业街 A-01 商铺', taxBase: 58000, taxRate: '9%', taxAmount: 5220, deadline: '2024-10-15', payStatus: '已缴纳' },
+  { id: 3, taxNo: 'TAX20240903', taxType: '印花税', relatedAsset: 'HT-2023-018', taxBase: 2160000, taxRate: '0.1%', taxAmount: 2160, deadline: '2024-09-30', payStatus: '已逾期' },
+  { id: 4, taxNo: 'TAX20240904', taxType: '土地使用税', relatedAsset: '江田镇仓储用地', taxBase: 12000, taxRate: '6元/㎡', taxAmount: 72000, deadline: '2024-12-31', payStatus: '待缴纳' },
+  { id: 5, taxNo: 'TAX20240905', taxType: '房产税', relatedAsset: '航城商务楼 3F', taxBase: 3200000, taxRate: '1.2%', taxAmount: 38400, deadline: '2024-10-31', payStatus: '待缴纳' },
+  { id: 6, taxNo: 'TAX20240906', taxType: '增值税', relatedAsset: '航城商务楼 3F', taxBase: 22000, taxRate: '9%', taxAmount: 1980, deadline: '2024-10-15', payStatus: '已缴纳' },
+  { id: 7, taxNo: 'TAX20240907', taxType: '印花税', relatedAsset: 'HT-2024-007', taxBase: 1740000, taxRate: '0.1%', taxAmount: 1740, deadline: '2024-08-31', payStatus: '已逾期' },
+  { id: 8, taxNo: 'TAX20240908', taxType: '房产税', relatedAsset: '江田镇仓储用地', taxBase: 5400000, taxRate: '1.2%', taxAmount: 64800, deadline: '2024-10-31', payStatus: '待缴纳' }
 ]
 
 // ===== 收费 / 账单 / 保证金 共享种子 =====
@@ -289,6 +291,37 @@ export const useFinanceStore = defineStore('finance', () => {
     return deposits.value[idx]
   }
 
+  // 签约自动创建保证金记录：amount 单位为元，payStatus 默认 '待收'（签约时未必当场到账）
+  function addDeposit(deposit) {
+    const year = new Date().getFullYear()
+    const seq = String(deposits.value.length + 1).padStart(3, '0')
+    const stamp = nowStr()
+    const entry = {
+      id: Math.max(0, ...deposits.value.map(d => Number(d.id) || 0)) + 1,
+      depositNo: deposit.depositNo || `BZJ-${year}-${seq}`,
+      contractId: deposit.contractId || '',
+      tenant: deposit.tenant || '',
+      assetId: deposit.assetId || '',
+      assetName: deposit.assetName || '',
+      depositType: deposit.depositType || '租赁保证金',
+      amount: round2(deposit.amount),
+      payDate: deposit.payDate || today(),
+      payTime: deposit.payStatus === '已收' ? stamp : '—',
+      operator: deposit.operator || (deposit.payStatus === '已收' ? (useUserStore().user?.name || '收费员') : '—'),
+      payStatus: deposit.payStatus || '待收',
+      applyNo: '',
+      applyDate: '',
+      subletStatus: '无',
+      subletNote: '—',
+      subletTime: '—',
+      subletOperator: '—',
+      status: '在管',
+      assets: deposit.assets || []
+    }
+    deposits.value.push(entry)
+    return entry
+  }
+
   // 账单状态：由 financeStore 统一持有，收款动作再回写 feeRecords
   function addBill(bill) {
     const ym = (bill.billMonth || today()).replace('-', '')
@@ -358,7 +391,150 @@ export const useFinanceStore = defineStore('finance', () => {
     const nextReceived = round2((bill.received || 0) + paidYuan)
     const nextStatus = nextReceived >= (bill.receivable || 0) ? '已缴费' : (nextReceived > 0 ? '部分缴费' : '待缴费')
     updateBill(billNo, { received: nextReceived, status: nextStatus })
+    if (nextStatus === '已缴费') {
+      createInvoice(billNo)
+    }
     return { billNo, receiptNo, paidYuan, paidWan, status: nextStatus }
+  }
+
+  // 收款→开票：账单缴清后自动生成发票，税额由 invoiceRates 驱动
+  function createInvoice(billNo) {
+    const bill = bills.value.find(b => b.billNo === billNo)
+    if (!bill || bill.status !== '已缴费') return null
+    const already = invoices.value.find(inv => inv._billNo === billNo)
+    if (already) return already
+
+    const contractStore = useContractStore()
+    const contract = contractStore.getContractById(bill.contractId)
+    const feeType = bill.feeType || '租金'
+    const rateEntry = invoiceRates.value.find(r => r.bizType === feeType && r.enabled)
+    const taxRate = rateEntry ? rateEntry.rate : 5
+    const invoiceType = rateEntry ? rateEntry.invoiceType : '增值税普通发票'
+
+    const amountWan = round2((bill.received || 0) / 10000)
+    const tax = round2(amountWan / (1 + taxRate / 100) * taxRate / 100)
+
+    const pad2 = n => String(n).padStart(2, '0')
+    const now = new Date()
+    const seq = String(invoices.value.length + 1).padStart(3, '0')
+    const invoiceNo = `FP-${now.getFullYear()}-${seq}`
+
+    const invoice = {
+      invoiceNo,
+      invoiceType,
+      tenant: bill.tenant,
+      contractId: bill.contractId || '',
+      assetName: bill.assetName || contract?.assetName || '',
+      amount: amountWan,
+      taxRate,
+      tax,
+      issueDate: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`,
+      invoiceStatus: '已开具',
+      auto: true,
+      _billNo: billNo,
+      _source: '收款自动开票'
+    }
+    invoices.value.unshift(invoice)
+
+    useAuditStore().recordEvent({
+      assetId: bill.assetId || '',
+      assetName: bill.assetName,
+      group: groupOfContract(bill.contractId),
+      module: '发票',
+      action: '自动开票',
+      billNo: invoiceNo,
+      remark: `${bill.tenant} 账单 ${billNo} 收款后自动开票 ${amountWan} 万元`,
+      detail: `发票类型 ${invoiceType}，税率 ${taxRate}%`
+    })
+
+    computeTaxForInvoice(invoice)
+    return invoice
+  }
+
+  // 开票→税费：根据发票金额 + taxRules 自动生成增值税 / 房产税记录
+  function computeTaxForInvoice(invoice) {
+    const pad2 = n => String(n).padStart(2, '0')
+    const now = new Date()
+    const baseId = taxRecords.value.reduce((max, r) => Math.max(max, r.id || 0), 0)
+    let seq = 0
+
+    function nextId() { seq++; return baseId + seq }
+    function nextTaxNo() { return `TAX${Date.now()}${seq}` }
+    function deadlineFor(month) {
+      const m = month || now.getMonth() + 2
+      return `${now.getFullYear()}-${pad2(m > 12 ? m - 12 : m)}-${pad2(28)}`
+    }
+
+    const vatRule = taxRules.value.find(r => r.taxType === '增值税' && r.enabled)
+    if (vatRule) {
+      const base = round2(invoice.amount * 10000)
+      const amt = round2(base / (1 + vatRule.rate / 100) * vatRule.rate / 100)
+      taxRecords.value.unshift({
+        id: nextId(), taxNo: nextTaxNo(), taxType: '增值税',
+        relatedAsset: invoice.assetName, taxBase: base,
+        taxRate: `${vatRule.rate}%`, taxAmount: amt,
+        deadline: deadlineFor(10), payStatus: '待缴纳',
+        _source: 'auto', _invoiceNo: invoice.invoiceNo
+      })
+    }
+
+    const rentRule = taxRules.value.find(r => r.taxType === '房产税' && r.enabled)
+    if (rentRule && invoice._billNo) {
+      const bill = bills.value.find(b => b.billNo === invoice._billNo)
+      if (bill && bill.feeType === '租金') {
+        const base = round2(invoice.amount * 10000)
+        const amt = round2(base * rentRule.rate / 100)
+        taxRecords.value.unshift({
+          id: nextId(), taxNo: nextTaxNo(), taxType: '房产税',
+          relatedAsset: invoice.assetName, taxBase: base,
+          taxRate: rentRule.rateText || `${rentRule.rate}%`, taxAmount: amt,
+          deadline: deadlineFor(rentRule.deadlineMonth), payStatus: '待缴纳',
+          _source: 'auto', _invoiceNo: invoice.invoiceNo
+        })
+      }
+    }
+  }
+
+  // 逾期账单自动扫描：待缴费 + 已过截止日 → 已逾期，同时触发催租通知 + 合同欠费回写（驱动客商信用降级）
+  // 幂等：只处理 status 仍为 '待缴费' 的账单，已经是 '已逾期' 的不会重复处理
+  function checkOverdueBills() {
+    const todayStr = today()
+    const contractStore = useContractStore()
+    const notifyStore = useNotifyStore()
+    let count = 0
+
+    bills.value.forEach(b => {
+      if (b.status !== '待缴费' || !b.dueDate || b.dueDate >= todayStr) return
+
+      updateBill(b.billNo, { status: '已逾期' })
+
+      const contract = b.contractId ? contractStore.getContractById(b.contractId) : null
+      if (contract) {
+        const overDays = Math.max(0, Math.floor((new Date(todayStr) - new Date(b.dueDate)) / 86400000))
+        const newArrears = round2((contract.arrears || 0) + (b.receivable - (b.received || 0)) / 10000)
+        contractStore.updateContract(contract.id, {
+          arrears: newArrears,
+          overdueDays: Math.max(contract.overdueDays || 0, overDays)
+        })
+        notifyStore.sendByTemplate('urge_rent', {
+          contractNo: contract.id,
+          tenant: contract.tenant,
+          arrears: newArrears,
+          days: overDays
+        }, { target: contract.tenant, bizType: '催租', bizId: b.billNo })
+
+        const credit = usePartyStore().creditOf(contract.tenant)
+        notifyStore.sendByTemplate('warning_arrears', {
+          asset: b.assetName || contract.assetName,
+          contractNo: contract.id,
+          arrears: newArrears,
+          days: overDays,
+          credit
+        }, { target: 'gov', bizType: '欠费预警', bizId: contract.id })
+      }
+      count++
+    })
+    return count
   }
 
   function voucherOf(bizType, bizId) {
@@ -382,7 +558,7 @@ export const useFinanceStore = defineStore('finance', () => {
     const year = String(new Date().getFullYear())
     const rows = []
     contractStore.feeRecords.forEach(f => {
-      if (!f.yearActual) return
+      if (!f.yearActual || f.assetDeleted) return
       rows.push({
         contractId: f.contractId,
         tenant: f.tenant,
@@ -394,7 +570,7 @@ export const useFinanceStore = defineStore('finance', () => {
       })
     })
     contractStore.contracts.forEach(c => {
-      if (!c.deposit) return
+      if (!c.deposit || c.assetDeleted) return
       rows.push({
         contractId: c.id,
         tenant: c.tenant,
@@ -410,7 +586,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
   const stats = computed(() => {
     const contractStore = useContractStore()
-    const fees = contractStore.feeRecords
+    const fees = contractStore.feeRecords.filter(f => !f.assetDeleted)
     const list = revenueRecords.value
     const pending = list.filter(r => !r.voucherNo).length
     return {
@@ -475,6 +651,18 @@ export const useFinanceStore = defineStore('finance', () => {
     return t
   })
 
+  // 评估值→招租指导价：收益法反推月租金单价（元/㎡/月），供招租页自动引用
+  function guidePriceForAsset(assetId) {
+    const ev = evaluationRecords.find(e => e.assetId === assetId)
+    if (!ev) return null
+    const assetStore = useAssetStore()
+    const asset = assetStore.getAssetById(assetId)
+    const area = asset?.area || 0
+    if (!area) return { evalValue: ev.value, guidePrice: 0, reportNo: ev.reportNo, method: ev.method, date: ev.date }
+    const guidePrice = round2(ev.value * 10000 * CAP_RATE / area / 12)
+    return { evalValue: ev.value, guidePrice, reportNo: ev.reportNo, method: ev.method, date: ev.date }
+  }
+
   // 租金差价：实收单价来自合同，市场单价由评估值按收益法反推
   const rentMarginRows = computed(() => {
     const contractStore = useContractStore()
@@ -526,6 +714,10 @@ export const useFinanceStore = defineStore('finance', () => {
     }
   })
 
+  // 初始化时扫描一次逾期账单：种子数据里有待缴费但已过截止日的账单，首次加载即自动转逾期并催租
+  // persist 恢复后 onHydrated 会再跑一次，幂等不会重复处理
+  checkOverdueBills()
+
   return {
     invoices,
     expenses,
@@ -555,8 +747,14 @@ export const useFinanceStore = defineStore('finance', () => {
     refundDeposit,
     collectDeposit,
     applyDepositRefund,
+    addDeposit,
     addBill,
     updateBill,
-    payBill
+    payBill,
+    createInvoice,
+    computeTaxForInvoice,
+    checkOverdueBills,
+    guidePriceForAsset,
+    onHydrated: checkOverdueBills
   }
 })

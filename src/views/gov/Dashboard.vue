@@ -73,7 +73,7 @@
         </el-radio-group>
       </template>
       <el-table :data="metricRows" stripe size="small" show-summary :summary-method="getMetricSummary">
-        <el-table-column prop="name" label="集团" width="120" />
+        <el-table-column prop="name" label="集团" min-width="120" />
         <el-table-column prop="assets" label="资产数" width="80" align="right" />
         <el-table-column prop="bookValue" label="账面价值(亿)" width="120" align="right" />
         <el-table-column prop="rented" label="在租" width="80" align="right" />
@@ -124,7 +124,8 @@ const metricYear = ref(2026)
 const rows = computed(() => reportStore.getAllCompaniesLatestData())
 const total = computed(() => {
   const data = rows.value
-  const t = { assets: 0, bookValue: 0, rented: 0, idle: 0, cumReceivable: 0, cumActual: 0, yearReceivable: 0, yearActual: 0, newCert: 0, unCert: 0, rentalRate: 0, idleRate: 0 }
+  const special = reportStore.computeSpecialAssetSummary()
+  const t = { assets: 0, bookValue: 0, rented: 0, idle: 0, cumReceivable: 0, cumActual: 0, yearReceivable: 0, yearActual: 0, newCert: 0, unCert: 0, rentalRate: 0, idleRate: 0, intangibleCount: 0, intangibleValue: 0, equityCount: 0, equityInvest: 0 }
   data.forEach(r => {
     t.assets += (r.assets || 0)
     t.bookValue += (r.bookValue || 0)
@@ -137,6 +138,13 @@ const total = computed(() => {
     t.newCert += (r.newCert || 0)
     t.unCert += (r.unCert || 0)
   })
+  // 纳入无形资产 + 股权投资
+  t.intangibleCount = special.intangibleCount
+  t.intangibleValue = special.intangibleValue
+  t.equityCount = special.equityCount
+  t.equityInvest = special.equityInvest
+  t.assets += special.intangibleCount + special.equityCount
+  t.bookValue += special.intangibleValue + special.equityInvest
   t.bookValue = Math.round(t.bookValue * 100) / 100
   t.rentalRate = t.assets > 0 ? Math.round(t.rented / t.assets * 1000) / 10 : 0
   t.idleRate = t.assets > 0 ? Math.round(t.idle / t.assets * 1000) / 10 : 0
@@ -144,8 +152,8 @@ const total = computed(() => {
 })
 
 const kpiList = computed(() => [
-  { label: '总资产(万元)', value: '600,164.83', color: '#1668DC', trend: 5.2 },
-  { label: '资产总数', value: '6,354', color: '#722ed1', trend: 8.1 },
+  { label: '总资产(万元)', value: total.value.bookValue.toLocaleString(), color: '#1668DC', trend: 5.2 },
+  { label: '资产总数', value: String(total.value.assets), color: '#722ed1', trend: 8.1 },
   { label: '运营总数', value: '59', color: '#13c2c2', trend: 12 },
   { label: '预警数', value: '41', color: '#D93026', trend: -3 },
   { label: '出租率', value: (total.value.rentalRate ?? 0).toFixed(1), unit: '%', color: '#18A058', trend: 1.2 },
@@ -200,7 +208,8 @@ onMounted(() => {
         { value: 1200, name: '土地类', itemStyle: { color: '#18A058' } },
         { value: 680, name: '设备类', itemStyle: { color: '#722ed1' } },
         { value: 420, name: '在建工程', itemStyle: { color: '#E8912A' } },
-        { value: 254, name: '无形资产', itemStyle: { color: '#13c2c2' } }
+        { value: total.value.intangibleCount || 7, name: '无形资产', itemStyle: { color: '#13c2c2' } },
+        { value: total.value.equityCount || 0, name: '股权投资', itemStyle: { color: '#eb2f96' } }
       ]
     }]
   })

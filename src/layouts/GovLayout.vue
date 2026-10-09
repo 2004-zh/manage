@@ -89,7 +89,7 @@
       <TagsView home="/gov/home" />
 
       <el-main class="main-content">
-        <router-view />
+        <router-view :key="route.fullPath" />
       </el-main>
     </el-container>
   </el-container>

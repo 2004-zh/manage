@@ -26,7 +26,10 @@ const DEFAULT_TEMPLATES = [
   { key: 'warning_expiry', scene: '合同临期', channel: '站内信', title: '合同临期提醒：{contractNo}', content: '{asset} 的合同将于 {endDate} 到期，承租方 {tenant}，请提前启动续租或重新招商。', enabled: true },
   { key: 'inventory_diff', scene: '盘点差异', channel: '站内信', title: '盘点差异待处理：{task}', content: '本次盘点发现盘盈 {gain} 项、盘亏 {loss} 项，请核实后提交调整。', enabled: true },
   { key: 'dispose_blocked', scene: '处置被拦截', channel: '站内信', title: '处置申请被拦截：{asset}', content: '该资产存在{reason}，按管控规则不得处置，请先解除限制。', enabled: true },
-  { key: 'contract_signed', scene: '合同生效', channel: '站内信', title: '合同生效：{contractNo}', content: '{asset} 已与 {tenant} 签约，年租金 {rent} 万元，资产状态已联动更新。', enabled: true }
+  { key: 'contract_signed', scene: '合同生效', channel: '站内信', title: '合同生效：{contractNo}', content: '{asset} 已与 {tenant} 签约，年租金 {rent} 万元，资产状态已联动更新。', enabled: true },
+  { key: 'report_submit', scene: '数据报送', channel: '站内信', title: '收到 {company} 数据报送', content: '{company} 提交了新的数据报送（{report}），请及时审核。', enabled: true },
+  { key: 'report_accept', scene: '报送接收', channel: '站内信', title: '报送数据已接收', content: '你单位报送的数据（{report}）已通过审核并接收。', enabled: true },
+  { key: 'report_return', scene: '报送退回', channel: '站内信+短信', title: '报送数据已退回', content: '你单位报送的数据（{report}）已被退回，原因：{reason}，请修正后重新提交。', enabled: true }
 ]
 
 export const useNotifyStore = defineStore('notify', () => {

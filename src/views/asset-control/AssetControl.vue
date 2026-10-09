@@ -165,7 +165,7 @@
               >{{ f }}</div>
             </div>
             <div class="floor-panel">
-              <div class="section-title">{{ panoFloor }} 资产分布（共 {{ panoFloorAssets.length }} 项）</div>
+              <div class="section-title">{{ panoSelectedZone ? panoSelectedZone + ' / ' : '' }}{{ panoFloor }} 资产分布（共 {{ panoFloorAssets.length }} 项）</div>
               <div class="pano-grid">
                 <div
                   v-for="a in panoFloorAssets"
@@ -451,6 +451,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { OfficeBuilding, LocationInformation, Search } from '@element-plus/icons-vue'
 import { useProjectStore } from '../../store/project'
@@ -458,6 +459,7 @@ import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
 import { useMortgageStore } from '../../store/mortgage'
 import AssetDetailDrawer from '../../components/AssetDetailDrawer.vue'
+const route = useRoute()
 const projectStore = useProjectStore()
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
@@ -476,6 +478,42 @@ function levelTagType(lv) { return { '项目': 'primary', '分区': 'success', '
 const zoneOf = a => a.zoneName || '未分区'
 const floorOf = a => a.floorName || '未分层'
 
+// 项目结构的房间转成和台账资产一样的形状，这样空间管控/全景租控可以统一处理
+function roomToAsset(room, project, partitionName, floorName) {
+  return {
+    id: room.id,
+    assetNo: room.assetNo || room.id,
+    name: room.name,
+    area: Number(room.area) || 0,
+    status: room.status || '空置',
+    tenant: room.tenant || null,
+    leaseExpiry: room.leaseExpiry || null,
+    vacancyDays: room.vacancyDays ?? null,
+    projectId: project.id,
+    projectName: project.name,
+    zoneName: partitionName,
+    floorName: floorName,
+    assetCategory: '房产类',
+    location: `${project.name}${partitionName}${floorName}`,
+    certStatus: room.hasPropertyRight ? '已办证' : '未办证',
+    certDetail: '',
+    _fromStructure: true
+  }
+}
+
+// 合并项目自带房间和挂入的台账资产，空间管控和全景租控共用
+function allProjectAssets(projectId) {
+  const project = projectStore.getProjectById(projectId)
+  if (!project) return []
+  const structRooms = []
+  ;(project.partitions || []).forEach(p => {
+    ;(p.floors || []).forEach(f => {
+      ;(f.rooms || []).forEach(r => structRooms.push(roomToAsset(r, project, p.name, f.name)))
+    })
+  })
+  return [...structRooms, ...assetStore.getProjectAssets(projectId)]
+}
+
 const treeProps = { label: 'label', children: 'children' }
 const treeRef = ref(null)
 const treeFilter = ref('')
@@ -483,7 +521,7 @@ const treeFilter = ref('')
 // 层级树按资产台账的真实归集口径生成：项目自带房间 + 从台账挂进来的平铺资产
 const treeData = computed(() => projectStore.visibleProjects.map(b => {
   const byZone = new Map()
-  assetStore.getProjectAssets(b.id).forEach(a => {
+  allProjectAssets(b.id).forEach(a => {
     if (!byZone.has(zoneOf(a))) byZone.set(zoneOf(a), [])
     byZone.get(zoneOf(a)).push(a)
   })
@@ -547,12 +585,22 @@ const currentFloors = computed(() => {
   if (!n) {
     const ids = new Set(projectStore.visibleProjects.map(b => b.id))
     pool = assetStore.visibleAssets.filter(a => ids.has(a.projectId))
+    // 也要包含项目结构的房间
+    const structPool = []
+    projectStore.visibleProjects.forEach(b => {
+      ;(b.partitions || []).forEach(p => {
+        ;(p.floors || []).forEach(f => {
+          ;(f.rooms || []).forEach(r => structPool.push(roomToAsset(r, b, p.name, f.name)))
+        })
+      })
+    })
+    pool = [...structPool, ...pool]
   } else if (n.type === 'project') {
-    pool = assetStore.getProjectAssets(n.key)
+    pool = allProjectAssets(n.key)
   } else if (n.type === 'partition') {
-    pool = assetStore.getProjectAssets(n.project.id).filter(a => zoneOf(a) === n.label)
+    pool = allProjectAssets(n.project.id).filter(a => zoneOf(a) === n.label)
   } else if (n.type === 'floor' || n.type === 'asset') {
-    pool = assetStore.getProjectAssets(n.project.id).filter(a => zoneOf(a) === n.partition.name && floorOf(a) === n.floor.name)
+    pool = allProjectAssets(n.project.id).filter(a => zoneOf(a) === n.partition.name && floorOf(a) === n.floor.name)
   } else {
     pool = []
   }
@@ -578,13 +626,14 @@ const boardStats = computed(() => {
 
 const panoView = ref('map')
 const panoFloor = ref('')
+const panoSelectedZone = ref('')
 const panoStatus = ref('')
 const panoVacBucket = ref('')
 const panoExpBucket = ref('')
 const panoUnrentable = ref(false)
 const panoAreaKw = ref('')
 
-const panoSelectedProjectId = ref(projectStore.visibleProjects[0]?.id || '')
+const panoSelectedProjectId = ref(route.query.projectId || projectStore.visibleProjects[0]?.id || '')
 
 // 选中的项目可能被切号/删除掉，兜底回本公司第一个项目
 const activeProjectId = computed(() =>
@@ -597,18 +646,25 @@ const panoTreeRef = ref(null)
 const panoTreeFilter = ref('')
 watch(panoTreeFilter, v => panoTreeRef.value?.filter(v))
 
-const panoTreeData = computed(() => projectStore.visibleProjects.map(b => ({
-  key: b.id, label: b.name, level: '项目', type: 'project',
-  children: [...new Set(assetStore.getProjectAssets(b.id).map(a => zoneOf(a)))].map(z => ({
-    key: `${b.id}|${z}`, label: z, level: '分区', type: 'partition', projectId: b.id
-  }))
-})))
+const panoTreeData = computed(() => projectStore.visibleProjects.map(b => {
+  const zoneNames = new Set()
+  ;(b.partitions || []).forEach(p => zoneNames.add(p.name))
+  allProjectAssets(b.id).forEach(a => zoneNames.add(zoneOf(a)))
+  return {
+    key: b.id, label: b.name, level: '项目', type: 'project',
+    children: [...zoneNames].map(z => ({
+      key: `${b.id}|${z}`, label: z, level: '分区', type: 'partition', projectId: b.id
+    }))
+  }
+}))
 
 function onPanoNodeClick(data) {
   if (data.type === 'project') {
     panoSelectedProjectId.value = data.key
+    panoSelectedZone.value = ''
   } else if (data.type === 'partition') {
     panoSelectedProjectId.value = data.projectId
+    panoSelectedZone.value = data.label
   }
 }
 
@@ -622,14 +678,22 @@ const currentPanoProject = computed(() => {
   return { name: b.name, typeTag: projectTypeTag(b.type), address: b.address, image: b.image }
 })
 
-const currentPanoFloors = computed(() =>
-  [...new Set(assetStore.getProjectAssets(activeProjectId.value).map(a => floorOf(a)))]
-)
+const currentPanoFloors = computed(() => {
+  const assets = allProjectAssets(activeProjectId.value)
+    .filter(a => !panoSelectedZone.value || zoneOf(a) === panoSelectedZone.value)
+  return [...new Set(assets.map(a => floorOf(a)))]
+})
 
 watch(activeProjectId, () => {
+  panoSelectedZone.value = ''
   const floors = currentPanoFloors.value
   if (!floors.includes(panoFloor.value)) panoFloor.value = floors[0] || ''
 }, { immediate: true })
+
+watch(panoSelectedZone, () => {
+  const floors = currentPanoFloors.value
+  if (!floors.includes(panoFloor.value)) panoFloor.value = floors[0] || ''
+})
 
 const panoStatusList = ['已租赁', '未租赁', '审批中', '已占用', '处置中', '流转中', '调拨中']
 const panoStatusColors = { '已租赁': '#1668DC', '未租赁': '#909399', '审批中': '#E8912A', '已占用': '#722ed1', '处置中': '#D93026', '流转中': '#13c2c2', '调拨中': '#18A058' }
@@ -659,7 +723,11 @@ const activeMortgageAssetIds = computed(() => new Set(
 
 const allPanoAssets = computed(() => {
   const projects = new Map(projectStore.visibleProjects.map(b => [b.id, b]))
-  return assetStore.visibleAssets
+  const allAssets = []
+  projectStore.visibleProjects.forEach(b => {
+    allAssets.push(...allProjectAssets(b.id))
+  })
+  return allAssets
     .filter(a => a.projectId && projects.has(a.projectId))
     .map(a => {
       const b = projects.get(a.projectId)
@@ -681,7 +749,11 @@ const allPanoAssets = computed(() => {
     })
 })
 
-const projectPanoAssets = computed(() => allPanoAssets.value.filter(a => a.projectId === activeProjectId.value))
+const projectPanoAssets = computed(() => allPanoAssets.value.filter(a => {
+  if (a.projectId !== activeProjectId.value) return false
+  if (panoSelectedZone.value && a.zone !== panoSelectedZone.value) return false
+  return true
+}))
 
 const panoReceipts = computed(() => contractStore.projectReceipts(activeProjectId.value))
 

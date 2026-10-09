@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAssetStore } from './asset'
 import { useAuditStore } from './audit'
+import { useFixedAssetStore } from './fixedAsset'
+import { useNotifyStore } from './notify'
 
 /**
  * 盘点清查（辅链 N）：盘点任务以 asset store 当时快照生成清单，
@@ -126,15 +128,42 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
     task.status = '已完成'
     task.finishedTime = nowStr()
+
+    // 盘亏/损毁自动生成处置工单，流转到固定资产处置台账
+    const diffLines = task.lines.filter(l => l.checkResult === '盘亏' || l.checkResult === '损毁')
+    const fixedAssetStore = useFixedAssetStore()
+    const today = nowStr().slice(0, 10)
+    diffLines.forEach(l => {
+      fixedAssetStore.addDispose({
+        assetName: l.assetName,
+        assetNo: l.assetId,
+        disposeType: l.checkResult === '损毁' ? '报废' : '核销',
+        disposeReason: `盘点${l.checkResult}核销：${l.remark || '账实不符'}`,
+        residualValue: l.checkResult === '损毁' ? 0 : (l.bookValue || 0),
+        disposeDate: today,
+        status: '待处置'
+      })
+    })
+
+    const summary = taskSummary(task)
     useAuditStore().recordEvent({
       group: task.group,
       module: '盘点清查',
       action: '完成盘点',
       billNo: task.id,
       remark: task.name,
-      detail: `差异 ${task.lines.filter(l => l.checkResult !== '正常' && l.checkResult !== '未盘').length} 项`
+      detail: `差异 ${summary.diff} 项${diffLines.length ? `，已生成 ${diffLines.length} 条处置工单` : ''}`
     })
-    return { ok: true }
+
+    if (summary.diff > 0) {
+      useNotifyStore().sendByTemplate('inventory_diff', {
+        task: task.id,
+        gain: summary.surplus,
+        loss: summary.loss + summary.damaged
+      }, { target: 'gov', bizType: '盘点差异', bizId: task.id })
+    }
+
+    return { ok: true, disposed: diffLines.length }
   }
 
   function taskSummary(task) {

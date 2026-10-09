@@ -78,7 +78,7 @@
         <!-- 部门统计 -->
         <el-tab-pane label="部门统计" name="department">
           <el-table :data="pagedDepartmentStats" style="width: 100%">
-            <el-table-column prop="department" label="部门名称" width="150" />
+            <el-table-column prop="department" label="部门名称" min-width="150" />
             <el-table-column prop="assetCount" label="资产数量" width="120" />
             <el-table-column prop="assetAmount" label="资产总值" width="150" align="right">
               <template #default="{ row }"><span class="num">¥{{ row.assetAmount.toLocaleString() }}</span></template>
@@ -273,53 +273,91 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Download, Search } from '@element-plus/icons-vue'
+import { useFixedAssetStore } from '../../store/fixedAsset'
+
+const fixedAssetStore = useFixedAssetStore()
 
 const activeTab = ref('category')
 
-// 分类统计
-const categoryStats = ref([
-  { name: '办公用品', count: 156, amount: 234000, percentage: 15 },
-  { name: '车辆', count: 12, amount: 2160000, percentage: 35 },
-  { name: '设备', count: 89, amount: 1780000, percentage: 28 },
-  { name: '材料', count: 230, amount: 460000, percentage: 12 },
-  { name: '其他', count: 45, amount: 620000, percentage: 10 }
-])
+const categoryStats = computed(() => {
+  const grouped = {}
+  fixedAssetStore.assets.forEach(a => {
+    const key = a.type || '其他'
+    if (!grouped[key]) grouped[key] = { name: key, count: 0, amount: 0 }
+    grouped[key].count++
+    grouped[key].amount += (a.original || 0)
+  })
+  const total = Object.values(grouped).reduce((s, g) => s + g.amount, 0) || 1
+  return Object.values(grouped).map(g => ({
+    ...g,
+    percentage: Math.round(g.amount / total * 100)
+  })).sort((a, b) => b.amount - a.amount)
+})
 
-// 位置统计
-const locationStats = ref([
-  { location: '总部办公楼1层', count: 45, amount: 890000, departments: '行政部、财务部', percentage: 18 },
-  { location: '总部办公楼2层', count: 38, amount: 760000, departments: '技术部、人事部', percentage: 15 },
-  { location: '总部办公楼3层', count: 52, amount: 1040000, departments: '市场部、销售部', percentage: 21 },
-  { location: '仓库A区', count: 68, amount: 560000, departments: '后勤部', percentage: 14 },
-  { location: '仓库B区', count: 42, amount: 380000, departments: '后勤部', percentage: 10 },
-  { location: '车库', count: 12, amount: 2160000, departments: '办公室', percentage: 22 }
-])
+const locationStats = computed(() => {
+  const grouped = {}
+  fixedAssetStore.assets.forEach(a => {
+    const key = a.location || '未指定'
+    if (!grouped[key]) grouped[key] = { location: key, count: 0, amount: 0, depts: new Set() }
+    grouped[key].count++
+    grouped[key].amount += (a.original || 0)
+    if (a.dept) grouped[key].depts.add(a.dept)
+  })
+  const total = Object.values(grouped).reduce((s, g) => s + g.amount, 0) || 1
+  return Object.values(grouped).map(g => ({
+    location: g.location,
+    count: g.count,
+    amount: g.amount,
+    departments: [...g.depts].join('、'),
+    percentage: Math.round(g.amount / total * 100)
+  })).sort((a, b) => b.amount - a.amount)
+})
 
-// 部门统计
-const departmentStats = ref([
-  { department: '行政部', assetCount: 35, assetAmount: 560000, userCount: 12, perCapita: 46667, percentage: 14 },
-  { department: '财务部', assetCount: 28, assetAmount: 420000, userCount: 10, perCapita: 42000, percentage: 11 },
-  { department: '技术部', assetCount: 65, assetAmount: 1300000, userCount: 25, perCapita: 52000, percentage: 26 },
-  { department: '市场部', assetCount: 42, assetAmount: 840000, userCount: 18, perCapita: 46667, percentage: 18 },
-  { department: '人事部', assetCount: 18, assetAmount: 270000, userCount: 8, perCapita: 33750, percentage: 7 },
-  { department: '后勤部', assetCount: 32, assetAmount: 480000, userCount: 15, perCapita: 32000, percentage: 12 },
-  { department: '办公室', assetCount: 12, assetAmount: 2160000, userCount: 5, perCapita: 432000, percentage: 12 }
-])
+const departmentStats = computed(() => {
+  const grouped = {}
+  fixedAssetStore.assets.forEach(a => {
+    const key = a.dept || '未分配'
+    if (!grouped[key]) grouped[key] = { department: key, assetCount: 0, assetAmount: 0, users: new Set() }
+    grouped[key].assetCount++
+    grouped[key].assetAmount += (a.original || 0)
+    if (a.user) grouped[key].users.add(a.user)
+  })
+  const total = Object.values(grouped).reduce((s, g) => s + g.assetAmount, 0) || 1
+  return Object.values(grouped).map(g => {
+    const userCount = g.users.size || 1
+    return {
+      department: g.department,
+      assetCount: g.assetCount,
+      assetAmount: g.assetAmount,
+      userCount,
+      perCapita: Math.round(g.assetAmount / userCount),
+      percentage: Math.round(g.assetAmount / total * 100)
+    }
+  }).sort((a, b) => b.assetAmount - a.assetAmount)
+})
 
 // 使用人统计
 const userSearch = reactive({ name: '', department: '' })
 watch(userSearch, () => { userPage.value = 1 }, { deep: true })
 
-const userStats = ref([
-  { name: '张三', department: '技术部', position: '工程师', assetCount: 3, assetAmount: 25500, assetDetail: '笔记本电脑x1、显示器x1、办公桌x1' },
-  { name: '李四', department: '财务部', position: '会计', assetCount: 2, assetAmount: 9700, assetDetail: '笔记本电脑x1、打印机x1' },
-  { name: '王五', department: '市场部', position: '经理', assetCount: 4, assetAmount: 35000, assetDetail: '笔记本电脑x1、手机x1、投影仪x1、办公桌x1' },
-  { name: '赵六', department: '行政部', position: '助理', assetCount: 2, assetAmount: 9200, assetDetail: '台式电脑x1、办公桌x1' },
-  { name: '孙七', department: '技术部', position: '架构师', assetCount: 4, assetAmount: 42000, assetDetail: '笔记本电脑x2、服务器x1、显示器x1' },
-  { name: '周八', department: '人事部', position: '主管', assetCount: 2, assetAmount: 9700, assetDetail: '笔记本电脑x1、办公桌x1' },
-  { name: '吴九', department: '后勤部', position: '主任', assetCount: 3, assetAmount: 15000, assetDetail: '台式电脑x1、打印机x1、办公桌x1' },
-  { name: '郑十', department: '办公室', position: '主任', assetCount: 3, assetAmount: 189200, assetDetail: '笔记本电脑x1、轿车x1、手机x1' }
-])
+const userStats = computed(() => {
+  const grouped = {}
+  fixedAssetStore.assets.forEach(a => {
+    const key = a.user || '未分配'
+    if (!grouped[key]) grouped[key] = { name: key, department: a.dept || '未分配', assetCount: 0, assetAmount: 0, assets: [] }
+    grouped[key].assetCount++
+    grouped[key].assetAmount += (a.original || 0)
+    grouped[key].assets.push(a.name)
+  })
+  return Object.values(grouped).map(g => ({
+    name: g.name,
+    department: g.department,
+    position: '',
+    assetCount: g.assetCount,
+    assetAmount: g.assetAmount,
+    assetDetail: g.assets.join('、')
+  })).sort((a, b) => b.assetAmount - a.assetAmount)
+})
 
 const filteredUserStats = computed(() => {
   return userStats.value.filter(item => {

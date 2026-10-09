@@ -121,9 +121,13 @@ const router = createRouter({
         { path: 'warning-tasks', name: 'EntWarningTasks', component: () => import('../views/ent/WarningTasks.vue'), meta: { title: '预警任务' } },
         { path: 'warning-config', name: 'EntWarningConfig', component: () => import('../views/ent/WarningConfig.vue'), meta: { title: '预警配置' } },
 
-        // ===== 巡查管理 =====
-        { path: 'inspection-plan', name: 'EntInspectionPlan', component: () => import('../views/InspectionMaintenance/InspectionMaintenance.vue'), meta: { title: '巡查计划' } },
-        { path: 'inspection-records', name: 'EntInspectionRecords', component: () => import('../views/InspectionMaintenance/InspectionMaintenance.vue'), meta: { title: '巡查记录' } }
+        // ===== 巡检维修 =====
+        { path: 'inspection-plan', name: 'EntInspectionPlan', component: () => import('../views/InspectionMaintenance/InspectionMaintenance.vue'), meta: { title: '巡查计划', tab: 'plan' } },
+        { path: 'inspection-records', name: 'EntInspectionRecords', component: () => import('../views/InspectionMaintenance/InspectionMaintenance.vue'), meta: { title: '资产巡查', tab: 'inspection' } },
+        { path: 'project-inspection', name: 'EntProjectInspection', component: () => import('../views/InspectionMaintenance/InspectionMaintenance.vue'), meta: { title: '项目巡查', tab: 'project' } },
+        { path: 'repair-request', name: 'EntRepairRequest', component: () => import('../views/InspectionMaintenance/InspectionMaintenance.vue'), meta: { title: '资产报修', tab: 'repair' } },
+        { path: 'repair-mgmt', name: 'EntRepairMgmt', component: () => import('../views/InspectionMaintenance/InspectionMaintenance.vue'), meta: { title: '维修管理', tab: 'mgmt' } },
+        { path: 'work-order', name: 'EntWorkOrder', component: () => import('../views/InspectionMaintenance/InspectionMaintenance.vue'), meta: { title: '工单跟踪', tab: 'workorder' } }
       ]
     },
     {

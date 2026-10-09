@@ -47,6 +47,11 @@
             <el-tag :type="statusType(row.payStatus)" size="small">{{ row.payStatus }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="来源" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row._source === 'auto' ? 'success' : 'info'" size="small" effect="plain">{{ row._source === 'auto' ? '自动' : '手动' }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
@@ -204,8 +209,9 @@ function handleExport() {
 }
 
 function handleView(row) {
+  const source = row._source === 'auto' ? '系统自动计算' : '手动录入'
   ElMessageBox.alert(
-    `税费编号：${row.taxNo}\n类型：${row.taxType}\n关联资产：${row.relatedAsset}\n计税基数：${row.taxBase} 元\n税率：${row.taxRate}\n应缴税额：${row.taxAmount} 元\n状态：${row.payStatus}`,
+    `税费编号：${row.taxNo}\n类型：${row.taxType}\n关联资产：${row.relatedAsset}\n计税基数：${row.taxBase} 元\n税率：${row.taxRate}\n应缴税额：${row.taxAmount} 元\n状态：${row.payStatus}\n来源：${source}`,
     '详情',
     { confirmButtonText: '确定' }
   )

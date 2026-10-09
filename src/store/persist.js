@@ -3,7 +3,7 @@ import { watch } from 'vue'
 const PERSIST_IDS = [
   'asset', 'contract', 'project', 'audit', 'party', 'notify',
   'revitalize', 'finance', 'inventory', 'control', 'credential',
-  'special', 'supervise', 'mortgage', 'warning', 'lease'
+  'special', 'supervise', 'mortgage', 'warning', 'lease', 'fixedAsset', 'inspection', 'dispose'
 ]
 const PREFIX = 'ams:'
 

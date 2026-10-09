@@ -82,7 +82,7 @@ const specialtyAssets = [
   { id: 'CT-214', name: '文武砂危化品专用仓库', location: '文武砂街道', type: '特种行业', status: '已出租', area: 1800, bookValue: 260, annualRent: 32, certStatus: '已办证', certDetail: '闽(2020)长乐区特种行业许可第1012345号', group: '水投集团', assetCategory: '特殊特种行业类', propertyRight: '有不动产证', assetUsage: '仓储', sourceType: '自建', acquisitionMethod: '自建' },
   { id: 'CT-215', name: '城区户外广告设置经营权（3 年期）', location: '吴航街道', type: '特许经营权', status: '已出租', area: 0, bookValue: 180, annualRent: 60, certStatus: '已办证', certDetail: '长城管广字(2024)第1123456号', group: '领航公司', assetCategory: '经营权类资产', propertyRight: '有证', assetUsage: '广告位', sourceType: '移交资产', acquisitionMethod: '划拨' },
   { id: 'CT-216', name: '鹤上镇公交线路运营权', location: '鹤上镇', type: '特许经营权', status: '已出租', area: 0, bookValue: 320, annualRent: 88, certStatus: '已办证', certDetail: '闽交运字(2023)第1234567号', group: '城投集团', assetCategory: '经营权类资产', propertyRight: '两证齐全', assetUsage: '运营权', sourceType: '划入', acquisitionMethod: '划拨' },
-  { id: 'CT-217', name: '潭头镇珍稀苗木繁育基地（12 亩）', location: '古槐镇', type: '特殊动植物', status: '已出租', area: 8000, bookValue: 75, annualRent: 6, certStatus: '未办证（办理中）', certDetail: '', group: '产投集团', assetCategory: '特殊动植物类', propertyRight: '无证', assetUsage: '林地', sourceType: '托管', acquisitionMethod: '划拨' },
+  { id: 'CT-217', name: '古槐镇珍稀苗木繁育基地（12 亩）', location: '古槐镇', type: '特殊动植物', status: '已出租', area: 8000, bookValue: 75, annualRent: 6, certStatus: '未办证（办理中）', certDetail: '', group: '产投集团', assetCategory: '特殊动植物类', propertyRight: '无证', assetUsage: '林地', sourceType: '托管', acquisitionMethod: '划拨' },
   { id: 'CT-218', name: '文武砂对虾育苗棚及种质资源', location: '文武砂街道', type: '特殊动植物', status: '闲置', area: 2600, bookValue: 48, annualRent: null, certStatus: '未办证（未启动）', certDetail: '', group: '水投集团', assetCategory: '特殊动植物类', propertyRight: '无证', assetUsage: '养殖设施', sourceType: '自建', acquisitionMethod: '自建' }
 ]
 
@@ -173,6 +173,22 @@ function generateAssets() {
 
 export const chengtouAssets = generateAssets()
 
+// 部分平铺资产预挂到项目下，让项目管理/分区管理有真实数据可演示
+const _attachMap = {
+  'CT-005': { projectId: 'BLD-003', partitionId: 'PART-003B', projectName: '安东大厦', zoneName: '裙楼B座', floorName: '1F' },
+  'CT-017': { projectId: 'BLD-008', partitionId: 'PART-015', projectName: '府前御景阁', zoneName: 'B栋', floorName: '1F' },
+  'CT-047': { projectId: 'BLD-004', partitionId: 'PART-007', projectName: '悦山小区', zoneName: '四栋', floorName: '1F' },
+  'CT-027': { projectId: 'BLD-006', partitionId: 'PART-011', projectName: '高沟第一街', zoneName: '西段', floorName: '1F' },
+  'CT-037': { projectId: 'BLD-009', partitionId: 'PART-016', projectName: '红日公寓', zoneName: '主楼', floorName: '1F' },
+  'CT-087': { projectId: 'BLD-001', partitionId: 'PART-001', projectName: '红联壹城', zoneName: 'C22#栋', floorName: '2F' },
+  'CT-206': { projectId: 'BLD-002', partitionId: 'PART-002B', projectName: '航站区资产', zoneName: '航站楼B', floorName: '1F' },
+  'CT-215': { projectId: 'BLD-012', partitionId: 'PART-022', projectName: '宏信大厦', zoneName: '裙楼', floorName: '1F' }
+}
+chengtouAssets.forEach(a => {
+  const t = _attachMap[a.id]
+  if (t) Object.assign(a, t)
+})
+
 // ===== 合同数据 =====
 export const contracts = [
   { id: 'HT-2023-018', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', tenant: '福州××商业管理有限公司', startDate: '2023-05-01', endDate: '2028-04-30', leaseArea: 320, annualRent: 42, status: '欠缴', arrears: 10.5, overdueDays: 45, increment: '每年递增3%', deposit: 8.4, electronic: true },
@@ -226,17 +242,17 @@ export const warnings = {
 
 export const warningList = [
   { id: 'W001', type: '欠费', group: '城投集团', asset: 'CT-001 商铺', desc: '欠缴 10.5 万元，逾期 45 天', days: 45, amount: 10.5 },
-  { id: 'W002', type: '欠费', group: '城投集团', asset: 'CT-015 写字楼', desc: '欠缴 8.2 万元，逾期 30 天', days: 30, amount: 8.2 },
-  { id: 'W003', type: '欠费', group: '城投集团', asset: 'CT-022 商铺', desc: '欠缴 5.6 万元，逾期 22 天', days: 22, amount: 5.6 },
+  { id: 'W002', type: '欠费', group: '城投集团', asset: 'CT-017 写字楼', desc: '欠缴 8.2 万元，逾期 30 天', days: 30, amount: 8.2 },
+  { id: 'W003', type: '欠费', group: '城投集团', asset: 'CT-007 吴航农贸市场', desc: '欠缴 5.6 万元，逾期 22 天', days: 22, amount: 5.6 },
   { id: 'W004', type: '闲置超期', group: '城投集团', asset: 'CT-006 玉田镇旧工业厂房', desc: '空置 420 天，超阈值 365 天', days: 420, amount: null },
   { id: 'W005', type: '闲置超期', group: '城投集团', asset: 'CT-097 江田镇闲置用地', desc: '空置 380 天，超阈值 365 天', days: 380, amount: null },
   { id: 'W006', type: '未办证', group: '城投集团', asset: 'CT-005 江田镇仓储用地', desc: '未办证，办理中', days: null, amount: null },
   { id: 'W007', type: '未办证', group: '城投集团', asset: 'CT-006 玉田镇旧工业厂房', desc: '未办证，超 12 个月未启动', days: null, amount: null },
   { id: 'W008', type: '合同临期', group: '城投集团', asset: 'CT-003 营前标准厂房 2#', desc: '合同 2026-09-30 到期', days: null, amount: null },
-  { id: 'W009', type: '欠费', group: '产投集团', asset: 'CT-201 商铺', desc: '欠缴 12.3 万元，逾期 60 天', days: 60, amount: 12.3 },
-  { id: 'W010', type: '闲置超期', group: '产投集团', asset: 'CT-210 旧厂房', desc: '空置 400 天，超阈值 365 天', days: 400, amount: null },
-  { id: 'W011', type: '欠费', group: '水投集团', asset: 'CT-301 办公楼', desc: '欠缴 6.8 万元，逾期 35 天', days: 35, amount: 6.8 },
-  { id: 'W012', type: '未办证', group: '领航公司', asset: 'CT-401 仓储用地', desc: '未办证，办理中', days: null, amount: null }
+  { id: 'W009', type: '欠费', group: '产投集团', asset: 'CT-010 商铺', desc: '欠缴 12.3 万元，逾期 60 天', days: 60, amount: 12.3 },
+  { id: 'W010', type: '闲置超期', group: '产投集团', asset: 'CT-098 玉田镇闲置厂房', desc: '空置 400 天，超阈值 365 天', days: 400, amount: null },
+  { id: 'W011', type: '欠费', group: '水投集团', asset: 'CT-017 写字楼', desc: '欠缴 6.8 万元，逾期 35 天', days: 35, amount: 6.8 },
+  { id: 'W012', type: '未办证', group: '领航公司', asset: 'CT-012 保障房', desc: '未办证，办理中', days: null, amount: null }
 ]
 
 // ===== 督办单 =====
@@ -353,18 +369,18 @@ export const buildingHierarchy = [
           {
             id: 'ZONE-001', name: '1F', area: 968.3,
             rooms: [
-              { id: 'RM-001', name: '壹城红寓C22#101', assetNo: 'YC4LC22#101', area: 222.1, status: '已出租', leaseExpiry: '2027-02-25', hasPropertyRight: false, tenant: '南京××商贸有限公司', monthlyRent: 8800 },
-              { id: 'RM-002', name: '壹城红寓C22#102', assetNo: 'YC4LC22#102', area: 186.5, status: '已出租', leaseExpiry: '2027-06-15', hasPropertyRight: false, tenant: '南京××餐饮管理', monthlyRent: 7200 },
+              { id: 'RM-001', name: '壹城红寓C22#101', assetNo: 'YC4LC22#101', area: 222.1, status: '已出租', leaseExpiry: '2027-02-25', hasPropertyRight: true, tenant: '南京××商贸有限公司', monthlyRent: 8800 },
+              { id: 'RM-002', name: '壹城红寓C22#102', assetNo: 'YC4LC22#102', area: 186.5, status: '已出租', leaseExpiry: '2027-06-15', hasPropertyRight: true, tenant: '南京××餐饮管理', monthlyRent: 7200 },
               { id: 'RM-003', name: '壹城红寓C22#103', assetNo: 'YC4LC22#103', area: 210.3, status: '空置', leaseExpiry: null, hasPropertyRight: false, tenant: null, monthlyRent: 0, vacancyDays: 120 },
-              { id: 'RM-004', name: '壹城红寓C22#104', assetNo: 'YC4LC22#104', area: 175.8, status: '已出租', leaseExpiry: '2026-12-31', hasPropertyRight: false, tenant: '南京××科技', monthlyRent: 6500 },
+              { id: 'RM-004', name: '壹城红寓C22#104', assetNo: 'YC4LC22#104', area: 175.8, status: '已出租', leaseExpiry: '2026-12-31', hasPropertyRight: true, tenant: '南京××科技', monthlyRent: 6500 },
               { id: 'RM-005', name: '壹城红寓C22#105', assetNo: 'YC4LC22#105', area: 173.6, status: '空置', leaseExpiry: null, hasPropertyRight: false, tenant: null, monthlyRent: 0, vacancyDays: 200 }
             ]
           },
           {
             id: 'ZONE-002', name: '2F', area: 968.3,
             rooms: [
-              { id: 'RM-006', name: '壹城红寓C22#201', assetNo: 'YC4LC22#201', area: 222.1, status: '已出租', leaseExpiry: '2027-09-05', hasPropertyRight: false, tenant: '南京××教育', monthlyRent: 9200 },
-              { id: 'RM-007', name: '壹城红寓C22#202', assetNo: 'YC4LC22#202', area: 186.5, status: '已出租', leaseExpiry: '2027-03-20', hasPropertyRight: false, tenant: '南京××设计', monthlyRent: 7000 },
+              { id: 'RM-006', name: '壹城红寓C22#201', assetNo: 'YC4LC22#201', area: 222.1, status: '已出租', leaseExpiry: '2027-09-05', hasPropertyRight: true, tenant: '南京××教育', monthlyRent: 9200 },
+              { id: 'RM-007', name: '壹城红寓C22#202', assetNo: 'YC4LC22#202', area: 186.5, status: '已出租', leaseExpiry: '2027-03-20', hasPropertyRight: true, tenant: '南京××设计', monthlyRent: 7000 },
               { id: 'RM-008', name: '壹城红寓C22#203', assetNo: 'YC4LC22#203', area: 210.3, status: '空置', leaseExpiry: null, hasPropertyRight: false, tenant: null, monthlyRent: 0, vacancyDays: 95 }
             ]
           }
@@ -862,6 +878,74 @@ export const buildingHierarchy = [
   }
 ]
 
+// 从实际房间数据重算项目统计，避免硬编码与房间数不一致
+buildingHierarchy.forEach(b => {
+  const rooms = b.partitions.flatMap(p => p.floors.flatMap(f => f.rooms))
+  b.totalAssets = rooms.length
+  b.totalArea = Math.round(rooms.reduce((s, r) => s + (r.area || 0), 0) * 100) / 100
+  b.rentedCount = rooms.filter(r => r.status === '已出租' || r.status === '部分出租').length
+  b.idleCount = rooms.filter(r => r.status === '空置' || r.status === '闲置').length
+  b.rentalRate = b.totalAssets ? Math.round(b.rentedCount / b.totalAssets * 10000) / 100 : 0
+})
+
+// 为所有已出租房间自动生成合同，补齐项目管理/合同管理演示数据
+{
+  const _today = new Date('2026-10-09')
+  buildingHierarchy.forEach(b => {
+    b.partitions.forEach(p => {
+      p.floors.forEach(f => {
+        f.rooms.forEach(r => {
+          if (r.status !== '已出租' || !r.tenant || !r.leaseExpiry) return
+          const endDate = r.leaseExpiry
+          const end = new Date(endDate)
+          const start = new Date(end)
+          start.setFullYear(start.getFullYear() - 1)
+          const fmt = d => d.toISOString().slice(0, 10)
+          const daysLeft = Math.round((end - _today) / 86400000)
+          const annualRent = r.monthlyRent ? Math.round(r.monthlyRent * 12 / 10000 * 100) / 100 : 0
+          const deposit = r.monthlyRent ? Math.round(r.monthlyRent * 2 / 10000 * 100) / 100 : 0
+          contracts.push({
+            id: `HT-${r.id.replace(/\D/g, '')}`,
+            assetId: r.id,
+            assetName: r.name,
+            tenant: r.tenant,
+            startDate: fmt(start),
+            endDate,
+            leaseArea: r.area,
+            annualRent,
+            status: daysLeft < 180 ? '临期' : '正常',
+            arrears: 0,
+            overdueDays: 0,
+            increment: '无递增',
+            deposit,
+            electronic: true
+          })
+        })
+      })
+    })
+  })
+}
+
+// 从实际资产数据重算 12 大分类的 count / area，避免硬编码与种子不一致
+{
+  const _catMap = {}
+  assetCategories.forEach(c => { _catMap[c.name] = { count: 0, area: 0 } })
+  chengtouAssets.forEach(a => {
+    const cat = a.assetCategory || deriveAssetCategory(a.type)
+    if (_catMap[cat]) { _catMap[cat].count++; _catMap[cat].area += a.area || 0 }
+  })
+  buildingHierarchy.forEach(b => {
+    const cat = deriveAssetCategory(b.type)
+    b.partitions.forEach(p => p.floors.forEach(f => f.rooms.forEach(r => {
+      if (_catMap[cat]) { _catMap[cat].count++; _catMap[cat].area += r.area || 0 }
+    })))
+  })
+  assetCategories.forEach(c => {
+    const s = _catMap[c.name]
+    if (s) { c.count = s.count; c.area = Math.round(s.area * 100) / 100 }
+  })
+}
+
 // ===== 成本信息 =====
 export const costRecords = [
   { id: 1, assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', costType: '购置成本', amount: 1860, date: '2018-03-15', remark: '含税费' },
@@ -895,10 +979,10 @@ export const warningTasks = [
   { id: 'WT-002', name: 'CT-003 合同到期提醒', asset: 'CT-003 营前标准厂房 2#', type: '合同临期', deadline: '2026-09-30', status: '待处理', priority: '中', assignee: '运营人员', group: '水投集团' },
   { id: 'WT-003', name: 'CT-006 闲置超期预警', asset: 'CT-006 玉田镇旧工业厂房', type: '闲置超期', deadline: '2026-10-15', status: '进行中', priority: '中', assignee: '资产管理员', group: '产投集团' },
   { id: 'WT-004', name: 'CT-005 权证办理跟进', asset: 'CT-005 江田镇仓储用地', type: '未办证', deadline: '2026-11-30', status: '进行中', priority: '低', assignee: '权证专员', group: '城投集团' },
-  { id: 'WT-005', name: 'CT-015 写字楼欠费催缴', asset: 'CT-015 航城写字楼', type: '欠费催缴', deadline: '2026-09-25', status: '待处理', priority: '高', assignee: '资产管理员', group: '城投集团' },
+  { id: 'WT-005', name: 'CT-017 写字楼欠费催缴', asset: 'CT-017 首占新区写字楼', type: '欠费催缴', deadline: '2026-09-25', status: '待处理', priority: '高', assignee: '资产管理员', group: '水投集团' },
   { id: 'WT-006', name: 'CT-097 闲置用地招租', asset: 'CT-097 江田镇闲置用地', type: '闲置盘活', deadline: '2026-10-30', status: '待处理', priority: '中', assignee: '运营人员', group: '城投集团' },
-  { id: 'WT-007', name: 'CT-201 商铺欠费催缴', asset: 'CT-201 产投商铺', type: '欠费催缴', deadline: '2026-09-22', status: '待处理', priority: '高', assignee: '资产管理员', group: '产投集团' },
-  { id: 'WT-008', name: 'CT-301 办公楼欠费催缴', asset: 'CT-301 水投办公楼', type: '欠费催缴', deadline: '2026-09-28', status: '进行中', priority: '中', assignee: '资产管理员', group: '水投集团' }
+  { id: 'WT-007', name: 'CT-010 商铺欠费催缴', asset: 'CT-010 航城街道商铺', type: '欠费催缴', deadline: '2026-09-22', status: '待处理', priority: '高', assignee: '资产管理员', group: '产投集团' },
+  { id: 'WT-008', name: 'CT-012 保障房欠费催缴', asset: 'CT-012 首占新区保障房', type: '欠费催缴', deadline: '2026-09-28', status: '进行中', priority: '中', assignee: '资产管理员', group: '领航公司' }
 ]
 
 // ===== 资产盘点任务 =====
@@ -927,12 +1011,12 @@ export const departments = [
 
 // ===== 缴费记录（移动端）=====
 export const paymentRecords = [
-  { id: 1, month: '2026年08月', payer: '张伟', phone: '177****8734', amount: 683.33, address: '山西省大同市平城区新旺街道旺华紫城', time: '2026-08-31 17:38:58', type: '租金', invoice: false },
-  { id: 2, month: '2026年03月', payer: '张伟', phone: '177****8734', amount: 100, address: '天津市天津城区和平区小白楼街道楼之外0006', time: '2026-03-30 10:21:12', type: '租金', invoice: false },
-  { id: 3, month: '2026年02月', payer: '张伟', phone: '177****8734', amount: 100, address: '山西省大同市平城区新旺街道旺华紫城', time: '2026-02-10 11:20:32', type: '其他收费-现场维修', invoice: true },
-  { id: 4, month: '2026年02月', payer: '张伟', phone: '177****8734', amount: 630, address: '山西省大同市平城区新旺街道旺华紫城', time: '2026-02-10 11:00:41', type: '租金', invoice: false, discount: 50 },
-  { id: 5, month: '2026年02月', payer: '张伟', phone: '177****8734', amount: 13.33, address: '山西省大同市平城区新旺街道旺华紫城', time: '2026-02-10 10:30:00', type: '物业费', invoice: false },
-  { id: 6, month: '2026年01月', payer: '张伟', phone: '177****8734', amount: 1000, address: '山西省大同市平城区新旺街道旺华紫城', time: '2026-01-15 09:00:00', type: '租金', invoice: true }
+  { id: 1, month: '2026年08月', payer: '福州××商业管理有限公司', phone: '138****5678', amount: 35000, address: '福建省长乐区吴航街道商业街 A-01', time: '2026-08-31 17:38:58', type: '租金', invoice: false },
+  { id: 2, month: '2026年03月', payer: '福建××科技有限公司', phone: '139****2345', amount: 39000, address: '福建省长乐区航城街道航城商务楼 3F', time: '2026-03-30 10:21:12', type: '租金', invoice: false },
+  { id: 3, month: '2026年02月', payer: '长乐××物流有限公司', phone: '137****6789', amount: 19500, address: '福建省长乐区营前街道营前标准厂房 2#', time: '2026-02-10 11:20:32', type: '租金', invoice: true },
+  { id: 4, month: '2026年02月', payer: '长乐××市场管理有限公司', phone: '136****4321', amount: 17000, address: '福建省长乐区吴航街道吴航农贸市场', time: '2026-02-10 11:00:41', type: '租金', invoice: false, discount: 0 },
+  { id: 5, month: '2026年02月', payer: '长乐××物业管理有限公司', phone: '135****8765', amount: 24000, address: '福建省长乐区首占新区首占新区保障房 1# 楼', time: '2026-02-10 10:30:00', type: '租金', invoice: false },
+  { id: 6, month: '2026年01月', payer: '南京××商贸有限公司', phone: '158****3456', amount: 8800, address: '福建省长乐区漳港街道壹城红寓 C22#101', time: '2026-01-15 09:00:00', type: '租金', invoice: true }
 ]
 
 // ===== 资产档案 =====

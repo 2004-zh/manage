@@ -3,11 +3,11 @@
     <div class="page-header">
       <h2>{{ pageTitle }}</h2>
       <div>
-        <el-button type="primary" @click="handleCreateOrder">
+        <el-button type="primary" @click="handleCreateOrder" v-if="activeTab === 'workorder' || activeTab === 'repair'">
           <el-icon><Plus /></el-icon>
           新建工单
         </el-button>
-        <el-button @click="handleCreateInspection">
+        <el-button @click="handleCreateInspection" v-if="activeTab === 'inspection' || activeTab === 'project' || activeTab === 'plan'">
           <el-icon><Calendar /></el-icon>
           新建巡查
         </el-button>
@@ -15,8 +15,8 @@
     </div>
     <el-card class="fill">
 
-      <el-tabs v-model="activeTab">
-        <el-tab-pane v-if="isPlanRoute" label="巡查计划" name="plan">
+      <div>
+        <div v-show="activeTab === 'plan'">
           <el-form :inline="true" class="search-form">
             <el-form-item label="关键字">
               <el-input v-model="planFilter.keyword" placeholder="计划编号/巡查范围/负责人" clearable style="width: 190px" />
@@ -68,9 +68,8 @@
               layout="total, sizes, prev, pager, next, jumper"
             />
           </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="资产巡查" name="inspection">
+        </div>
+        <div v-show="activeTab === 'inspection'">
           <el-form :inline="true" class="search-form">
             <el-form-item label="关键字">
               <el-input v-model="inspFilter.keyword" placeholder="巡查编号/资产名称/巡查人" clearable style="width: 190px" />
@@ -106,6 +105,12 @@
               <el-table-column prop="zone" label="分区" width="100" />
               <el-table-column prop="assetName" label="资产名称" min-width="140" show-overflow-tooltip />
               <el-table-column prop="assetCode" label="资产编号" width="120" />
+              <el-table-column prop="assetId" label="主资产编号" width="110">
+                <template #default="{ row }">
+                  <el-tag v-if="row.assetId" size="small" type="info">{{ row.assetId }}</el-tag>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
               <el-table-column prop="address" label="资产座落" min-width="180" show-overflow-tooltip />
               <el-table-column prop="company" label="所属公司" min-width="150" show-overflow-tooltip />
             </el-table-column>
@@ -143,9 +148,8 @@
               layout="total, sizes, prev, pager, next, jumper"
             />
           </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="项目巡查" name="project">
+        </div>
+        <div v-show="activeTab === 'project'">
           <el-form :inline="true" class="search-form">
             <el-form-item label="关键字">
               <el-input v-model="projFilter.keyword" placeholder="巡查编号/项目名称/巡查人" clearable style="width: 190px" />
@@ -210,9 +214,8 @@
               layout="total, sizes, prev, pager, next, jumper"
             />
           </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="资产报修" name="repair">
+        </div>
+        <div v-show="activeTab === 'repair'">
           <el-form :inline="true" class="search-form">
             <el-form-item label="关键字">
               <el-input v-model="repairFilter.keyword" placeholder="报修编号/资产名称/报修人" clearable style="width: 190px" />
@@ -237,14 +240,20 @@
           </div>
 
           <el-table :data="pagedRepairs" border stripe style="width: 100%">
+            <el-table-column prop="repairNo" label="报修编号" width="140" />
             <el-table-column label="资产信息" align="center">
               <el-table-column prop="zone" label="分区" width="100" />
               <el-table-column prop="assetName" label="资产名称" min-width="150" show-overflow-tooltip />
               <el-table-column prop="assetCode" label="资产编号" width="140" />
+              <el-table-column prop="assetId" label="主资产编号" width="110">
+                <template #default="{ row }">
+                  <el-tag v-if="row.assetId" size="small" type="info">{{ row.assetId }}</el-tag>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
               <el-table-column prop="address" label="资产座落" min-width="180" show-overflow-tooltip />
               <el-table-column prop="company" label="所属公司" min-width="150" show-overflow-tooltip />
             </el-table-column>
-            <el-table-column prop="repairNo" label="报修编号" width="140" />
             <el-table-column prop="reporter" label="报修人" width="90" />
             <el-table-column prop="reporterPhone" label="联系电话" width="120" />
             <el-table-column prop="reportDate" label="报修日期" width="110" />
@@ -254,15 +263,10 @@
                 <el-tag :type="getRepairStatusType(row.status)" size="small">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="详情" width="70" align="center">
-              <template #default="{ row }">
-                <el-button link type="primary" size="small" @click="handleViewRepair(row)">详情</el-button>
-              </template>
-            </el-table-column>
             <el-table-column label="操作" width="120" fixed="right">
               <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="handleViewRepair(row)">查看</el-button>
                 <el-button link type="primary" size="small" @click="handleAssign(row)" v-if="row.status === '待处理'">派单</el-button>
-                <el-button link type="primary" size="small" @click="handleCompleteRepair(row)" v-if="row.status === '处理中'">完成</el-button>
               </template>
             </el-table-column>
             <template #empty>
@@ -278,14 +282,13 @@
               layout="total, sizes, prev, pager, next, jumper"
             />
           </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="维修管理" name="mgmt">
+        </div>
+        <div v-show="activeTab === 'mgmt'">
           <el-form :inline="true" class="search-form">
             <el-form-item label="关键字">
-              <el-input v-model="mgmtFilter.keyword" placeholder="报修人姓名/联系电话" clearable style="width: 190px" />
+              <el-input v-model="mgmtFilter.keyword" placeholder="报修人/联系电话" clearable style="width: 190px" />
             </el-form-item>
-            <el-form-item label="提交时间">
+            <el-form-item label="提交日期">
               <el-date-picker v-model="mgmtFilter.dateRange" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 240px" />
             </el-form-item>
             <el-form-item label="审核状态">
@@ -307,7 +310,7 @@
           </el-form>
 
           <div class="toolbar-row">
-            <el-button :icon="Download" @click="handleExport('维修记录')">导出</el-button>
+            <el-button :icon="Download" @click="handleExport('维修管理')">导出</el-button>
           </div>
 
           <el-table :data="pagedMgmt" border stripe style="width: 100%">
@@ -316,10 +319,16 @@
               <el-table-column prop="zone" label="分区" width="100" />
               <el-table-column prop="assetName" label="资产名称" min-width="150" show-overflow-tooltip />
               <el-table-column prop="assetCode" label="资产编号" width="140" />
+              <el-table-column prop="assetId" label="主资产编号" width="110">
+                <template #default="{ row }">
+                  <el-tag v-if="row.assetId" size="small" type="info">{{ row.assetId }}</el-tag>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
               <el-table-column prop="address" label="资产座落" min-width="180" show-overflow-tooltip />
               <el-table-column prop="company" label="所属公司" min-width="150" show-overflow-tooltip />
             </el-table-column>
-            <el-table-column prop="reporter" label="报修人姓名" width="110" />
+            <el-table-column prop="reporter" label="报修人" width="90" />
             <el-table-column prop="reporterPhone" label="联系电话" width="120" />
             <el-table-column prop="content" label="维修内容" min-width="170" show-overflow-tooltip />
             <el-table-column prop="submitTime" label="提交时间" width="160" />
@@ -334,13 +343,9 @@
                 <span v-else style="color:var(--t-weak)">-</span>
               </template>
             </el-table-column>
-            <el-table-column label="详情" width="70" align="center">
+            <el-table-column label="操作" width="120" fixed="right">
               <template #default="{ row }">
-                <el-button link type="primary" size="small" @click="handleViewMgmt(row)">详情</el-button>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="90" fixed="right">
-              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="handleViewMgmt(row)">查看</el-button>
                 <el-button link type="primary" size="small" @click="openAudit(row)" v-if="row.auditStatus === '待审核'">审核</el-button>
               </template>
             </el-table-column>
@@ -357,9 +362,8 @@
               layout="total, sizes, prev, pager, next, jumper"
             />
           </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="工单跟踪" name="workorder">
+        </div>
+        <div v-show="activeTab === 'workorder'">
           <el-form :inline="true" class="search-form">
             <el-form-item label="关键字">
               <el-input v-model="woFilter.keyword" placeholder="工单编号/资产名称/处理人" clearable style="width: 190px" />
@@ -382,6 +386,12 @@
             <el-table-column prop="orderNo" label="工单编号" width="150" />
             <el-table-column prop="repairNo" label="关联报修" width="150" />
             <el-table-column prop="assetName" label="资产名称" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="assetId" label="主资产编号" width="110">
+              <template #default="{ row }">
+                <el-tag v-if="row.assetId" size="small" type="info">{{ row.assetId }}</el-tag>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="company" label="所属公司" min-width="150" show-overflow-tooltip />
             <el-table-column prop="handler" label="处理人" width="100" />
             <el-table-column prop="handlerPhone" label="联系电话" width="120" />
@@ -413,8 +423,8 @@
               layout="total, sizes, prev, pager, next, jumper"
             />
           </div>
-        </el-tab-pane>
-      </el-tabs>
+        </div>
+      </div>
     </el-card>
 
     <el-dialog v-model="orderDialogVisible" title="新建工单" width="600px">
@@ -446,7 +456,7 @@
     <el-dialog v-model="inspectionDialogVisible" title="新建巡查" width="600px">
       <el-form :model="inspectionForm" label-width="100px">
         <el-form-item label="选择资产">
-          <el-select v-model="inspectionForm.assetId" placeholder="请选择" style="width: 100%">
+          <el-select v-model="inspectionForm.assetId" filterable placeholder="请输入资产名称搜索" style="width: 100%">
             <el-option v-for="item in assetOptions" :key="item.code" :label="item.name" :value="item.code" />
           </el-select>
         </el-form-item>
@@ -494,27 +504,34 @@
     </el-dialog>
 
     <el-dialog v-model="uploadVisible" title="上传巡查信息" width="620px">
-      <template v-if="uploadTarget">
-        <div class="section-title">资产信息</div>
-        <div class="upload-asset">
-          <span class="asset-name">{{ uploadTarget.name }}</span>
-          <el-tag size="small" effect="plain">{{ uploadTarget.type }}</el-tag>
-          <span class="asset-addr">{{ uploadTarget.address }}</span>
-        </div>
-        <el-form label-width="110px">
-          <el-form-item label="巡查人员">
-            <el-input v-model="uploadForm.inspector" placeholder="请输入巡查人员" />
-          </el-form-item>
-          <el-form-item label="巡查详情">
-            <el-input v-model="uploadForm.detail" type="textarea" :rows="4" placeholder="请输入巡查详情" />
-          </el-form-item>
-          <el-form-item label="上传照片/视频">
-            <el-upload v-model:file-list="uploadFileList" action="#" list-type="picture-card" :auto-upload="false" accept="image/*,video/*">
-              <el-icon><Plus /></el-icon>
-            </el-upload>
-          </el-form-item>
-        </el-form>
-      </template>
+      <el-form label-width="110px">
+        <el-form-item label="选择资产/项目">
+          <el-select v-model="uploadAssetCode" filterable placeholder="请输入资产名称搜索" style="width: 100%" @change="onUploadAssetChange">
+            <el-option-group :label="activeTab === 'project' ? '项目列表' : '资产列表'">
+              <el-option v-for="item in uploadAssetList" :key="item.code" :label="item.name" :value="item.code" />
+            </el-option-group>
+          </el-select>
+        </el-form-item>
+        <template v-if="uploadTarget">
+          <div class="section-title">资产信息</div>
+          <div class="upload-asset">
+            <span class="asset-name">{{ uploadTarget.name }}</span>
+            <el-tag size="small" effect="plain">{{ uploadTarget.type }}</el-tag>
+            <span class="asset-addr">{{ uploadTarget.address }}</span>
+          </div>
+        </template>
+        <el-form-item label="巡查人员">
+          <el-input v-model="uploadForm.inspector" placeholder="请输入巡查人员" />
+        </el-form-item>
+        <el-form-item label="巡查详情">
+          <el-input v-model="uploadForm.detail" type="textarea" :rows="4" placeholder="请输入巡查详情" />
+        </el-form-item>
+        <el-form-item label="上传照片/视频">
+          <el-upload v-model:file-list="uploadFileList" action="#" list-type="picture-card" :auto-upload="false" accept="image/*,video/*">
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
+      </el-form>
       <template #footer>
         <el-button @click="uploadVisible = false">取消</el-button>
         <el-button type="primary" @click="submitUpload(false)">提交</el-button>
@@ -525,7 +542,7 @@
     <el-dialog v-model="repairReqVisible" title="报修" width="560px">
       <el-form label-width="90px">
         <el-form-item label="报修资产">
-          <el-select v-model="repairReqForm.assetCode" placeholder="请选择报修资产" style="width: 100%">
+          <el-select v-model="repairReqForm.assetCode" filterable placeholder="请输入资产名称搜索" style="width: 100%">
             <el-option v-for="a in assetOptions" :key="a.code" :label="a.name" :value="a.code" />
           </el-select>
         </el-form-item>
@@ -686,27 +703,34 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Calendar, Download } from '@element-plus/icons-vue'
+import { useInspectionStore } from '../../store/inspection'
+import { storeToRefs } from 'pinia'
 
-const route = useRoute()
+const store = useInspectionStore()
+
+const {
+  inspectionList,
+  projectInspections,
+  repairList,
+  repairMgmtList,
+  workOrderList,
+  planList,
+  companyOptions,
+  assetOptions,
+  projectOptions,
+  surveyorOptions
+} = storeToRefs(store)
 
 const activeTab = ref('inspection')
+const pageTitle = computed(() => route.meta?.title || '巡检维修')
 
-const isPlanRoute = computed(() => route.name === 'EntInspectionPlan')
-
-const pageTitle = computed(() => {
-  if (route.name === 'EntInspectionPlan') return '巡查计划'
-  if (route.name === 'EntInspectionRecords') return '巡查记录'
-  return '巡检维修管理'
-})
-
-const setTabByRoute = (name) => {
-  if (name === 'EntInspectionPlan') activeTab.value = 'plan'
-  else activeTab.value = 'inspection'
+const route = useRoute()
+const setTabByRoute = () => {
+  const tab = route.meta?.tab
+  if (tab) activeTab.value = tab
 }
-
-watch(() => route.name, (name) => setTabByRoute(name), { immediate: true })
-
-const companyOptions = ['城市建设投资有限公司', '置业发展有限公司', '物业管理服务有限公司', '旅游开发投资有限公司']
+setTabByRoute()
+watch(() => route.name, setTabByRoute)
 
 const inspFilter = reactive({ keyword: '', dateRange: [], status: '', company: '' })
 const projFilter = reactive({ keyword: '', dateRange: [], company: '' })
@@ -714,53 +738,6 @@ const repairFilter = reactive({ keyword: '', dateRange: [], company: '' })
 const mgmtFilter = reactive({ keyword: '', dateRange: [], status: '', company: '' })
 const woFilter = reactive({ keyword: '', dateRange: [], company: '' })
 const planFilter = reactive({ keyword: '', status: '' })
-
-const inspectionList = ref([
-  { inspectionNo: 'XC20260901001', zone: '吴航街道', assetName: '阳光花园1号楼', assetCode: 'ZC2024001', address: '长乐区吴航街道阳光花园小区', company: '城市建设投资有限公司', assetType: '保障房', inspector: '李四', inspectionDate: '2026-09-01', status: '已完成', issueCount: 2 },
-  { inspectionNo: 'XC20260905001', zone: '航城街道', assetName: '万达广场商铺A座', assetCode: 'ZC2024010', address: '长乐区航城街道万达广场A座', company: '置业发展有限公司', assetType: '商铺', inspector: '王五', inspectionDate: '2026-09-05', status: '进行中', issueCount: 0 },
-  { inspectionNo: 'XC20260910001', zone: '营前镇', assetName: '国贸写字楼A座', assetCode: 'ZC2024020', address: '长乐区营前镇国贸中心A座', company: '置业发展有限公司', assetType: '写字楼', inspector: '赵六', inspectionDate: '2026-09-10', status: '待巡查', issueCount: 0 },
-  { inspectionNo: 'XC20260912001', zone: '玉田镇', assetName: '高新技术产业园厂房', assetCode: 'ZC2024030', address: '长乐区玉田镇高新技术产业园C区', company: '物业管理服务有限公司', assetType: '厂房', inspector: '李四', inspectionDate: '2026-09-12', status: '待巡查', issueCount: 0 },
-  { inspectionNo: 'XC20260915001', zone: '江田镇', assetName: '朝阳农贸市场', assetCode: 'ZC2024040', address: '长乐区江田镇朝阳路88号', company: '旅游开发投资有限公司', assetType: '农贸市场', inspector: '王五', inspectionDate: '2026-09-15', status: '进行中', issueCount: 1 }
-])
-
-const projectInspections = ref([
-  { inspectionNo: 'XM20260903001', zone: '航城片区', assetName: '航城商务楼改造项目', assetCode: 'PRJ2024001', address: '长乐区航城街道商务楼', company: '城市建设投资有限公司', assetType: '改造项目', inspector: '王五', inspectionDate: '2026-09-03', status: '已完成', issueCount: 1 },
-  { inspectionNo: 'XM20260906001', zone: '吴航片区', assetName: '阳光花园保障房二期项目', assetCode: 'PRJ2024002', address: '长乐区吴航街道阳光花园西侧', company: '城市建设投资有限公司', assetType: '保障房项目', inspector: '李四', inspectionDate: '2026-09-06', status: '进行中', issueCount: 0 },
-  { inspectionNo: 'XM20260909001', zone: '江田片区', assetName: '滨海旅游集散中心项目', assetCode: 'PRJ2024003', address: '长乐区江田镇滨海大道', company: '旅游开发投资有限公司', assetType: '文旅项目', inspector: '赵六', inspectionDate: '2026-09-09', status: '待巡查', issueCount: 0 },
-  { inspectionNo: 'XM20260911001', zone: '营前片区', assetName: '营前标准厂房三期项目', assetCode: 'PRJ2024004', address: '长乐区营前镇工业园', company: '置业发展有限公司', assetType: '厂房项目', inspector: '王五', inspectionDate: '2026-09-11', status: '进行中', issueCount: 2 }
-])
-
-const repairList = ref([
-  { repairNo: 'BX20260902001', zone: '吴航街道', assetName: '阳光花园1号楼101室', assetCode: 'ZC2024001-0101', address: '长乐区吴航街道阳光花园小区1号楼101室', company: '城市建设投资有限公司', reporter: '张三', reporterPhone: '13800138001', reportDate: '2026-09-02', issue: '空调漏水，需要维修', status: '待处理' },
-  { repairNo: 'BX20260903001', zone: '航城街道', assetName: '万达广场商铺A101', assetCode: 'ZC2024010-A101', address: '长乐区航城街道万达广场A座101铺', company: '置业发展有限公司', reporter: '王经理', reporterPhone: '13900139001', reportDate: '2026-09-03', issue: '电梯故障，无法运行', status: '处理中' },
-  { repairNo: 'BX20260905001', zone: '营前镇', assetName: '国贸写字楼A座1501', assetCode: 'ZC2024020-1501', address: '长乐区营前镇国贸中心A座1501室', company: '置业发展有限公司', reporter: '刘总', reporterPhone: '13700137001', reportDate: '2026-09-05', issue: '卫生间水管破裂', status: '处理中' },
-  { repairNo: 'BX20260901001', zone: '玉田镇', assetName: '高新技术产业园厂房C1', assetCode: 'ZC2024030-C1', address: '长乐区玉田镇高新技术产业园C1厂房', company: '物业管理服务有限公司', reporter: '陈厂长', reporterPhone: '13600136001', reportDate: '2026-09-01', issue: '门窗损坏，需要更换', status: '已完成' },
-  { repairNo: 'BX20260910001', zone: '江田镇', assetName: '朝阳农贸市场1号厅', assetCode: 'ZC2024040-01', address: '长乐区江田镇朝阳路88号1号厅', company: '旅游开发投资有限公司', reporter: '孙老板', reporterPhone: '13500135001', reportDate: '2026-09-10', issue: '照明灯不亮', status: '已完成' }
-])
-
-const repairMgmtList = ref([
-  { repairNo: 'WX20260902001', zone: '吴航街道', assetName: '阳光花园1号楼101室', assetCode: 'ZC2024001-0101', address: '长乐区吴航街道阳光花园小区1号楼101室', company: '城市建设投资有限公司', reporter: '张三', reporterPhone: '13800138001', content: '空调漏水，需要维修', photoCount: 3, submitTime: '2026-09-02 10:20:00', auditStatus: '已通过', surveyor: '勘查员-陈志强' },
-  { repairNo: 'WX20260903001', zone: '航城街道', assetName: '万达广场商铺A101', assetCode: 'ZC2024010-A101', address: '长乐区航城街道万达广场A座101铺', company: '置业发展有限公司', reporter: '王经理', reporterPhone: '13900139001', content: '电梯故障，无法运行', photoCount: 5, submitTime: '2026-09-03 09:15:00', auditStatus: '待审核', surveyor: '' },
-  { repairNo: 'WX20260905001', zone: '营前镇', assetName: '国贸写字楼A座1501', assetCode: 'ZC2024020-1501', address: '长乐区营前镇国贸中心A座1501室', company: '置业发展有限公司', reporter: '刘总', reporterPhone: '13700137001', content: '卫生间水管破裂', photoCount: 2, submitTime: '2026-09-05 14:40:00', auditStatus: '待审核', surveyor: '' },
-  { repairNo: 'WX20260901001', zone: '玉田镇', assetName: '高新技术产业园厂房C1', assetCode: 'ZC2024030-C1', address: '长乐区玉田镇高新技术产业园C1厂房', company: '物业管理服务有限公司', reporter: '陈厂长', reporterPhone: '13600136001', content: '门窗损坏，需要更换', photoCount: 4, submitTime: '2026-09-01 16:05:00', auditStatus: '已通过', surveyor: '勘查员-林晓' },
-  { repairNo: 'WX20260910001', zone: '江田镇', assetName: '朝阳农贸市场1号厅', assetCode: 'ZC2024040-01', address: '长乐区江田镇朝阳路88号1号厅', company: '旅游开发投资有限公司', reporter: '孙老板', reporterPhone: '13500135001', content: '照明灯不亮', photoCount: 1, submitTime: '2026-09-10 11:30:00', auditStatus: '已驳回', surveyor: '勘查员-黄伟' }
-])
-
-const workOrderList = ref([
-  { orderNo: 'GD20260902001', repairNo: 'BX20260902001', assetName: '阳光花园1号楼101室', company: '城市建设投资有限公司', handler: '维修工A', handlerPhone: '13100131001', assignDate: '2026-09-02', completeDate: '-', status: '处理中' },
-  { orderNo: 'GD20260903001', repairNo: 'BX20260903001', assetName: '万达广场商铺A101', company: '置业发展有限公司', handler: '维修工B', handlerPhone: '13100131002', assignDate: '2026-09-03', completeDate: '-', status: '处理中' },
-  { orderNo: 'GD20260905001', repairNo: 'BX20260905001', assetName: '国贸写字楼A座1501', company: '置业发展有限公司', handler: '维修工C', handlerPhone: '13100131003', assignDate: '2026-09-05', completeDate: '-', status: '处理中' },
-  { orderNo: 'GD20260901001', repairNo: 'BX20260901001', assetName: '高新技术产业园厂房C1', company: '物业管理服务有限公司', handler: '维修工D', handlerPhone: '13100131004', assignDate: '2026-09-01', completeDate: '2026-09-02', status: '已完成' },
-  { orderNo: 'GD20260910001', repairNo: 'BX20260910001', assetName: '朝阳农贸市场1号厅', company: '旅游开发投资有限公司', handler: '维修工E', handlerPhone: '13100131005', assignDate: '2026-09-10', completeDate: '2026-09-11', status: '已完成' }
-])
-
-const planList = ref([
-  { planNo: 'JH20260901001', scope: '阳光花园1号楼及周边商铺', cycle: '2026-09-01 ~ 2026-09-30', owner: '李四', status: '进行中', remark: '每月全覆盖巡查一次' },
-  { planNo: 'JH20260905001', scope: '万达广场商铺A座', cycle: '2026-09-05 ~ 2026-10-05', owner: '王五', status: '进行中', remark: '重点关注消防通道' },
-  { planNo: 'JH20260910001', scope: '国贸写字楼A座', cycle: '2026-09-10 ~ 2026-12-10', owner: '赵六', status: '未开始', remark: '季度计划' },
-  { planNo: 'JH20260915001', scope: '朝阳农贸市场', cycle: '2026-09-15 ~ 2026-10-15', owner: '王五', status: '未开始', remark: '' },
-  { planNo: 'JH20260801001', scope: '高新技术产业园厂房', cycle: '2026-08-01 ~ 2026-08-31', owner: '李四', status: '已完成', remark: '上月计划已归档' }
-])
 
 const orderDialogVisible = ref(false)
 const inspectionDialogVisible = ref(false)
@@ -798,21 +775,6 @@ const reportForm = reactive({
 })
 
 const pendingRepairList = computed(() => repairList.value.filter(r => r.status === '待处理').map(r => ({ repairNo: r.repairNo, assetName: r.assetName })))
-
-const assetOptions = ref([
-  { code: 'ZC2024001', name: '阳光花园1号楼', type: '保障房', zone: '吴航街道', address: '长乐区吴航街道阳光花园小区', company: '城市建设投资有限公司' },
-  { code: 'ZC2024010', name: '万达广场商铺A座', type: '商铺', zone: '航城街道', address: '长乐区航城街道万达广场A座', company: '置业发展有限公司' },
-  { code: 'ZC2024020', name: '国贸写字楼A座', type: '写字楼', zone: '营前镇', address: '长乐区营前镇国贸中心A座', company: '置业发展有限公司' },
-  { code: 'ZC2024030', name: '高新技术产业园厂房', type: '厂房', zone: '玉田镇', address: '长乐区玉田镇高新技术产业园C区', company: '物业管理服务有限公司' },
-  { code: 'ZC2024040', name: '朝阳农贸市场', type: '农贸市场', zone: '江田镇', address: '长乐区江田镇朝阳路88号', company: '旅游开发投资有限公司' }
-])
-
-const projectOptions = ref([
-  { code: 'PRJ2024001', name: '航城商务楼改造项目', type: '改造项目', zone: '航城片区', address: '长乐区航城街道商务楼', company: '城市建设投资有限公司' },
-  { code: 'PRJ2024002', name: '阳光花园保障房二期项目', type: '保障房项目', zone: '吴航片区', address: '长乐区吴航街道阳光花园西侧', company: '城市建设投资有限公司' },
-  { code: 'PRJ2024003', name: '滨海旅游集散中心项目', type: '文旅项目', zone: '江田片区', address: '长乐区江田镇滨海大道', company: '旅游开发投资有限公司' },
-  { code: 'PRJ2024004', name: '营前标准厂房三期项目', type: '厂房项目', zone: '营前片区', address: '长乐区营前镇工业园', company: '置业发展有限公司' }
-])
 
 const inRange = (dateStr, range) => {
   if (!range || range.length !== 2 || !range[0] || !range[1]) return true
@@ -986,9 +948,9 @@ const handleOrderSubmit = () => {
     ElMessage.warning('请填写完整信息')
     return
   }
-  const repair = repairList.value.find(r => r.repairNo === orderForm.repairNo)
-  workOrderList.value.unshift({
-    orderNo: 'GD' + Date.now().toString().slice(-10),
+  const repair = store.getRepairByNo(orderForm.repairNo)
+  store.addWorkOrder({
+    orderNo: store.nextNo('GD'),
     repairNo: orderForm.repairNo,
     assetName: repair ? repair.assetName : '',
     company: repair ? repair.company : '',
@@ -999,7 +961,7 @@ const handleOrderSubmit = () => {
     status: '处理中'
   })
   if (repair) {
-    repair.status = '处理中'
+    store.updateRepair(repair.repairNo, { status: '处理中' })
   }
   orderDialogVisible.value = false
   ElMessage.success('派单成功')
@@ -1016,8 +978,8 @@ const handleInspectionSubmit = () => {
     return
   }
   const asset = assetOptions.value.find(a => a.code === inspectionForm.assetId)
-  inspectionList.value.unshift({
-    inspectionNo: 'XC' + Date.now().toString().slice(-10),
+  store.addInspection({
+    inspectionNo: store.nextNo('XC'),
     zone: asset ? asset.zone : '',
     assetName: asset ? asset.name : inspectionForm.assetId,
     assetCode: asset ? asset.code : '',
@@ -1038,9 +1000,21 @@ const uploadVisible = ref(false)
 const uploadTarget = ref(null)
 const uploadForm = reactive({ inspector: '', detail: '' })
 const uploadFileList = ref([])
+const uploadAssetCode = ref('')
+
+const uploadAssetList = computed(() => activeTab.value === 'project' ? projectOptions.value : assetOptions.value)
+
+const onUploadAssetChange = (code) => {
+  const list = uploadAssetList.value
+  const item = list.find(a => a.code === code)
+  if (item) {
+    uploadTarget.value = { name: item.name, type: item.type, zone: item.zone, code: item.code, address: item.address, company: item.company }
+  }
+}
 
 const openUpload = (target) => {
   uploadTarget.value = target
+  uploadAssetCode.value = target?.code || ''
   uploadForm.inspector = ''
   uploadForm.detail = ''
   uploadFileList.value = []
@@ -1052,13 +1026,12 @@ const openUploadForInspection = (row) => {
 }
 
 const handleCreateInspectionInfo = () => {
-  if (activeTab.value === 'project') {
-    const p = projectOptions.value[0]
-    openUpload({ name: p.name, type: p.type, zone: p.zone, code: p.code, address: p.address, company: p.company })
-  } else {
-    const a = assetOptions.value[0]
-    openUpload({ name: a.name, type: a.type, zone: a.zone, code: a.code, address: a.address, company: a.company })
-  }
+  uploadTarget.value = null
+  uploadAssetCode.value = ''
+  uploadForm.inspector = ''
+  uploadForm.detail = ''
+  uploadFileList.value = []
+  uploadVisible.value = true
 }
 
 const submitUpload = (andRepair) => {
@@ -1066,10 +1039,15 @@ const submitUpload = (andRepair) => {
     ElMessage.warning('请填写巡查人员')
     return
   }
+  if (!uploadTarget.value) {
+    ElMessage.warning('请选择资产/项目')
+    return
+  }
   const t = uploadTarget.value
   const today = new Date().toISOString().slice(0, 10)
+  const isProject = activeTab.value === 'project'
   const record = {
-    inspectionNo: (activeTab.value === 'project' ? 'XM' : 'XC') + Date.now().toString().slice(-10),
+    inspectionNo: store.nextNo(isProject ? 'XM' : 'XC'),
     zone: t.zone,
     assetName: t.name,
     assetCode: t.code,
@@ -1081,18 +1059,17 @@ const submitUpload = (andRepair) => {
     status: '已完成',
     issueCount: andRepair ? 1 : 0
   }
-  if (activeTab.value === 'project') projectInspections.value.unshift(record)
-  else inspectionList.value.unshift(record)
+  store.addInspection(record, isProject)
   if (andRepair) {
-    const bxNo = 'BX' + Date.now().toString().slice(-10)
+    const bxNo = store.nextNo('BX')
     const now = new Date().toLocaleString('zh-CN', { hour12: false })
     const issue = uploadForm.detail || '巡查发现问题，需维修处理'
-    repairList.value.unshift({
-      repairNo: bxNo, zone: t.zone, assetName: t.name, assetCode: t.code, address: t.address, company: t.company,
+    store.addRepair({
+      repairNo: bxNo, zone: t.zone, assetName: t.name, assetCode: t.code, assetId: t.code, address: t.address, company: t.company,
       reporter: uploadForm.inspector, reporterPhone: '13800138000', reportDate: today, issue, status: '待处理'
     })
-    repairMgmtList.value.unshift({
-      repairNo: bxNo.replace('BX', 'WX'), zone: t.zone, assetName: t.name, assetCode: t.code, address: t.address, company: t.company,
+    store.addRepairMgmt({
+      repairNo: bxNo.replace('BX', 'WX'), zone: t.zone, assetName: t.name, assetCode: t.code, assetId: t.code, address: t.address, company: t.company,
       reporter: uploadForm.inspector, reporterPhone: '13800138000', content: issue, photoCount: uploadFileList.value.length,
       submitTime: now, auditStatus: '待审核', surveyor: ''
     })
@@ -1125,14 +1102,14 @@ const submitRepairRequest = () => {
   const asset = assetOptions.value.find(a => a.code === repairReqForm.assetCode) || assetOptions.value[0]
   const today = new Date().toISOString().slice(0, 10)
   const now = new Date().toLocaleString('zh-CN', { hour12: false })
-  const bxNo = 'BX' + Date.now().toString().slice(-10)
+  const bxNo = store.nextNo('BX')
   const issue = repairReqForm.desc || '现场报修，待勘查'
-  repairList.value.unshift({
-    repairNo: bxNo, zone: asset.zone, assetName: asset.name, assetCode: asset.code, address: asset.address, company: asset.company,
+  store.addRepair({
+    repairNo: bxNo, zone: asset.zone, assetName: asset.name, assetCode: asset.code, assetId: asset.code, address: asset.address, company: asset.company,
     reporter: repairReqForm.contact, reporterPhone: repairReqForm.phone, reportDate: today, issue, status: '待处理'
   })
-  repairMgmtList.value.unshift({
-    repairNo: bxNo.replace('BX', 'WX'), zone: asset.zone, assetName: asset.name, assetCode: asset.code, address: asset.address, company: asset.company,
+  store.addRepairMgmt({
+    repairNo: bxNo.replace('BX', 'WX'), zone: asset.zone, assetName: asset.name, assetCode: asset.code, assetId: asset.code, address: asset.address, company: asset.company,
     reporter: repairReqForm.contact, reporterPhone: repairReqForm.phone, content: issue, photoCount: repairReqFiles.value.length,
     submitTime: now, auditStatus: '待审核', surveyor: ''
   })
@@ -1143,7 +1120,6 @@ const submitRepairRequest = () => {
 const auditVisible = ref(false)
 const auditRow = ref(null)
 const auditForm = reactive({ status: '通过', surveyor: '' })
-const surveyorOptions = ['勘查员-陈志强', '勘查员-林晓', '勘查员-黄伟', '工程勘查-刘工']
 
 const openAudit = (row) => {
   auditRow.value = row
@@ -1157,8 +1133,10 @@ const submitAudit = () => {
     ElMessage.warning('请选择勘查人员')
     return
   }
-  auditRow.value.auditStatus = auditForm.status === '通过' ? '已通过' : '已驳回'
-  auditRow.value.surveyor = auditForm.surveyor
+  store.updateRepairMgmt(auditRow.value.repairNo, {
+    auditStatus: auditForm.status === '通过' ? '已通过' : '已驳回',
+    surveyor: auditForm.surveyor
+  })
   auditVisible.value = false
   ElMessage.success('审核完成')
 }
@@ -1180,10 +1158,25 @@ const handleReportSubmit = () => {
   }
   const inspection = inspectionList.value.find(i => i.inspectionNo === reportingInspectionNo.value)
   if (inspection) {
-    inspection.issueCount++
+    store.updateInspection(inspection.inspectionNo, { issueCount: inspection.issueCount + 1 })
+    const today = new Date().toISOString().slice(0, 10)
+    const now = new Date().toLocaleString('zh-CN', { hour12: false })
+    const bxNo = store.nextNo('BX')
+    const issue = `[${reportForm.urgency}] ${reportForm.issueType}：${reportForm.description}`
+    store.addRepair({
+      repairNo: bxNo, zone: inspection.zone, assetName: inspection.assetName, assetCode: inspection.assetCode, assetId: inspection.assetId,
+      address: inspection.address, company: inspection.company,
+      reporter: inspection.inspector, reporterPhone: '13800138000', reportDate: today, issue, status: '待处理'
+    })
+    store.addRepairMgmt({
+      repairNo: bxNo.replace('BX', 'WX'), zone: inspection.zone, assetName: inspection.assetName, assetCode: inspection.assetCode, assetId: inspection.assetId,
+      address: inspection.address, company: inspection.company,
+      reporter: inspection.inspector, reporterPhone: '13800138000', content: issue, photoCount: 0,
+      submitTime: now, auditStatus: '待审核', surveyor: ''
+    })
   }
   reportDialogVisible.value = false
-  ElMessage.success('问题上报成功')
+  ElMessage.success('问题上报成功，已生成报修记录')
   Object.assign(reportForm, { issueType: '', description: '', urgency: '一般' })
 }
 
@@ -1193,7 +1186,8 @@ const handleCompleteInspection = (row) => {
     cancelButtonText: '取消',
     type: 'info'
   }).then(() => {
-    row.status = '已完成'
+    const isProject = activeTab.value === 'project'
+    store.updateInspection(row.inspectionNo, { status: '已完成' }, isProject)
     ElMessage.success('巡查已完成')
   }).catch(() => {})
 }
@@ -1219,7 +1213,7 @@ const handleCompleteRepair = (row) => {
     cancelButtonText: '取消',
     type: 'info'
   }).then(() => {
-    row.status = '已完成'
+    store.updateRepair(row.repairNo, { status: '已完成' })
     ElMessage.success('报修已完成')
   }).catch(() => {})
 }
@@ -1235,8 +1229,7 @@ const handleCompleteOrder = (row) => {
     cancelButtonText: '取消',
     type: 'info'
   }).then(() => {
-    row.status = '已完成'
-    row.completeDate = new Date().toISOString().slice(0, 10)
+    store.updateWorkOrder(row.orderNo, { status: '已完成', completeDate: new Date().toISOString().slice(0, 10) })
     ElMessage.success('工单已完成')
   }).catch(() => {})
 }
@@ -1256,8 +1249,8 @@ const handlePlanSubmit = () => {
     ElMessage.warning('请填写完整信息')
     return
   }
-  planList.value.unshift({
-    planNo: 'JH' + Date.now().toString().slice(-10),
+  store.addPlan({
+    planNo: store.nextNo('JH'),
     scope: planForm.scope,
     cycle: planForm.cycleRange[0] + ' ~ ' + planForm.cycleRange[1],
     owner: planForm.owner,
@@ -1279,8 +1272,7 @@ const handleDeletePlan = (row) => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    const idx = planList.value.indexOf(row)
-    if (idx > -1) planList.value.splice(idx, 1)
+    store.deletePlan(row.planNo)
     ElMessage.success('计划已删除')
   }).catch(() => {})
 }

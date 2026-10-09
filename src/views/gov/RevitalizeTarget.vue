@@ -56,7 +56,7 @@
             <div class="expand-wrap">
               <div class="expand-title">各公司分摊与完成情况</div>
               <el-table v-if="row.allocations.length" :data="companyRows(row)" size="small" border>
-                <el-table-column prop="company" label="公司" width="140" />
+                <el-table-column prop="company" label="公司" min-width="140" />
                 <el-table-column prop="ratio" label="分摊比例" width="100">
                   <template #default="{ row: c }">{{ c.ratio }}%</template>
                 </el-table-column>

@@ -135,6 +135,7 @@
             <el-option label="待开具" value="待开具" />
           </el-select>
           <el-button type="primary" @click="showIssue = true">开具发票</el-button>
+          <el-button type="success" @click="openAutoInvoice">根据收款记录开票</el-button>
         </div>
         <el-table :data="pagedRecords" border stripe>
           <el-table-column type="expand" width="46">
@@ -159,6 +160,11 @@
           <el-table-column label="状态" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="row.invoiceStatus === '已开具' ? 'success' : row.invoiceStatus === '已红冲' ? 'danger' : 'warning'" size="small">{{ row.invoiceStatus }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="来源" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.auto ? 'success' : 'info'" size="small" effect="plain">{{ row.auto ? '自动' : '手动' }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="150" align="center" fixed="right">
@@ -495,6 +501,33 @@
         <el-button @click="orderDetailVisible = false">关闭</el-button>
       </template>
     </el-drawer>
+
+    <!-- 根据收款记录开票 -->
+    <el-dialog v-model="showAutoInvoice" title="根据收款记录开票" width="700px" destroy-on-close>
+      <div style="margin-bottom:12px;color:#909399;font-size:13px">以下账单已缴清但尚未开票，可一键生成发票并自动计算税费。</div>
+      <el-table :data="uninvoicedPaidBills" border stripe size="small" max-height="360">
+        <el-table-column type="selection" width="42" />
+        <el-table-column prop="billNo" label="账单编号" width="130" />
+        <el-table-column prop="tenant" label="承租方" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="assetName" label="资产" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="feeType" label="费用类型" width="90" align="center" />
+        <el-table-column label="已收金额(元)" width="110" align="right">
+          <template #default="{ row }">{{ row.received?.toLocaleString() }}</template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="90" align="center">
+          <template #default><el-tag type="success" size="small">已缴费</el-tag></template>
+        </el-table-column>
+        <el-table-column label="操作" width="90" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="doAutoInvoice(row)">开票</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="showAutoInvoice = false">关闭</el-button>
+        <el-button type="primary" @click="doBatchAutoInvoice" :disabled="!uninvoicedPaidBills.length">全部开票</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -837,6 +870,37 @@ function submitIssue() {
   showIssue.value = false
   issueForm.value = { invoiceType: '增值税普通发票', tenant: '', bizType: '租金', amount: 0, taxRate: 5, tax: 0, push: false }
   ElMessage.success(`发票 ${no} 已开具`)
+}
+
+// ===== 根据收款记录开票 =====
+const showAutoInvoice = ref(false)
+const uninvoicedPaidBills = computed(() => {
+  const invoicedBillNos = new Set(financeStore.invoices.filter(inv => inv._billNo).map(inv => inv._billNo))
+  return financeStore.bills.filter(b => b.status === '已缴费' && !invoicedBillNos.has(b.billNo))
+})
+
+function openAutoInvoice() {
+  showAutoInvoice.value = true
+}
+
+function doAutoInvoice(bill) {
+  const inv = financeStore.createInvoice(bill.billNo)
+  if (inv) {
+    ElMessage.success(`已为账单 ${bill.billNo} 自动开票 ${inv.invoiceNo}`)
+  } else {
+    ElMessage.warning('开票失败，请检查账单状态')
+  }
+}
+
+function doBatchAutoInvoice() {
+  const bills = uninvoicedPaidBills.value
+  let count = 0
+  bills.forEach(b => {
+    const inv = financeStore.createInvoice(b.billNo)
+    if (inv) count++
+  })
+  showAutoInvoice.value = false
+  ElMessage.success(`批量开票完成，共生成 ${count} 张发票`)
 }
 </script>
 

@@ -34,7 +34,7 @@
               <el-tag size="small">{{ row.revenueType }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="period" label="归属期间" width="160" />
+          <el-table-column prop="period" label="归属期间" min-width="160" />
           <el-table-column prop="amount" label="金额(万元)" width="110" align="right" class-name="num" />
           <el-table-column label="财务凭证" width="140">
             <template #default="{ row }">

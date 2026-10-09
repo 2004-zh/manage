@@ -364,9 +364,13 @@ function viewAsset(row) {
 }
 
 function deleteAsset(row) {
-  ElMessageBox.confirm(`确认删除资产"${row.name}"？`, '提示', { type: 'warning' }).then(() => {
-    assetStore.deleteAsset(row.id)
-    ElMessage.success('删除成功')
+  ElMessageBox.confirm(`确认删除资产"${row.name}"？删除后关联的合同、抵押、权证等记录也将一并清除。`, '提示', { type: 'warning' }).then(() => {
+    const ok = assetStore.deleteAsset(row.id)
+    if (ok) {
+      ElMessage.success('删除成功')
+    } else {
+      ElMessage.warning('该资产存在活跃合同（在租/未终止），请先终止合同后再删除')
+    }
   }).catch(() => {})
 }
 

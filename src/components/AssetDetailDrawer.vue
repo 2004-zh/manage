@@ -263,12 +263,14 @@ import { useContractStore } from '../store/contract'
 import { useAuditStore } from '../store/audit'
 import { useCredentialStore } from '../store/credential'
 import { useFinanceStore } from '../store/finance'
+import { useInspectionStore } from '../store/inspection'
 
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
 const auditStore = useAuditStore()
 const credentialStore = useCredentialStore()
 const financeStore = useFinanceStore()
+const inspectionStore = useInspectionStore()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -446,33 +448,31 @@ const urgeRows = computed(() => assetContracts.value
     result: '待催缴'
   })))
 
-// 巡查/盘点：业务留痕里的巡查类动作，没有则空表
+// 巡查：从 inspectionStore 取该资产的巡查记录
 const inspectionRows = computed(() => {
   if (!assetId.value) return []
-  return auditStore.getByAsset(assetId.value)
-    .filter(r => /巡查|盘点|检查|清查/.test(`${r.module || ''}${r.action || ''}`))
-    .map(r => ({
-      inspector: r.operator || '—',
-      inspectDate: (r.time || '').slice(0, 10) || '—',
-      result: /正常|无差异|一致/.test(String(r.after || '')) ? '正常' : '有差异',
-      remark: `${r.action}：${r.before} → ${r.after}${r.remark ? `（${r.remark}）` : ''}`
-    }))
+  return inspectionStore.getInspectionsByAsset(assetId.value).map(r => ({
+    inspector: r.inspector || '—',
+    inspectDate: r.inspectionDate || '—',
+    result: r.status === '已完成' && !r.issueCount ? '正常' : r.issueCount > 0 ? '有异常' : '正常',
+    remark: `${r.inspectionNo} · ${r.status}${r.issueCount ? ` · ${r.issueCount}项问题` : ''}`
+  }))
 })
 
-// 维修：财务费用单中该资产的维修支出，视为一次已完成的维修事项
+// 维修：从 inspectionStore 取该资产的报修记录，关联工单获取完成状态
 const repairRows = computed(() => {
-  const name = assetRecord.value?.name || assetRecord.value?.assetName
-  if (!name) return []
-  return financeStore.expenses
-    .filter(e => e.assetName === name && /维修/.test(String(e.expenseType || '')))
-    .map(e => ({
-      reporter: '—',
-      reportDate: e.occurDate || '—',
-      issue: `${e.expenseType}（${e.supplier || '—'}）`,
-      status: '已完成',
-      completeDate: e.occurDate || '—',
-      cost: e.amount ?? '—'
-    }))
+  if (!assetId.value) return []
+  return inspectionStore.getRepairsByAsset(assetId.value).map(r => {
+    const order = inspectionStore.workOrderList.find(o => o.repairNo === r.repairNo)
+    return {
+      issue: r.issue || '—',
+      reporter: r.reporter || '—',
+      reportDate: r.reportDate || '—',
+      status: r.status || '—',
+      completeDate: order?.completeDate || '—',
+      cost: '—'
+    }
+  })
 })
 
 // 备案：证件层登记的程序证件 + 已领到的不动产权证

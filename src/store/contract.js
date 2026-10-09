@@ -71,6 +71,15 @@ export const useContractStore = defineStore('contract', () => {
           field: 'status', before: before.status, after: updates.status,
           billNo: before.id, remark: `合同 ${before.id} 状态改为${updates.status}`
         })
+        // 合同终止/退租 → 自动把关联的「在管」保证金推到「待审批」，避免人走了保证金还挂在账上
+        const financeStore = useFinanceStore()
+        financeStore.deposits.forEach(d => {
+          if (d.contractId === id && d.status === '在管') {
+            financeStore.applyDepositRefund(d.id, {
+              reason: `合同 ${id} ${updates.status === '退租' ? '退租' : '终止'}，自动发起保证金退还`
+            })
+          }
+        })
       }
     }
   }
@@ -207,6 +216,30 @@ export const useContractStore = defineStore('contract', () => {
         received: 0,
         dueDate: `${due.getFullYear()}-${p(due.getMonth() + 1)}-${p(due.getDate())}`,
         status: '待缴费'
+      })
+    }
+
+    // 合同约定了保证金则自动生成保证金记录，金额由万元转元；签约时未必当场到账，默认「待收」
+    const financeStore = useFinanceStore()
+    if (contract.deposit > 0 && signedAsset) {
+      financeStore.addDeposit({
+        contractId: contract.id,
+        tenant: contract.tenant,
+        assetId: signedAsset.id,
+        assetName: contract.assetName || signedAsset.name,
+        depositType: '租赁保证金',
+        amount: Math.round((contract.deposit || 0) * 10000),
+        payDate: contract.startDate || todayStr(),
+        payStatus: '待收',
+        assets: [{
+          region: signedAsset.region || '',
+          project: signedAsset.project || signedAsset.group || '',
+          zone: signedAsset.zone || '',
+          assetNo: signedAsset.id,
+          address: contract.assetName || signedAsset.name,
+          company: signedAsset.group || '',
+          leaseType: signedAsset.leaseType || '整体出租'
+        }]
       })
     }
 
@@ -355,9 +388,9 @@ export const useContractStore = defineStore('contract', () => {
       billNo: contractId,
       remark: `本次收缴 ${amount} 万元，剩余欠费 ${arrears} 万元`
     })
-    useChangeLogStore().record({
-      assetId: c.assetId, assetName: c.assetName, module: '收费', type: '缴费登记',
-      before: `欠缴 ${c.arrears || 0} 万元`, after: `${contractId} 缴纳 ${amount} 万元，余欠 ${arrears} 万元`
+    useAuditStore().recordEvent({
+      assetId: c.assetId, assetName: c.assetName, module: '收费', action: '缴费登记',
+      bizId: contractId, detail: `欠缴 ${c.arrears || 0} 万元，本次缴纳 ${amount} 万元，余欠 ${arrears} 万元`
     })
     return { paid, arrears, status }
   }
@@ -412,6 +445,7 @@ export const useContractStore = defineStore('contract', () => {
     visibleContracts,
     visibleFees,
     getContractsByAsset,
+    activeContractsOfAsset,
     addContract,
     updateContract,
     updateFeeRecord,

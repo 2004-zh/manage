@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useAuditStore } from './audit'
+import { useAssetStore } from './asset'
 
 const initialMortgages = [
   {
@@ -70,20 +72,54 @@ export const useMortgageStore = defineStore('mortgage', () => {
     const newId = `DY-2026-${String(num).padStart(3, '0')}`
     const newMortgage = { ...mortgage, id: newId }
     mortgages.value.push(newMortgage)
+    const asset = newMortgage.assetId ? useAssetStore().getAssetById(newMortgage.assetId) : null
+    useAuditStore().recordEvent({
+      assetId: newMortgage.assetId,
+      assetName: asset?.name || newMortgage.assetName || newMortgage.assetId,
+      group: newMortgage.company,
+      module: '抵押管理',
+      action: '新增抵押',
+      billNo: newId,
+      remark: `抵押金额 ${newMortgage.amount} 万元，期限 ${newMortgage.period} 个月`,
+      detail: `${newMortgage.mortgagor} / ${newMortgage.bank}`
+    })
     return newMortgage
   }
 
   function updateMortgage(id, updates) {
     const idx = mortgages.value.findIndex(m => m.id === id)
     if (idx !== -1) {
-      mortgages.value[idx] = { ...mortgages.value[idx], ...updates }
+      const before = mortgages.value[idx]
+      mortgages.value[idx] = { ...before, ...updates }
+      const after = mortgages.value[idx]
+      const asset = after.assetId ? useAssetStore().getAssetById(after.assetId) : null
+      useAuditStore().recordEvent({
+        assetId: after.assetId,
+        assetName: asset?.name || after.assetName || after.assetId,
+        group: after.company,
+        module: '抵押管理',
+        action: '更新抵押信息',
+        billNo: id,
+        remark: `抵押编号 ${id} 信息变更`,
+        detail: Object.keys(updates).join(', ')
+      })
     }
   }
 
   function deleteMortgage(id) {
     const idx = mortgages.value.findIndex(m => m.id === id)
     if (idx !== -1) {
-      mortgages.value.splice(idx, 1)
+      const [removed] = mortgages.value.splice(idx, 1)
+      const asset = removed.assetId ? useAssetStore().getAssetById(removed.assetId) : null
+      useAuditStore().recordEvent({
+        assetId: removed.assetId,
+        assetName: asset?.name || removed.assetName || removed.assetId,
+        group: removed.company,
+        module: '抵押管理',
+        action: '删除抵押记录',
+        billNo: id,
+        remark: `抵押金额 ${removed.amount} 万元，抵押人 ${removed.mortgagor}`
+      })
     }
   }
 

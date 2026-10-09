@@ -21,17 +21,19 @@ const project = computed(() => (props.projectId ? projectStore.getProjectById(pr
 // 老缓存里的项目可能没有 partitions/floors，这里全部按缺省空数组兜住，否则 computed 抛错会让弹窗打不开
 const rows = computed(() => {
   if (!project.value) return []
-  const attached = assetStore.attachedAssetsOf(project.value.id)
+  const allProjectAssets = assetStore.attachedAssetsOf(project.value.id)
   return (project.value.partitions || [])
     .filter(p => !keyword.value || p.name.includes(keyword.value))
     .map(p => {
       const stat = projectStore.partitionStats(p)
+      // 只有手动挂入的平铺资产才需要 detach，结构房间随分区删除自动消失
+      const detachable = allProjectAssets.filter(a => a.partitionId === p.id && assetStore.isBaseAsset(a.id))
       return {
         id: p.id,
         name: p.name,
         area: p.area,
         ...stat,
-        attachedCount: attached.filter(a => a.partitionId === p.id).length
+        attachedCount: detachable.length
       }
     })
 })
@@ -91,7 +93,7 @@ function removeRow(row) {
   }).then(() => {
     if (row.attachedCount) {
       assetStore.attachedAssetsOf(project.value.id)
-        .filter(a => a.partitionId === row.id)
+        .filter(a => a.partitionId === row.id && assetStore.isBaseAsset(a.id))
         .forEach(a => assetStore.detachFromProject(a.id, { remark: `分区「${row.name}」被删除，自动移出项目` }))
     }
     const res = projectStore.removePartition(project.value.id, row.id)

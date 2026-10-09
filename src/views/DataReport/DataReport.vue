@@ -82,7 +82,7 @@
           <el-table :data="leaseExpiringList" style="width: 100%; margin-top: 16px">
             <el-table-column prop="contractNo" label="合同编号" width="140" />
             <el-table-column prop="assetName" label="资产名称" min-width="150" show-overflow-tooltip />
-            <el-table-column prop="tenant" label="承租方" width="120" />
+            <el-table-column prop="tenant" label="承租方" min-width="120" />
             <el-table-column prop="endDate" label="到期日期" width="110" />
             <el-table-column prop="remainDays" label="剩余天数" width="100">
               <template #default="{ row }">

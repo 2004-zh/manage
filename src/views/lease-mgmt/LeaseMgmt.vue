@@ -80,18 +80,18 @@
               <div v-if="row.children && row.children.length" class="expand-wrap">
                 <div class="section-title">拆分子单元（{{ row.children.length }} 项）</div>
                 <el-table :data="row.children" border size="small" class="child-table">
-                  <el-table-column prop="assetNo" label="资产编号" width="140" />
+                  <el-table-column prop="assetNo" label="资产编号" min-width="140" />
                   <el-table-column prop="name" label="单元名称" min-width="160" show-overflow-tooltip />
-                  <el-table-column prop="area" label="面积(㎡)" width="110" align="right">
+                  <el-table-column prop="area" label="面积(㎡)" min-width="110" align="right">
                     <template #default="{ row: c }">{{ c.area.toLocaleString() }}</template>
                   </el-table-column>
-                  <el-table-column prop="floor" label="楼层" width="120" />
-                  <el-table-column prop="leaseStatus" label="租赁状态" width="100" align="center">
+                  <el-table-column prop="floor" label="楼层" min-width="120" />
+                  <el-table-column prop="leaseStatus" label="租赁状态" min-width="100" align="center">
                     <template #default="{ row: c }">
                       <el-tag :type="leaseTagType(c.leaseStatus)" size="small">{{ c.leaseStatus }}</el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column label="出租/自用/可用" width="170" align="right">
+                  <el-table-column label="出租/自用/可用" min-width="170" align="right">
                     <template #default="{ row: c }">
                       <span style="color:#67c23a">{{ (c.leasedArea || 0).toLocaleString() }}</span>
                       <span style="color:#c0c4cc"> / </span>
@@ -138,11 +138,11 @@
             </template>
           </el-table-column>
           <el-table-column type="selection" width="45" />
-          <el-table-column prop="project" label="项目" width="120" show-overflow-tooltip />
-          <el-table-column prop="assetNo" label="资产编号" width="120" />
-          <el-table-column prop="company" label="所属公司" width="140" show-overflow-tooltip />
-          <el-table-column prop="address" label="资产地址" width="170" show-overflow-tooltip />
-          <el-table-column label="出租/自用/可用" width="180" align="right">
+          <el-table-column prop="project" label="项目" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="assetNo" label="资产编号" min-width="120" />
+          <el-table-column prop="company" label="所属公司" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="address" label="资产地址" min-width="170" show-overflow-tooltip />
+          <el-table-column label="出租/自用/可用" min-width="180" align="right">
             <template #default="{ row }">
               <span class="area-rented num">{{ (row.leasedArea || 0).toLocaleString() }}</span>
               <span class="area-sep"> / </span>
@@ -152,12 +152,12 @@
               <span class="area-unit"> ㎡</span>
             </template>
           </el-table-column>
-          <el-table-column prop="assetStatus" label="资产状态" width="95" align="center">
+          <el-table-column prop="assetStatus" label="资产状态" min-width="95" align="center">
             <template #default="{ row }">
               <el-tag :type="assetStatusType(row.assetStatus)" size="small">{{ row.assetStatus }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="leaseStatus" label="租赁状态" width="95" align="center">
+          <el-table-column prop="leaseStatus" label="租赁状态" min-width="95" align="center">
             <template #default="{ row }">
               <el-tag :type="leaseTagType(row.leaseStatus)" size="small">{{ row.leaseStatus }}</el-tag>
             </template>
@@ -232,17 +232,17 @@
         </el-card>
 
         <el-table :data="pagedData" border stripe show-summary :summary-method="getSummary">
-          <el-table-column prop="contractNo" label="合同编号" width="130" />
+          <el-table-column prop="contractNo" label="合同编号" min-width="130" />
           <el-table-column prop="assetName" label="资产名称" min-width="200" show-overflow-tooltip />
-          <el-table-column prop="tenant" label="承租方" width="140" />
-          <el-table-column prop="project" label="所属项目" width="150" show-overflow-tooltip />
-          <el-table-column prop="area" label="面积(㎡)" width="100" align="right" />
-          <el-table-column prop="monthlyRent" label="月租金(元)" width="120" align="right">
+          <el-table-column prop="tenant" label="承租方" min-width="140" />
+          <el-table-column prop="project" label="所属项目" min-width="150" show-overflow-tooltip />
+          <el-table-column prop="area" label="面积(㎡)" min-width="100" align="right" />
+          <el-table-column prop="monthlyRent" label="月租金(元)" min-width="120" align="right">
             <template #default="{ row }">{{ row.monthlyRent.toLocaleString() }}</template>
           </el-table-column>
-          <el-table-column prop="startDate" label="起租日" width="110" />
-          <el-table-column prop="endDate" label="到期日" width="110" />
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="startDate" label="起租日" min-width="110" />
+          <el-table-column prop="endDate" label="到期日" min-width="110" />
+          <el-table-column prop="status" label="状态" min-width="100">
             <template #default="{ row }">
               <el-tag :type="getStatusType(row.status)" size="small">{{ row.status }}</el-tag>
             </template>
@@ -298,23 +298,23 @@
         </el-card>
 
         <el-table :data="pagedOcc" border stripe>
-          <el-table-column prop="no" label="编号" width="130" />
-          <el-table-column prop="company" label="公司名称" width="120" />
-          <el-table-column prop="person" label="责任人" width="100" />
+          <el-table-column prop="no" label="编号" min-width="130" />
+          <el-table-column prop="company" label="公司名称" min-width="120" />
+          <el-table-column prop="person" label="责任人" min-width="100" />
           <el-table-column prop="period" label="占用自用时间" min-width="200" />
-          <el-table-column prop="type" label="类型" width="90" align="center">
+          <el-table-column prop="type" label="类型" min-width="90" align="center">
             <template #default="{ row }">
               <el-tag :type="row.type === '自用' ? 'success' : 'warning'" size="small">{{ row.type }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip />
-          <el-table-column prop="status" label="状态" width="95" align="center">
+          <el-table-column prop="status" label="状态" min-width="95" align="center">
             <template #default="{ row }">
               <el-tag :type="row.status === '正常' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="createTime" label="创建时间" width="160" />
-          <el-table-column prop="voidTime" label="作废时间" width="160">
+          <el-table-column prop="createTime" label="创建时间" min-width="160" />
+          <el-table-column prop="voidTime" label="作废时间" min-width="160">
             <template #default="{ row }">{{ row.voidTime || '—' }}</template>
           </el-table-column>
           <el-table-column label="操作" width="130" fixed="right">
@@ -561,12 +561,12 @@
             <el-input v-model="row.name" size="small" />
           </template>
         </el-table-column>
-        <el-table-column label="面积(㎡)" width="130">
+        <el-table-column label="面积(㎡)" min-width="130">
           <template #default="{ row }">
             <el-input-number v-model="row.area" :min="0" :precision="2" size="small" style="width: 100%" />
           </template>
         </el-table-column>
-        <el-table-column label="租赁状态" width="110">
+        <el-table-column label="租赁状态" min-width="110">
           <template #default="{ row }">
             <el-tag size="small" :type="leaseTagType(row.leaseStatus)">{{ row.leaseStatus }}</el-tag>
           </template>
@@ -1256,12 +1256,16 @@ function handleRenewBatch() {
     type: 'info'
   }).then(({ value }) => {
     const months = parseInt(value, 10)
+    let updated = 0
     assetSelection.value.forEach(row => {
-      row.renewMonths = months
-      if (row.endDate) row.endDate = addMonths(row.endDate, months)
-      row.leaseStatus = '已出租'
+      const contracts = contractStore.visibleContracts.filter(c => c.assetName === row.name && (c.status === '正常' || c.status === '即将到期'))
+      contracts.forEach(c => {
+        const newEnd = addMonths(c.endDate, months)
+        contractStore.updateContract(c.id, { endDate: newEnd, status: '正常', overdueDays: 0 })
+        updated++
+      })
     })
-    ElMessage.success(`已为 ${assetSelection.value.length} 项资产续租 ${months} 个月`)
+    ElMessage.success(`已为 ${updated} 份合同续租 ${months} 个月`)
     assetSelection.value = []
   }).catch(() => {})
 }
@@ -1277,13 +1281,15 @@ function handleTerminateBatch() {
     type: 'warning'
   }).then(({ value }) => {
     const reason = value.trim()
+    let updated = 0
     assetSelection.value.forEach(row => {
-      row.leaseStatus = '未出租'
-      row.assetStatus = '未使用'
-      row.isLeased = '否'
-      row.terminateReason = reason
+      const contracts = contractStore.visibleContracts.filter(c => c.assetName === row.name && c.status !== '已退租')
+      contracts.forEach(c => {
+        contractStore.updateContract(c.id, { status: '退租', terminateReason: reason })
+        updated++
+      })
     })
-    ElMessage.success(`已退租 ${assetSelection.value.length} 项资产：${reason}`)
+    ElMessage.success(`已退租 ${updated} 份合同：${reason}`)
     assetSelection.value = []
   }).catch(() => {})
 }

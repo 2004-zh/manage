@@ -89,19 +89,26 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="billNo" label="账单编号" width="140" />
-        <el-table-column prop="tenant" label="承租方" width="170" show-overflow-tooltip />
-        <el-table-column prop="billMonth" label="账单月份" width="100" align="center" />
-        <el-table-column prop="feeType" label="费用类型" width="90" align="center">
+        <el-table-column prop="billNo" label="账单编号" min-width="140" />
+        <el-table-column prop="tenant" label="承租方" min-width="170" show-overflow-tooltip />
+        <el-table-column prop="billMonth" label="账单月份" min-width="100" align="center" />
+        <el-table-column prop="feeType" label="费用类型" min-width="90" align="center">
           <template #default="{ row }">
             <el-tag size="small">{{ row.feeType }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="receivable" label="应收金额(元)" width="115" align="right" />
-        <el-table-column prop="received" label="实缴金额(元)" width="115" align="right" />
-        <el-table-column prop="status" label="缴费状态" width="90" align="center">
+        <el-table-column prop="receivable" label="应收金额(元)" min-width="115" align="right" />
+        <el-table-column prop="received" label="实缴金额(元)" min-width="115" align="right" />
+        <el-table-column prop="status" label="缴费状态" min-width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="statusType(row.status)" size="small">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="备注" min-width="120" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.assetDeleted" type="info" size="small" effect="plain">资产已删除</el-tag>
+            <span v-else-if="row.remark" style="font-size:12px;color:var(--t-weak)" >{{ row.remark }}</span>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="140" fixed="right" align="center">
@@ -293,6 +300,8 @@ const bills = computed(() => financeStore.billList.map(b => ({
   company: companyOf(b.contractId),
   createTime: b.createTime,
   updateTime: b.updateTime,
+  assetDeleted: b.assetDeleted || false,
+  remark: b.remark || '',
   raw: b
 })))
 

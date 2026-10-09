@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAssetStore } from './asset'
 import { useContractStore } from './contract'
+import { useSpecialAssetStore } from './specialAsset'
+import { useAuditStore } from './audit'
+import { useNotifyStore } from './notify'
 
 export const useReportStore = defineStore('report', () => {
   const reports = ref([])
@@ -13,6 +16,7 @@ export const useReportStore = defineStore('report', () => {
   function computeCompanyData(companyName) {
     const assetStore = useAssetStore()
     const contractStore = useContractStore()
+    const specialStore = useSpecialAssetStore()
 
     const companyAssets = assetStore.getAssetsByCompany(companyName)
     const totalAssets = companyAssets.length
@@ -66,15 +70,32 @@ export const useReportStore = defineStore('report', () => {
     }
   }
 
+  // 特殊资产（无形资产 + 股权投资）汇总：不归属单一公司，全区口径
+  function computeSpecialAssetSummary() {
+    const specialStore = useSpecialAssetStore()
+    const iaList = specialStore.intangibleAssets.filter(a => a.status !== '已注销')
+    const eqList = specialStore.equityCompanies
+    return {
+      intangibleCount: iaList.length,
+      intangibleValue: Number(specialStore.intangibleTotalValue) || 0,
+      equityCount: eqList.length,
+      equityInvest: Number(specialStore.totalInvest) || 0,
+      equityValue: Number(specialStore.totalEquity) || 0,
+      equityDividend: Number(specialStore.totalDividend) || 0
+    }
+  }
+
   function submitReport(companyName, period, remark) {
     const data = computeCompanyData(companyName)
+    const seq = String(reports.value.length + 1).padStart(3, '0')
     const report = {
-      id: `DB-${Date.now()}`,
+      id: `SB-2026-${seq}`,
       company: companyName,
       period: period || '2026-Q1',
       submitTime: new Date().toLocaleString('zh-CN'),
-      status: '已接收',
-      remark: remark || '数据校验通过',
+      status: '待审核',
+      remark: remark || '',
+      returnReason: '',
       assetCount: data.assets,
       totalValue: data.bookValue,
       idleCount: data.idle,
@@ -82,7 +103,28 @@ export const useReportStore = defineStore('report', () => {
     }
     reports.value.push(report)
     submittedData.value = data
+    useAuditStore().recordEvent({ module: '数据上报', action: '企业提交报送', bizId: report.id, target: 'gov', detail: `${companyName} 提交 ${report.period} 数据报送` })
+    useNotifyStore().sendByTemplate('report_submit', { report: report.id, company: companyName }, { target: 'gov', bizType: '数据报送', bizId: report.id })
     return report
+  }
+
+  function acceptReport(id) {
+    const report = reports.value.find(r => r.id === id)
+    if (!report) return false
+    report.status = '已接收'
+    useAuditStore().recordEvent({ module: '数据上报', action: '监管接收报送', bizId: id, target: 'gov', detail: `${report.company} 报送数据已接收` })
+    useNotifyStore().sendByTemplate('report_accept', { report: id, company: report.company }, { target: 'ent', bizType: '数据报送', bizId: id })
+    return true
+  }
+
+  function returnReport(id, reason) {
+    const report = reports.value.find(r => r.id === id)
+    if (!report) return false
+    report.status = '已退回'
+    report.returnReason = reason
+    useAuditStore().recordEvent({ module: '数据上报', action: '监管退回报送', bizId: id, target: 'gov', detail: `${report.company} 报送数据已退回：${reason}` })
+    useNotifyStore().sendByTemplate('report_return', { report: id, company: report.company, reason }, { target: 'ent', bizType: '数据报送', bizId: id })
+    return true
   }
 
   function getLatestDataByCompany(companyName) {
@@ -104,7 +146,10 @@ export const useReportStore = defineStore('report', () => {
     allReports,
     latestSubmission,
     submitReport,
+    acceptReport,
+    returnReport,
     computeCompanyData,
+    computeSpecialAssetSummary,
     getLatestDataByCompany,
     getAllCompaniesLatestData
   }

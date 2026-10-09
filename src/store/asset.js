@@ -5,8 +5,17 @@ import { resolveAssetCategory } from '../data/assetCategory'
 import { useProjectStore } from './project'
 import { useAuditStore } from './audit'
 import { useUserStore } from './user'
+import { useContractStore } from './contract'
+import { useMortgageStore } from './mortgage'
+import { useLeaseStore } from './lease'
+import { useCredentialStore } from './credential'
+import { useControlStore } from './control'
+import { useFinanceStore } from './finance'
+import { useRevitalizeStore } from './revitalize'
+import { useWarningStore } from './warning'
 
 function roomToAsset(r, b, p, f) {
+  const unitPrice = b.type.includes('住宅') ? 0.8 : b.type.includes('商业') || b.type.includes('办公') ? 1.2 : 1.0
   return {
     id: r.id,
     name: r.name,
@@ -14,7 +23,7 @@ function roomToAsset(r, b, p, f) {
     assetCategory: resolveAssetCategory({ type: b.type }),
     type: b.type,
     area: r.area,
-    bookValue: 0,
+    bookValue: Math.round(r.area * unitPrice * 100) / 100,
     location: `${b.address} ${p.name} ${f.name}`,
     status: r.status,
     certStatus: r.certStatus || (r.hasPropertyRight ? '已办证' : '未办证（未启动）'),
@@ -113,9 +122,9 @@ export const useAssetStore = defineStore('asset', () => {
   // 本公司名下、还没挂到任何项目下的平铺资产，供「挂入已有资产」挑选
   const unattachedAssets = computed(() => visibleAssets.value.filter(a => !a.projectId))
 
-  // 项目下"挂进来"的那部分（不含项目结构自带的房间级资产），只认 baseAssets 里的平铺记录
+  // 项目下所有资产：结构房间 + 手动挂入的平铺资产，供项目管理页/分区管理展示
   function attachedAssetsOf(projectId) {
-    return baseAssets.value.filter(a => a.projectId === projectId)
+    return getProjectAssets(projectId)
   }
 
   function isBaseAsset(id) {
@@ -287,16 +296,20 @@ export const useAssetStore = defineStore('asset', () => {
 
   /**
    * base 资产真删；房间级资产来自项目派生数据，不能删源，用 removedIds 从台账口径剔除。
+   * 删除前检查在租合同——有活跃合同时拒绝删除，并级联清理关联数据。
    */
   function deleteAsset(id, meta = {}) {
     const before = getAssetById(id)
     if (!before) return false
-    const baseIdx = baseAssets.value.findIndex(a => a.id === id)
-    if (baseIdx !== -1) {
-      baseAssets.value.splice(baseIdx, 1)
-    } else {
-      removedIds.value.push(id)
+
+    // 有活跃合同时拦截，避免产生孤儿合同和收费记录
+    if (!meta.force) {
+      const cs = useContractStore()
+      const actives = cs.contracts.filter(c => c.assetId === id && c.status !== '已终止' && c.status !== '退租')
+      if (actives.length) return false
     }
+
+    // 先记录审计（在数据消失前保留资产名和详情）
     useAuditStore().recordEvent({
       assetId: id,
       assetName: before.name,
@@ -307,7 +320,115 @@ export const useAssetStore = defineStore('asset', () => {
       remark: meta.remark || `删除资产：${before.name}`,
       detail: `面积 ${before.area || 0}㎡ / 原值 ${before.bookValue || 0}万元`
     })
+
+    // 级联清理其他 store 中引用该资产的记录
+    cascadeCleanup(id, before.name)
+
+    const baseIdx = baseAssets.value.findIndex(a => a.id === id)
+    if (baseIdx !== -1) {
+      baseAssets.value.splice(baseIdx, 1)
+    } else {
+      removedIds.value.push(id)
+    }
     return true
+  }
+
+  function cascadeCleanup(assetId, assetName) {
+    // 财务：在删除合同前，先标记账单、保证金、收费记录（需要合同→资产映射）
+    try {
+      const fs = useFinanceStore()
+      const csLocal = useContractStore()
+      fs.bills.forEach(b => {
+        if (b.assetId === assetId || (b.contractId && csLocal.contracts.some(c => c.id === b.contractId && c.assetId === assetId))) {
+          b.assetDeleted = true
+          b.remark = (b.remark ? b.remark + '；' : '') + `资产 ${assetName} 已删除，不再计入收入`
+        }
+      })
+      fs.deposits.forEach(d => {
+        if (d.assetId === assetId) {
+          d.assetDeleted = true
+          d.remark = (d.remark ? d.remark + '；' : '') + `资产 ${assetName} 已删除`
+        }
+      })
+    } catch (_) {}
+
+    try {
+      const cs2 = useContractStore()
+      cs2.feeRecords.forEach(f => {
+        if (f.assetId === assetId || (f.contractId && cs2.contracts.some(c => c.id === f.contractId && c.assetId === assetId))) {
+          f.assetDeleted = true
+          f.remark = (f.remark ? f.remark + '；' : '') + `资产 ${assetName} 已删除，不再计入收入`
+        }
+      })
+    } catch (_) {}
+
+    // 合同：清除该资产的合同（收费记录已在上方标记保留）
+    try {
+      const cs = useContractStore()
+      cs.contracts = cs.contracts.filter(c => c.assetId !== assetId)
+    } catch (_) {}
+
+    // 抵押记录
+    try {
+      const ms = useMortgageStore()
+      ms.mortgages = ms.mortgages.filter(m => m.assetId !== assetId)
+    } catch (_) {}
+
+    // 招租公告 / 房源 / 报名 / 竞价
+    try {
+      const ls = useLeaseStore()
+      ls.releases = ls.releases.filter(r => r.assetId !== assetId)
+      const removedNoticeNos = new Set(ls.notices.filter(n => n.assetId === assetId).map(n => n.noticeNo))
+      ls.notices = ls.notices.filter(n => n.assetId !== assetId)
+      if (removedNoticeNos.size) {
+        ls.registrants = ls.registrants.filter(r => !removedNoticeNos.has(r.noticeNo))
+        ls.bids = ls.bids.filter(b => !removedNoticeNos.has(b.noticeNo))
+        ls.results = ls.results.filter(r => !removedNoticeNos.has(r.noticeNo))
+      }
+    } catch (_) {}
+
+    // 权证
+    try {
+      const cs = useCredentialStore()
+      cs.credentials = cs.credentials.filter(c => c.assetId !== assetId)
+    } catch (_) {}
+
+    // 管控规则
+    try {
+      const cs = useControlStore()
+      cs.rules = cs.rules.filter(r => r.assetId !== assetId)
+    } catch (_) {}
+
+    // 盘活记录
+    try {
+      const rs = useRevitalizeStore()
+      rs.flows = rs.flows.filter(f => f.assetId !== assetId)
+      rs.targets = rs.targets.filter(t => t.assetId !== assetId)
+    } catch (_) {}
+
+    // 项目结构：如果资产对应项目里的房间，移除
+    try {
+      const ps = useProjectStore()
+      for (const p of ps.projects) {
+        for (const part of (p.partitions || [])) {
+          for (const fl of (part.floors || [])) {
+            const rmIdx = fl.rooms.findIndex(r => r.id === assetId)
+            if (rmIdx !== -1) fl.rooms.splice(rmIdx, 1)
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 预警任务：完结该资产相关的未完成任务
+    try {
+      const ws = useWarningStore()
+      ws.warningTasks.forEach(t => {
+        const token = String(t.asset || '').trim().split(/\s+/)[0]
+        if (token === assetId && t.status !== '已完成' && t.status !== '已审核') {
+          ws.updateTaskStatus(t.id, '已完成', { remark: `资产 ${assetName} 已删除，预警自动完结` })
+        }
+      })
+    } catch (_) {}
   }
 
   function getAssetById(id) {

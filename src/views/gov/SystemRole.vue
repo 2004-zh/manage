@@ -25,7 +25,7 @@
         <el-table :data="pagedUsers" border size="small" class="dense-table" style="width: 100%">
           <el-table-column prop="username" label="用户名" width="120" />
           <el-table-column prop="name" label="姓名" width="100" />
-          <el-table-column prop="dept" label="所属部门" width="130" />
+          <el-table-column prop="dept" label="所属部门" min-width="130" />
           <el-table-column prop="role" label="角色" width="130" />
           <el-table-column prop="phone" label="手机号" width="130" />
           <el-table-column label="状态" width="90" align="center">

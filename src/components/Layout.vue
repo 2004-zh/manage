@@ -28,7 +28,7 @@
           <el-icon><Wallet /></el-icon>
           <template #title>财务收费管理</template>
         </el-menu-item>
-        <el-menu-item index="/inspection-maintenance">
+        <el-menu-item index="/ent/inspection-records">
           <el-icon><Tools /></el-icon>
           <template #title>巡检维修管理</template>
         </el-menu-item>

@@ -581,7 +581,7 @@ const kpiWarningCount = computed(() => warningStore.tasksOfOrg(org.value).filter
 const yearRevenueWan = computed(() => Math.round(yearReceivable.value))
 
 const handleViewAll = () => {
-  router.push('/inspection-maintenance')
+  router.push('/ent/inspection-records')
 }
 
 const handleProcess = (row) => {

@@ -61,26 +61,26 @@
                   <el-table :data="row.assets" border size="small">
                     <el-table-column prop="region" label="省市区" min-width="150" />
                     <el-table-column prop="project" label="项目" min-width="130" />
-                    <el-table-column prop="zone" label="分区" width="80" />
+                    <el-table-column prop="zone" label="分区" min-width="80" />
                     <el-table-column prop="name" label="资产名称" min-width="130" />
-                    <el-table-column prop="code" label="资产编号" width="120" />
+                    <el-table-column prop="code" label="资产编号" min-width="120" />
                     <el-table-column prop="location" label="资产座落" min-width="200" />
                     <el-table-column prop="company" label="所属公司" min-width="220" />
-                    <el-table-column prop="leaseType" label="租赁类型" width="100" />
+                    <el-table-column prop="leaseType" label="租赁类型" min-width="100" />
                   </el-table>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="tenant" label="承租人" width="110" show-overflow-tooltip />
-            <el-table-column prop="leaseRange" label="租赁起止(起 至 止)" width="170" show-overflow-tooltip />
-            <el-table-column prop="payCycle" label="缴费周期" width="90" />
-            <el-table-column prop="dueDate" label="交费截至时间" width="120" />
-            <el-table-column prop="rentType" label="租金类型" width="100">
+            <el-table-column prop="tenant" label="承租人" min-width="110" show-overflow-tooltip />
+            <el-table-column prop="leaseRange" label="租赁起止(起 至 止)" min-width="170" show-overflow-tooltip />
+            <el-table-column prop="payCycle" label="缴费周期" min-width="90" />
+            <el-table-column prop="dueDate" label="交费截至时间" min-width="120" />
+            <el-table-column prop="rentType" label="租金类型" min-width="100">
               <template #default="{ row }">
                 <el-tag size="small" :type="row.rentType === '固定租金' ? '' : row.rentType === '递增租金' ? 'warning' : 'success'">{{ row.rentType }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="monthlyRent" label="月租金" width="110">
+            <el-table-column prop="monthlyRent" label="月租金" min-width="110">
               <template #default="{ row }">
                 <el-tag size="small" type="danger" effect="plain">¥{{ row.monthlyRent }}</el-tag>
               </template>
@@ -129,10 +129,10 @@
           </div>
           <el-table :data="pagedTpls" border stripe @selection-change="handleTplSelection">
             <el-table-column type="selection" width="46" />
-            <el-table-column prop="company" label="所属公司" width="180" show-overflow-tooltip />
-            <el-table-column prop="name" label="模板名称" width="170" show-overflow-tooltip />
-            <el-table-column prop="createTime" label="创建时间" width="150" />
-            <el-table-column prop="modifyTime" label="修改时间" width="150" />
+            <el-table-column prop="company" label="所属公司" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="name" label="模板名称" min-width="170" show-overflow-tooltip />
+            <el-table-column prop="createTime" label="创建时间" min-width="150" />
+            <el-table-column prop="modifyTime" label="修改时间" min-width="150" />
             <el-table-column label="操作" width="90" fixed="right">
               <template #default="{ row }">
                 <el-button type="danger" link size="small" @click="deleteTpl(row)">删除</el-button>
@@ -178,20 +178,20 @@
                   <el-table :data="row.assets" border size="small">
                     <el-table-column prop="region" label="省市区" min-width="150" />
                     <el-table-column prop="project" label="项目" min-width="130" />
-                    <el-table-column prop="zone" label="分区" width="80" />
+                    <el-table-column prop="zone" label="分区" min-width="80" />
                     <el-table-column prop="name" label="资产名称" min-width="130" />
-                    <el-table-column prop="code" label="资产编号" width="120" />
+                    <el-table-column prop="code" label="资产编号" min-width="120" />
                     <el-table-column prop="location" label="资产座落" min-width="200" />
                     <el-table-column prop="company" label="所属公司" min-width="220" />
-                    <el-table-column prop="leaseType" label="租赁类型" width="100" />
+                    <el-table-column prop="leaseType" label="租赁类型" min-width="100" />
                   </el-table>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="staff" label="催缴人员" width="110" />
+            <el-table-column prop="staff" label="催缴人员" min-width="110" />
             <el-table-column prop="detail" label="催缴详情" min-width="280" show-overflow-tooltip />
-            <el-table-column prop="time" label="催缴时间" width="150" />
-            <el-table-column label="现场文件" width="170">
+            <el-table-column prop="time" label="催缴时间" min-width="150" />
+            <el-table-column label="现场文件" min-width="170">
               <template #default="{ row }">
                 <div style="display:flex;gap:6px">
                   <div v-for="n in row.fileCount" :key="n" class="file-thumb">
@@ -243,21 +243,21 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="contractNo" label="合同编号" width="140" />
-            <el-table-column prop="assetName" label="资产名称" width="160" show-overflow-tooltip />
-            <el-table-column prop="tenant" label="承租人" width="110" show-overflow-tooltip />
-            <el-table-column prop="credit" label="信用" width="90">
+            <el-table-column prop="contractNo" label="合同编号" min-width="140" />
+            <el-table-column prop="assetName" label="资产名称" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="tenant" label="承租人" min-width="110" show-overflow-tooltip />
+            <el-table-column prop="credit" label="信用" min-width="90">
               <template #default="{ row }">
                 <el-tag size="small" :type="row.credit.startsWith('D') ? 'danger' : row.credit.startsWith('C') ? 'warning' : row.credit.startsWith('B') ? '' : 'success'">{{ row.credit }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="amount" label="应收(元)" width="100" align="right" />
-            <el-table-column prop="overdueDays" label="逾期天数" width="90" align="right">
+            <el-table-column prop="amount" label="应收(元)" min-width="100" align="right" />
+            <el-table-column prop="overdueDays" label="逾期天数" min-width="90" align="right">
               <template #default="{ row }">
                 <span :style="{ color: row.overdueDays > 90 ? '#F56C6C' : row.overdueDays > 30 ? '#E6A23C' : '#909399' }">{{ row.overdueDays }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="90">
+            <el-table-column prop="status" label="状态" min-width="90">
               <template #default="{ row }">
                 <el-tag :type="row.status === '已缴纳' ? 'success' : row.status === '已催缴' ? '' : 'warning'" size="small">{{ row.status }}</el-tag>
               </template>
@@ -303,15 +303,15 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="letterNo" label="函件编号" width="150" />
-            <el-table-column prop="receiver" label="接收公司/人" width="170" show-overflow-tooltip />
-            <el-table-column prop="letterType" label="函件类型" width="110">
+            <el-table-column prop="letterNo" label="函件编号" min-width="150" />
+            <el-table-column prop="receiver" label="接收公司/人" min-width="170" show-overflow-tooltip />
+            <el-table-column prop="letterType" label="函件类型" min-width="110">
               <template #default="{ row }">
                 <el-tag :type="row.letterType === '律师函' ? 'danger' : 'warning'" size="small">{{ row.letterType }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="createTime" label="创建时间" width="110" />
-            <el-table-column prop="status" label="状态" width="90" align="center">
+            <el-table-column prop="createTime" label="创建时间" min-width="110" />
+            <el-table-column prop="status" label="状态" min-width="90" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.status === '已发送' ? 'success' : 'info'" size="small">{{ row.status }}</el-tag>
               </template>
@@ -461,12 +461,12 @@
         <el-table :data="currentListItem.assets" border size="small">
           <el-table-column prop="region" label="省市区" min-width="150" />
           <el-table-column prop="project" label="项目" min-width="130" />
-          <el-table-column prop="zone" label="分区" width="80" />
+          <el-table-column prop="zone" label="分区" min-width="80" />
           <el-table-column prop="name" label="资产名称" min-width="130" />
-          <el-table-column prop="code" label="资产编号" width="120" />
+          <el-table-column prop="code" label="资产编号" min-width="120" />
           <el-table-column prop="location" label="资产座落" min-width="200" />
           <el-table-column prop="company" label="所属公司" min-width="220" />
-          <el-table-column prop="leaseType" label="租赁类型" width="100" />
+          <el-table-column prop="leaseType" label="租赁类型" min-width="100" />
         </el-table>
       </template>
       <template #footer>
@@ -477,11 +477,11 @@
     <!-- 催缴单记录 -->
     <el-dialog v-model="showBillRecords" title="催缴单记录" width="720px">
       <el-table :data="currentBillRecords" border stripe size="small">
-        <el-table-column prop="billNo" label="催缴单号" width="160" />
+        <el-table-column prop="billNo" label="催缴单号" min-width="160" />
         <el-table-column prop="assetName" label="资产名称" min-width="140" />
-        <el-table-column prop="amount" label="欠费金额(元)" width="120" align="right" />
-        <el-table-column prop="createTime" label="生成时间" width="160" />
-        <el-table-column prop="status" label="状态" width="90" align="center">
+        <el-table-column prop="amount" label="欠费金额(元)" min-width="120" align="right" />
+        <el-table-column prop="createTime" label="生成时间" min-width="160" />
+        <el-table-column prop="status" label="状态" min-width="90" align="center">
           <template #default="{ row }">
             <el-tag size="small" :type="row.status === '已送达' ? 'success' : 'warning'">{{ row.status }}</el-tag>
           </template>
@@ -521,7 +521,7 @@
     <!-- 参考参数配置 -->
     <el-dialog v-model="showParamDialog" title="参考参数配置" width="560px">
       <el-table :data="tplParams" border size="small">
-        <el-table-column prop="param" label="参数" width="160" />
+        <el-table-column prop="param" label="参数" min-width="160" />
         <el-table-column prop="desc" label="说明" min-width="240" />
       </el-table>
       <template #footer>
@@ -574,11 +574,13 @@ import { useContractStore } from '../../store/contract'
 import { usePartyStore } from '../../store/party'
 import { useAssetStore } from '../../store/asset'
 import { useAuditStore } from '../../store/audit'
+import { useNotifyStore } from '../../store/notify'
 
 const contractStore = useContractStore()
 const partyStore = usePartyStore()
 const assetStore = useAssetStore()
 const auditStore = useAuditStore()
+const notifyStore = useNotifyStore()
 
 const activeTab = ref('list')
 
@@ -963,6 +965,12 @@ function doUrge(contractNo) {
     remark: `向 ${c?.tenant || '承租人'} 催缴欠费`,
     detail: `欠费 ${c?.arrears || 0} 万元，逾期 ${c?.overdueDays || 0} 天`
   })
+  notifyStore.sendByTemplate('urge_rent', {
+    contractNo,
+    tenant: c?.tenant || '',
+    arrears: c?.arrears || 0,
+    days: c?.overdueDays || 0
+  }, { target: a?.group || 'ent', bizType: '催租', bizId: contractNo })
 }
 
 const filteredRecords = computed(() => {

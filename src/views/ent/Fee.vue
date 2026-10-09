@@ -341,6 +341,13 @@
                 <el-tag :type="row.billStatus === '已缴' ? 'success' : row.billStatus === '逾期' ? 'danger' : 'warning'" size="small">{{ row.billStatus }}</el-tag>
               </template>
             </el-table-column>
+            <el-table-column label="备注" width="120" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.assetDeleted" type="info" size="small" effect="plain">资产已删除</el-tag>
+                <span v-else-if="row.remark" style="font-size:12px;color:var(--t-weak)">{{ row.remark }}</span>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="120" align="center">
               <template #default="{ row }">
                 <el-button type="primary" link size="small" @click="viewBill(row)">查看</el-button>
@@ -1493,6 +1500,8 @@ const billRecords = computed(() => financeStore.billList.map(b => ({
   amount: Math.round((Number(b.receivable) || 0)) / 10000,
   dueDate: b.dueDate,
   billStatus: b.status === '已缴费' ? '已缴' : b.status === '已逾期' ? '逾期' : b.status === '部分缴费' ? '待缴' : '待缴',
+  assetDeleted: b.assetDeleted || false,
+  remark: b.remark || '',
   raw: b
 })))
 
@@ -1514,14 +1523,23 @@ function confirmPayment(row) {
 // 缴费订单
 const orderPayMethod = ref('')
 const orderStatus = ref('')
-const payOrders = ref([
-  { orderNo: 'DD-20260916-0001', contractId: 'HT-2026-001', tenant: '福州长乐融辉贸易有限公司', feeType: '租金', amount: 10.5, payMethod: '微信扫码', payTime: '2026-09-10 09:32:15', tradeNo: '4200001234202609101234', status: '已支付' },
-  { orderNo: 'DD-20260916-0002', contractId: 'HT-2026-002', tenant: '福建省长乐市鸿运纺织有限公司', feeType: '租金', amount: 17.5, payMethod: '银行转账', payTime: '2026-09-08 14:20:03', tradeNo: 'TRF20260908000123', status: '已支付' },
-  { orderNo: 'DD-20260916-0003', contractId: 'HT-2026-003', tenant: '长乐区鑫源投资有限公司', feeType: '租金', amount: 6, payMethod: '微信扫码', payTime: '', tradeNo: '', status: '待支付' },
-  { orderNo: 'DD-20260916-0004', contractId: 'HT-2026-004', tenant: '福州航城物流有限公司', feeType: '管理费', amount: 4, payMethod: '支付宝', payTime: '', tradeNo: '', status: '待支付' },
-  { orderNo: 'DD-20260916-0005', contractId: 'HT-2025-003', tenant: '长乐吴航街道陈氏食品店', feeType: '租金', amount: 1.2, payMethod: '现金', payTime: '2026-08-20 10:05:41', tradeNo: '—', status: '已支付' },
-  { orderNo: 'DD-20260916-0006', contractId: 'HT-2024-005', tenant: '长乐区某餐饮管理有限公司', feeType: '租金', amount: 3.8, payMethod: '支付宝', payTime: '2026-08-01 16:44:12', tradeNo: '', status: '已退款' },
-])
+const payOrders = computed(() =>
+  financeStore.billList.map(b => {
+    const receipt = financeStore.receipts.find(r => r.contractId === b.contractId && r.amount >= (b.receivable || 0))
+    return {
+      orderNo: b.billNo,
+      billNo: b.billNo,
+      contractId: b.contractId,
+      tenant: b.tenant,
+      feeType: b.feeType || '租金',
+      amount: Math.round((Number(b.receivable) || 0)) / 10000,
+      payMethod: receipt?.method || '',
+      payTime: receipt?.date || '',
+      tradeNo: receipt?.receiptNo || '',
+      status: b.status === '已缴费' ? '已支付' : '待支付'
+    }
+  })
+)
 
 const filteredOrders = computed(() => payOrders.value.filter(o =>
   (!orderPayMethod.value || o.payMethod === orderPayMethod.value) &&
@@ -1574,21 +1592,14 @@ function showPayQr(row) {
 function simulatePaid() {
   if (!qrOrder.value) return
   const row = qrOrder.value
-  row.status = '已支付'
-  row.payTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
-  row.tradeNo = '4200001234' + Date.now()
-  // 订单收款 → 走 financeStore.receivePayment，把收缴回写到同一份 contract.feeRecords
-  financeStore.receivePayment(row.contractId, { amount: row.amount, method: row.payMethod || '微信扫码' })
-  const done = row
+  financeStore.payBill(row.billNo, { amount: row.amount * 10000, method: row.payMethod || '微信扫码' })
   showQrDialog.value = false
-  ElMessage.success(`订单 ${done.orderNo} 支付成功，已回写收费台账`)
+  ElMessage.success(`订单 ${row.orderNo} 支付成功，已回写收费台账`)
 }
 
 function confirmOrderPaid(row) {
-  ElMessageBox.confirm(`确认已收到 ${row.tenant} 的 ${row.amount} 万元（${row.payMethod}）？`, '确认收款', { type: 'success' }).then(() => {
-    row.status = '已支付'
-    row.payTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
-    financeStore.receivePayment(row.contractId, { amount: row.amount, method: row.payMethod })
+  ElMessageBox.confirm(`确认已收到 ${row.tenant} 的 ${row.amount} 万元（${row.payMethod || '线下'}）？`, '确认收款', { type: 'success' }).then(() => {
+    financeStore.payBill(row.billNo, { amount: row.amount * 10000, method: row.payMethod || '现金' })
     ElMessage.success('收款已登记，收费台账已同步')
   }).catch(() => {})
 }
@@ -1596,13 +1607,32 @@ function confirmOrderPaid(row) {
 // 历史欠费
 const historyStatus = ref('')
 const historyKeyword = ref('')
-const historyRecords = ref([
-  { contractId: 'HT-2024-025', assetName: '工业区厂房A-02', tenant: '福建某制造有限公司', feeType: '租金', billPeriod: '2025-01 至 2025-06', arrearsAmount: 26, overdueDays: 120, status: '未结清', urgeLogs: [{ time: '2026-06-15', text: '发送催缴函（第5次）', type: 'danger' }, { time: '2026-04-10', text: '电话催缴（第4次）', type: 'warning' }] },
-  { contractId: 'HT-2023-018', assetName: '航城商铺A-03', tenant: '张某', feeType: '租金', billPeriod: '2025-07 至 2025-12', arrearsAmount: 1.5, overdueDays: 95, status: '未结清', urgeLogs: [{ time: '2026-07-20', text: '短信催缴（第3次）', type: 'warning' }] },
-  { contractId: 'HT-2024-012', assetName: '城西停车场', tenant: '福州某物业管理有限公司', feeType: '管理费', billPeriod: '2026-01 至 2026-06', arrearsAmount: 0.85, overdueDays: 45, status: '未结清', urgeLogs: [{ time: '2026-08-25', text: '短信催缴（第1次）', type: 'info' }] },
-  { contractId: 'HT-2025-008', assetName: '农贸市场1号摊位', tenant: '陈某', feeType: '租金', billPeriod: '2026-07 至 2026-08', arrearsAmount: 0.32, overdueDays: 20, status: '未结清', urgeLogs: [] },
-  { contractId: 'HT-2023-042', assetName: '滨江商铺B-07', tenant: '林某', feeType: '租金', billPeriod: '2024-01 至 2024-06', arrearsAmount: 3.4, overdueDays: 0, status: '已结清', urgeLogs: [{ time: '2024-09-01', text: '欠费结清，共补缴 3.4 万元', type: 'success' }] },
-])
+const historyRecords = computed(() => {
+  const now = new Date()
+  return contractStore.visibleFees
+    .filter(f => f.arrears > 0 || (f.payments && f.payments.length > 0))
+    .map(f => {
+      const c = contractStore.getContractById(f.contractId)
+      const startStr = c?.startDate || ''
+      const endStr = c?.endDate || ''
+      const period = startStr ? `${startStr.slice(0, 7)} 至 ${endStr ? endStr.slice(0, 7) : '至今'}` : ''
+      const lastPayDate = f.payments?.length ? f.payments[f.payments.length - 1].date : null
+      const overdueDays = f.arrears > 0
+        ? Math.max(1, Math.floor((now - new Date(lastPayDate || startStr || now)) / 86400000))
+        : 0
+      return {
+        contractId: f.contractId,
+        assetName: f.assetName || '',
+        tenant: c?.tenant || f.tenant || '',
+        feeType: '租金',
+        billPeriod: period,
+        arrearsAmount: f.arrears || 0,
+        overdueDays,
+        status: f.arrears > 0 ? '未结清' : '已结清',
+        urgeLogs: []
+      }
+    })
+})
 
 const filteredHistory = computed(() => historyRecords.value.filter(r =>
   (!historyStatus.value || r.status === historyStatus.value) &&
@@ -1633,14 +1663,13 @@ function sendLetter() {
   const row = currentLetterRow.value
   if (row) {
     const no = `CJH-2026-${String(letterSeq.value).padStart(3, '0')}`
-    row.urgeLogs.unshift({ time: today, text: `发送催缴函 ${no}`, type: 'danger' })
     letterSeq.value++
     auditStore.recordEvent({
       assetName: row.assetName || '',
       module: '收费',
       action: '发送催缴函',
       billNo: no,
-      remark: `向 ${row.tenant} 催缴 ${row.feeType} 欠费 ${row.arrearsAmount} 万元（逾期 ${row.overdueDays} 天）`
+      remark: `${row.tenant} 催缴函 ${no}`
     })
   }
   showLetterDialog.value = false
@@ -1649,10 +1678,6 @@ function sendLetter() {
 
 function settleHistory(row) {
   ElMessageBox.confirm(`确认登记 ${row.tenant} 已结清欠费 ${row.arrearsAmount} 万元？`, '登记结清', { type: 'success' }).then(() => {
-    row.status = '已结清'
-    row.overdueDays = 0
-    row.urgeLogs.unshift({ time: today, text: `欠费结清，共补缴 ${row.arrearsAmount} 万元`, type: 'success' })
-    // 若合同仍在收费台账里，则同步推动实收
     financeStore.receivePayment(row.contractId, { amount: row.arrearsAmount, method: '历史欠费结清' })
     auditStore.recordEvent({
       assetName: row.assetName || '',

@@ -46,7 +46,7 @@
     <el-card shadow="never" class="fill">
       <template #header><span>资债明细</span></template>
       <el-table :data="overview" border stripe show-summary :summary-method="getSummary">
-        <el-table-column prop="company" label="公司" width="150" />
+        <el-table-column prop="company" label="公司" min-width="150" />
         <el-table-column prop="assetCount" label="资产数(处)" width="100" align="right" />
         <el-table-column prop="assetValue" label="资产账面值(万元)" width="150" align="right" />
         <el-table-column prop="mortgage" label="抵押负债(万元)" width="140" align="right" />

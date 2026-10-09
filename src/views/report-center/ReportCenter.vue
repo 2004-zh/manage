@@ -10,10 +10,6 @@
     </div>
 
     <el-card class="fill report-card">
-      <el-tabs v-model="activeCategory" class="category-tabs">
-        <el-tab-pane v-for="cat in categories" :key="cat" :label="cat" :name="cat" />
-      </el-tabs>
-
       <el-form :inline="true" class="search-form">
         <el-form-item v-for="f in cfg.filters" :key="f.key" :label="f.label">
           <el-input
@@ -44,9 +40,6 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>查询
-          </el-button>
           <el-button @click="handleReset">
             <el-icon><Refresh /></el-icon>重置
           </el-button>
@@ -109,19 +102,16 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh, Download, Printer } from '@element-plus/icons-vue'
+import { Refresh, Download, Printer } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
 import { useFinanceStore } from '../../store/finance'
 import { useInventoryStore } from '../../store/inventory'
 import { useAuditStore } from '../../store/audit'
-import { ASSET_CATEGORIES } from '../../data/assetCategory'
 
 const route = useRoute()
 const pageTitle = computed(() => route.meta?.title || '报表中心')
 
-const categories = ASSET_CATEGORIES
-const activeCategory = ref('房产类')
 const page = ref(1)
 const pageSize = 15
 const filterState = ref({})
@@ -460,8 +450,9 @@ const cfg = computed(() => {
   const rows = tabRows.value
   return {
     ...c,
-    filters: c.filters.map(f =>
-      f.type === 'select' ? { ...f, options: f.options || uniqProp(rows, f.prop) } : f),
+    filters: c.filters
+      .map(f => f.type === 'select' ? { ...f, options: f.options || uniqProp(rows, f.prop) } : f)
+      .filter(f => f.type !== 'select' || (f.options && f.options.length > 1)),
     chips: c.chips.map(ch => ({ ...ch, options: ['不限', ...uniqProp(rows, ch.prop)] }))
   }
 })
@@ -479,9 +470,9 @@ watch(tabName, () => {
   initChipState()
 }, { immediate: true })
 
-/* 通用过滤：类别页签 + input/select/date + chips，全部作用于 store 行 */
+/* 通用过滤：input/select/date + chips，全部作用于 store 行 */
 const filteredRows = computed(() => {
-  let rows = tabRows.value.filter(r => !activeCategory.value || !r.category || r.category === activeCategory.value)
+  let rows = tabRows.value
   const fs = filterState.value
   cfg.value.filters.forEach(f => {
     const val = fs[f.key]
@@ -546,11 +537,6 @@ const tagType = (v) => ({
   '逾期': 'danger', '已逾期': 'danger', '待盘点': 'info', '待派单': 'info', '未出租': 'info', '已红冲': 'info'
 }[v] || 'info')
 
-const handleSearch = () => {
-  page.value = 1
-  ElMessage.success(`查询完成，共 ${filteredRows.value.length} 条`)
-}
-
 const handleReset = () => {
   filterState.value = {}
   initChipState()
@@ -580,10 +566,6 @@ const handlePrint = () => {
 </script>
 
 <style scoped>
-.category-tabs {
-  margin-bottom: 4px;
-}
-
 .search-form {
   margin-bottom: 4px;
 }

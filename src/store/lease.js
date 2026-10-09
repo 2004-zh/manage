@@ -46,10 +46,10 @@ const RESULT_SEEDS = [
 ]
 
 const RENT_RECORD_SEEDS = [
-  { id: 1, company: '城投集团', rentNo: 'ZC-2026-001', assetName: '城关旧厂房1#', area: 1800, startPrice: 15000, method: '公开竞价', startDate: '2026-02-01', endDate: '2026-03-01', status: '已成交', bidders: '3家', dealPrice: 18500 },
-  { id: 2, company: '城投集团', rentNo: 'ZC-2026-002', assetName: '航城商铺A-08', area: 120, startPrice: 3500, method: '挂牌出租', startDate: '2026-03-01', endDate: '2026-03-31', status: '招租中', bidders: null, dealPrice: null },
-  { id: 3, company: '水投集团', rentNo: 'ZC-2026-003', assetName: '营前仓库C-01', area: 600, startPrice: 8000, method: '公开竞价', startDate: '2026-01-10', endDate: '2026-02-10', status: '已流拍', bidders: '0家', dealPrice: null },
-  { id: 4, company: '产投集团', rentNo: 'ZC-2026-004', assetName: '漳港商铺E-02', area: 95, startPrice: 2800, method: '协议出租', startDate: '2026-03-15', endDate: '2026-04-15', status: '待审批', bidders: null, dealPrice: null }
+  { id: 1, assetId: 'CT-001', company: '城投集团', rentNo: 'ZC-2026-001', assetName: '城关旧厂房1#', area: 1800, startPrice: 15000, method: '公开竞价', startDate: '2026-02-01', endDate: '2026-03-01', status: '已成交', bidders: '3家', dealPrice: 18500 },
+  { id: 2, assetId: 'CT-021', company: '城投集团', rentNo: 'ZC-2026-002', assetName: '航城商铺A-08', area: 120, startPrice: 3500, method: '挂牌出租', startDate: '2026-03-01', endDate: '2026-03-31', status: '招租中', bidders: null, dealPrice: null },
+  { id: 3, assetId: 'CT-034', company: '水投集团', rentNo: 'ZC-2026-003', assetName: '营前仓库C-01', area: 600, startPrice: 8000, method: '公开竞价', startDate: '2026-01-10', endDate: '2026-02-10', status: '已流拍', bidders: '0家', dealPrice: null },
+  { id: 4, assetId: 'CT-042', company: '产投集团', rentNo: 'ZC-2026-004', assetName: '漳港商铺E-02', area: 95, startPrice: 2800, method: '协议出租', startDate: '2026-03-15', endDate: '2026-04-15', status: '待审批', bidders: null, dealPrice: null }
 ]
 
 function nextSeq(list, field, prefix) {

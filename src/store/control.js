@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useMortgageStore } from './mortgage'
 import { useAssetStore } from './asset'
 import { useAuditStore } from './audit'
+import { useContractStore } from './contract'
 
 /**
  * 管控限制（缺口7）：资产的第三类派生态（除使用状态、办证状态外）。
@@ -34,6 +35,14 @@ export const useControlStore = defineStore('control', () => {
     const reasons = []
     if (isMortgaged(assetId)) reasons.push('资产处于抵押状态')
     activeRules(assetId).filter(r => r.limitType === limitType).forEach(r => reasons.push(r.reason))
+    // 调拨时额外检查在租合同：资产正在出租则不允许调拨，避免调拨后承租方权益受损
+    if (limitType === '使用限制') {
+      const active = useContractStore().activeContractsOfAsset(assetId)
+      if (active.length) {
+        const c = active[0]
+        reasons.push(`资产在租中（合同 ${c.id}，承租方 ${c.tenant}，至 ${c.endDate}），请先终止或到期后再调拨`)
+      }
+    }
     return reasons
   }
 

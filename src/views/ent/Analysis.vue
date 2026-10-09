@@ -545,6 +545,7 @@ import { useUserStore } from '../../store/user'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
 import { useFinanceStore } from '../../store/finance'
+import { useInspectionStore } from '../../store/inspection'
 
 const route = useRoute()
 const isReport = computed(() => route.name === 'EntAssetReport')
@@ -553,6 +554,7 @@ const user = useUserStore()
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
 const financeStore = useFinanceStore()
+const inspectionStore = useInspectionStore()
 const org = computed(() => user.user?.org || '')
 
 // ===== store 派生的公共口径（企业端一律走 visibleXxx，已按 user.org 过滤）=====
@@ -714,7 +716,7 @@ const expiryData = computed(() => expiringList.value.slice(0, 8).map(c => ({
   disposition: c.status === '临期' ? '洽谈中' : '待处理',
 })))
 
-// 5. 维修费用（financeStore.expenses 费用台账；无工单状态字段，已入账即视为完结）
+// 5. 维修费用（费用台账取金额，工单/报修状态取 inspectionStore）
 const orgExpenses = computed(() => {
   const all = financeStore.expenses || []
   const names = new Set(assets.value.map(a => a.name))
@@ -725,14 +727,18 @@ const maintStats = computed(() => {
   const list = orgExpenses.value
   const total = +sum(list, e => e.amount).toFixed(1)
   const assetCount = groupSum(list, e => e.assetName, () => 1).size
-  return { total, avgPerAsset: assetCount ? +(total / assetCount).toFixed(2) : 0, count: list.length, resolved: 100 }
+  const s = inspectionStore.stats
+  const resolved = s.totalWorkOrders ? +(s.completedRepairs / s.totalWorkOrders * 100).toFixed(1) : 0
+  return { total, avgPerAsset: assetCount ? +(total / assetCount).toFixed(2) : 0, count: s.totalRepairs, resolved }
 })
+// 高费用资产排名：按 inspectionStore.repairList 聚合报修次数，金额仍取费用台账
 const maintRankData = computed(() => {
-  const list = orgExpenses.value
-  const rows = [...groupSum(list, e => e.assetName, e => e.amount)].map(([assetName, totalCost]) => {
-    const items = list.filter(e => e.assetName === assetName)
-    const issues = [...groupSum(items, e => e.expenseType, () => 1)].sort((a, b) => b[1] - a[1])
-    return { assetName, totalCost: +totalCost.toFixed(1), orderCount: items.length, mainIssue: issues[0]?.[0] || '日常维护' }
+  const repairs = inspectionStore.repairList
+  const rows = [...groupSum(repairs, r => r.assetName, () => 1)].map(([assetName, orderCount]) => {
+    const items = repairs.filter(r => r.assetName === assetName)
+    const issues = [...groupSum(items, r => r.issue || '日常维护', () => 1)].sort((a, b) => b[1] - a[1])
+    const totalCost = +orgExpenses.value.filter(e => e.assetName === assetName).reduce((s, e) => s + (Number(e.amount) || 0), 0).toFixed(1)
+    return { assetName, totalCost, orderCount, mainIssue: issues[0]?.[0] || '日常维护' }
   }).sort((a, b) => b.totalCost - a.totalCost).slice(0, 5)
   return rows.map((r, i) => ({ rank: i + 1, ...r }))
 })

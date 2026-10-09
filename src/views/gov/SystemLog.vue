@@ -8,7 +8,7 @@
       <el-table-column prop="time" label="时间" width="180" />
       <el-table-column prop="user" label="操作人" width="140" />
       <el-table-column prop="org" label="组织" width="120" />
-      <el-table-column prop="module" label="模块" width="140" />
+      <el-table-column prop="module" label="模块" min-width="140" />
       <el-table-column prop="action" label="操作内容" min-width="160" show-overflow-tooltip />
       <el-table-column prop="detail" label="明细" min-width="200" show-overflow-tooltip />
       <el-table-column prop="result" label="结果" width="80">

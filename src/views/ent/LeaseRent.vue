@@ -312,6 +312,10 @@
         </el-form-item>
         <el-form-item label="起拍价(元/月)" required>
           <el-input-number v-model="createForm.startPrice" :min="0" :step="100" style="width:100%" />
+          <div class="area-hint" v-if="guidePriceInfo && guidePriceInfo.guidePrice > 0">
+            评估价 {{ guidePriceInfo.evalValue }} 万元（{{ guidePriceInfo.method }}，{{ guidePriceInfo.reportNo }}），指导价 {{ guidePriceInfo.guidePrice.toLocaleString() }} 元/㎡/月
+          </div>
+          <div class="area-hint" v-else-if="createForm.assetId">该资产暂无评估记录，起拍价需手动定价</div>
         </el-form-item>
         <el-form-item label="招租期限" required>
           <el-date-picker v-model="createForm.dateRange" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始日期" end-placeholder="截止日期" style="width:100%" />
@@ -379,9 +383,9 @@
     <el-dialog v-model="registrantDetailVisible" title="报名详情" width="550px">
       <el-descriptions :column="2" border v-if="currentRegistrant">
         <el-descriptions-item label="报名编号">{{ currentRegistrant.regNo }}</el-descriptions-item>
-        <el-descriptions-item label="报名人">{{ currentRegistrant.name }}</el-descriptions-item>
-        <el-descriptions-item label="联系电话">{{ currentRegistrant.phone }}</el-descriptions-item>
-        <el-descriptions-item label="报名时间">{{ currentRegistrant.regTime }}</el-descriptions-item>
+        <el-descriptions-item label="报名人">{{ currentRegistrant.registrant }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话">{{ currentRegistrant.contactPhone }}</el-descriptions-item>
+        <el-descriptions-item label="报名时间">{{ currentRegistrant.registerDate }}</el-descriptions-item>
         <el-descriptions-item label="资质审核">
           <el-tag :type="currentRegistrant.qualification === '已通过' ? 'success' : currentRegistrant.qualification === '未通过' ? 'danger' : 'warning'" size="small">{{ currentRegistrant.qualification }}</el-tag>
         </el-descriptions-item>
@@ -564,6 +568,7 @@ import { Plus, Refresh, Filter, Search } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
 import { useLeaseStore } from '../../store/lease'
+import { useFinanceStore } from '../../store/finance'
 import { useUserStore } from '../../store/user'
 
 const router = useRouter()
@@ -571,6 +576,7 @@ const route = useRoute()
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
 const leaseStore = useLeaseStore()
+const financeStore = useFinanceStore()
 const userStore = useUserStore()
 // 招商数据按登录账号归属，经营公司不给选
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
@@ -592,8 +598,18 @@ const createForm = ref({
 const pickedRentOption = computed(() => idleAssetOptions.value.find(a => a.id === createForm.value.assetId) || null)
 const pickedRentArea = computed(() => pickedRentOption.value ? pickedRentOption.value.area : 0)
 
+// 评估值→招租指导价：选中资产后自动查评估记录，按收益法反推月租金单价
+const guidePriceInfo = computed(() => {
+  if (!createForm.value.assetId) return null
+  return financeStore.guidePriceForAsset(createForm.value.assetId)
+})
+
 function handleRentAssetPick() {
   createForm.value.leaseArea = pickedRentArea.value
+  const gp = financeStore.guidePriceForAsset(createForm.value.assetId)
+  if (gp && gp.guidePrice > 0) {
+    createForm.value.startPrice = gp.guidePrice
+  }
 }
 
 // 从租赁管理"跳招商发布"过来时：自动打开发起招租对话框，尝试按资产名预选
@@ -789,16 +805,6 @@ function handleCloseBid(row) {
   }).catch(() => {})
 }
 
-function nextContractId() {
-  const prefix = `HT-${new Date().getFullYear()}-`
-  const max = contractStore.contracts.reduce((m, c) => {
-    if (!String(c.id).startsWith(prefix)) return m
-    const n = Number(String(c.id).slice(prefix.length))
-    return Number.isFinite(n) && n > m ? n : m
-  }, 0)
-  return `${prefix}${String(max + 1).padStart(3, '0')}`
-}
-
 function handleSignContract(row) {
   if (row.contractId) {
     ElMessage.info(`该结果已生成合同 ${row.contractId}，请前往合同管理查看`)
@@ -826,9 +832,7 @@ function handleSignContract(row) {
     '生成合同草稿',
     { confirmButtonText: '确认生成', cancelButtonText: '取消', type: 'info' }
   ).then(() => {
-    const newId = nextContractId()
-    contractStore.contracts.push({
-      id: newId,
+    const newContract = contractStore.signContract({
       assetId: asset.id,
       assetName: asset.name,
       tenant: row.winner,
@@ -844,15 +848,10 @@ function handleSignContract(row) {
       overdueDays: 0,
       source: `招租${row.resultNo}`
     })
-    const summary = contractStore.getLeaseSummary(asset)
-    // 直接改 assets 里的对象是无效的（那是 computed 每次新建的临时对象），必须走统一写入口回写
-    assetStore.updateAsset(asset.id,
-      { status: summary.availableArea > 0 ? '部分出租' : '已出租' },
-      { module: '招商租赁', action: '招租成交联动', billNo: newId, remark: `招租结果 ${row.resultNo} 签约后回写出租状态` })
     row.status = '已签约'
-    row.contractId = newId
+    row.contractId = newContract.id
     leaseStore.markResultDealt(row)
-    ElMessage.success(`合同 ${newId} 已生成，请前往合同管理完成电子签章`)
+    ElMessage.success(`合同 ${newContract.id} 已生成，请前往合同管理完成电子签章`)
     router.push('/ent/contract-approval')
   }).catch(() => {})
 }

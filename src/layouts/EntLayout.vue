@@ -84,7 +84,11 @@
         <el-sub-menu index="inspection-group">
           <template #title><el-icon><SetUp /></el-icon><span>巡检维修</span></template>
           <el-menu-item index="/ent/inspection-plan">巡查计划</el-menu-item>
-          <el-menu-item index="/ent/inspection-records">巡查记录</el-menu-item>
+          <el-menu-item index="/ent/inspection-records">资产巡查</el-menu-item>
+          <el-menu-item index="/ent/project-inspection">项目巡查</el-menu-item>
+          <el-menu-item index="/ent/repair-request">资产报修</el-menu-item>
+          <el-menu-item index="/ent/repair-mgmt">维修管理</el-menu-item>
+          <el-menu-item index="/ent/work-order">工单跟踪</el-menu-item>
         </el-sub-menu>
 
         <!-- 资产地图 -->
@@ -174,7 +178,7 @@
       <TagsView home="/ent/home" />
 
       <el-main class="main-content">
-        <router-view />
+        <router-view :key="route.fullPath" />
       </el-main>
     </el-container>
   </el-container>

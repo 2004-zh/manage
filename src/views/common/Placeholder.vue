@@ -23,7 +23,6 @@ const moduleMap = {
   'valuation': { name: '资产评估', desc: '评估记录、评估价值登记与更新' },
   'inventory': { name: '资产盘点', desc: '盘点计划与盘点结果记录' },
   'invoice': { name: '数电发票/缴费', desc: '电子发票、多渠道缴费、开票记录' },
-  'repair': { name: '巡检/报修', desc: '报事报修、安全巡检、维修整改、处理流转' },
   'finance': { name: '业财一体', desc: '资产生命周期台账、台账与核算、收支数据同步' },
   'log': { name: '操作日志', desc: '关键操作留痕，协同工作、权限清晰、责任挂钩' }
 }

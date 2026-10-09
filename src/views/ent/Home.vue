@@ -314,23 +314,23 @@ const quickActions = [
   { label: '合同管理', icon: Document, bg: '#13c2c2', path: '/ent/contract-approval' },
   { label: '收费管理', icon: Wallet, bg: '#2F54EB', path: '/ent/collection-hall' },
   { label: '催缴提醒', icon: Bell, bg: '#D93026', path: '/ent/urge-rent' },
-  { label: '巡检维修', icon: SetUp, bg: '#2f54eb', path: '/ent/inspection-plan' }
+  { label: '巡检维修', icon: SetUp, bg: '#2f54eb', path: '/ent/inspection-records' }
 ]
 
 const quickEntries = [
   { label: '资产登记', icon: EditPen, bg: '#1668DC', path: '/ent/asset-register' },
-  { label: '资产管控', icon: Key, bg: '#2f54eb', path: '/ent/asset-register' },
+  { label: '资产管控', icon: Key, bg: '#2f54eb', path: '/ent/asset-control' },
   { label: '台账列表', icon: List, bg: '#13c2c2', path: '/ent/ledger-list' },
   { label: '产权信息', icon: House, bg: '#722ed1', path: '/ent/property-rights' },
-  { label: '证件信息', icon: Postcard, bg: '#E8912A', path: '/ent/property-rights' },
-  { label: '评估信息', icon: DataAnalysis, bg: '#18A058', path: '/ent/report-asset-stats' },
+  { label: '证件信息', icon: Postcard, bg: '#E8912A', path: '/ent/credential-info' },
+  { label: '评估信息', icon: DataAnalysis, bg: '#18A058', path: '/ent/evaluation-info' },
   { label: '资债权证', icon: Stamp, bg: '#2F54EB', path: '/ent/property-rights' },
   { label: '资产报表', icon: TrendCharts, bg: '#1668DC', path: '/ent/report-asset-stats' },
   { label: '固资看板', icon: DataBoard, bg: '#D93026', path: '/ent/fixed-assets' },
   { label: '资产清单', icon: Document, bg: '#E8912A', path: '/ent/ledger-list' },
   { label: '合同审批', icon: DocumentChecked, bg: '#18A058', path: '/ent/contract-approval' },
   { label: '收费大厅', icon: Wallet, bg: '#722ed1', path: '/ent/collection-hall' },
-  { label: '发票管理', icon: Tickets, bg: '#13c2c2', path: '/ent/business-finance' },
+  { label: '发票管理', icon: Tickets, bg: '#13c2c2', path: '/ent/invoice-management' },
   { label: '预警配置', icon: AlarmClock, bg: '#2f54eb', path: '/ent/warning-tasks' }
 ]
 
@@ -351,7 +351,7 @@ const appSections = [
       { label: '资产运营', desc: '租赁运营', icon: OfficeBuilding, bg: '#13c2c2', path: '/ent/lease-mgmt' },
       { label: '合同管理', desc: '合同审批', icon: Document, bg: '#2f54eb', path: '/ent/contract-approval' },
       { label: '收费管理', desc: '费用收缴', icon: Wallet, bg: '#2F54EB', path: '/ent/collection-hall' },
-      { label: '发票管理', desc: '开票记录', icon: Ticket, bg: '#E8912A', path: '/ent/business-finance' },
+      { label: '发票管理', desc: '开票记录', icon: Ticket, bg: '#E8912A', path: '/ent/invoice-management' },
       { label: '履约催缴', desc: '欠费催缴', icon: Bell, bg: '#D93026', path: '/ent/urge-rent' },
       { label: '资产地图', desc: '分布一张图', icon: MapLocation, bg: '#18A058', path: '/ent/map' },
       { label: '资产报表', desc: '统计分析', icon: TrendCharts, bg: '#722ed1', path: '/ent/report-asset-stats' },
@@ -405,10 +405,10 @@ const todoItems = [
 const monthTasks = [
   { type: '盘点任务', tagType: 'warning', docNo: 'PD-2026-0912', title: '三季度固定资产盘点', date: '09-20', month: 9, path: '/ent/fixed-assets' },
   { type: '固定资产', tagType: 'primary', docNo: 'GZ-2026-0345', title: '办公设备报废审批', date: '09-22', month: 9, path: '/ent/fixed-assets' },
-  { type: '报事报修', tagType: 'danger', docNo: 'BX-2026-1187', title: '3号楼电梯故障维修', date: '09-25', month: 9, path: '/ent/inspection-plan' },
+  { type: '报事报修', tagType: 'danger', docNo: 'BX-2026-1187', title: '3号楼电梯故障维修', date: '09-25', month: 9, path: '/ent/repair-request' },
   { type: '固定资产', tagType: 'primary', docNo: 'GZ-2026-0388', title: '公务车辆调拨登记', date: '09-30', month: 9, path: '/ent/fixed-assets' },
   { type: '盘点任务', tagType: 'warning', docNo: 'PD-2026-1002', title: '无形资产年度盘点', date: '10-15', month: 10, path: '/ent/asset-register' },
-  { type: '报事报修', tagType: 'danger', docNo: 'BX-2026-1201', title: '农贸市场水管漏水', date: '10-30', month: 10, path: '/ent/inspection-plan' },
+  { type: '报事报修', tagType: 'danger', docNo: 'BX-2026-1201', title: '农贸市场水管漏水', date: '10-30', month: 10, path: '/ent/repair-request' },
   { type: '固定资产', tagType: 'primary', docNo: 'GZ-2026-0401', title: '固定资产卡片变更', date: '11-08', month: 11, path: '/ent/ledger-list' }
 ]
 

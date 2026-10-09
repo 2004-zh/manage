@@ -47,7 +47,7 @@
           <el-tag :type="typeTagColor(row.type)" size="small">{{ row.type }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="group" label="集团" width="100" />
+      <el-table-column prop="group" label="集团" min-width="100" />
       <el-table-column prop="asset" label="资产" width="200" />
       <el-table-column prop="desc" label="预警说明" min-width="240" show-overflow-tooltip />
       <el-table-column label="操作" width="120" align="center">

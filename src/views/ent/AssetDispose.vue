@@ -459,10 +459,12 @@ import { Refresh, Filter, Plus, MoreFilled } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useUserStore } from '../../store/user'
 import { useControlStore } from '../../store/control'
+import { useDisposeStore } from '../../store/dispose'
 
 const assetStore = useAssetStore()
 const userStore = useUserStore()
 const controlStore = useControlStore()
+const disposeStore = useDisposeStore()
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
 
 function assertDisposalAllowed(assetId) {
@@ -500,129 +502,21 @@ const createForm = ref({
   assetId: '', method: '出售', disposeValue: 0, reason: '', remark: '', assessor: ''
 })
 
-// 处置候选直接取台账资产，企业端天然只有本公司名下资产
 const assetOptions = computed(() =>
   assetStore.visibleAssets
-    .filter(a => a.status !== '已处置')
+    .filter(a => a.status !== '已处置' && a.status !== '已报废')
     .map(a => ({ id: a.id, name: a.name, bookValue: Math.round(a.bookValue || 0) }))
 )
-
-function getApprovalLevels(value) {
-  if (value >= 500) return { total: 4, levels: ['部门经理', '分管领导', '总经理', '国资中心备案'] }
-  if (value >= 200) return { total: 3, levels: ['部门经理', '分管领导', '总经理'] }
-  if (value >= 50) return { total: 2, levels: ['部门经理', '分管领导'] }
-  return { total: 1, levels: ['部门经理'] }
-}
 
 const approvalLevelHint = computed(() => {
   const val = createForm.value.disposeValue
   if (!val || val <= 0) return '请填写处置金额以查看审批级别'
-  const { total, levels } = getApprovalLevels(val)
+  const { total, levels } = disposeStore.getApprovalLevels(val)
   return `根据处置金额 ${val} 万元，需经过 ${total} 级审批：${levels.join(' → ')}`
 })
 
-function buildApprovalSteps(value) {
-  const { total, levels } = getApprovalLevels(value)
-  const approvers = ['王建国（部门经理）', '陈志明（分管领导）', '刘大伟（总经理）', '国资中心']
-  return levels.map((name, idx) => ({
-    levelName: `${name}审批`,
-    approver: idx < total ? approvers[idx] : '',
-    date: '',
-    result: '',
-    isActive: idx === 0
-  }))
-}
+const records = computed(() => disposeStore.records)
 
-const records = ref([
-  {
-    id: 1, disposeNo: 'CZ-2026-001', assetName: '旧办公楼设备', method: '报废', bookValue: 25, disposeValue: 5,
-    applicant: '张三', applyDate: '2026-03-20', status: '已完成', reason: '设备老化无法使用', remark: '',
-    projectType: '资产产权', company: '城投集团', disposeDate: '2026-03-25', disposePerson: '张三',
-    createdAt: '2026-03-20 09:10', updatedAt: '2026-03-25 16:00', disposeStatus: '完成',
-    assets: [
-      { assetNo: 'CT-101', assetName: '旧办公楼中央空调机组', disposeType: '报废', amount: 3 },
-      { assetNo: 'CT-102', assetName: '旧办公楼电梯设备', disposeType: '报废', amount: 2 }
-    ],
-    approvalLevel: 1, totalLevels: 1,
-    approvalSteps: [{ levelName: '部门经理审批', approver: '王建国（部门经理）', date: '2026-03-21', result: '通过', isActive: false }],
-    approvalLogs: [{ levelName: '部门经理审批', approver: '王建国', date: '2026-03-21 09:30', result: '通过', comment: '设备确实已无法使用，同意报废' }]
-  },
-  {
-    id: 2, disposeNo: 'CZ-2026-002', assetName: '城关旧厂房1#', method: '出售', bookValue: 280, disposeValue: 320,
-    applicant: '李四', applyDate: '2026-03-15', status: '已通过', reason: '闲置资产盘活', remark: '已通过公开竞价出售',
-    projectType: '资产产权', company: '城投集团', disposeDate: '2026-03-28', disposePerson: '李四',
-    createdAt: '2026-03-15 10:20', updatedAt: '2026-03-28 11:30', disposeStatus: '完成',
-    assets: [
-      { assetNo: 'CT-001', assetName: '城关旧厂房1#主体', disposeType: '出售', amount: 280 },
-      { assetNo: 'CT-002', assetName: '城关旧厂房1#附属仓库', disposeType: '出售', amount: 40 }
-    ],
-    approvalLevel: 3, totalLevels: 3,
-    approvalSteps: [
-      { levelName: '部门经理审批', approver: '王建国（部门经理）', date: '2026-03-16', result: '通过', isActive: false },
-      { levelName: '分管领导审批', approver: '陈志明（分管领导）', date: '2026-03-17', result: '通过', isActive: false },
-      { levelName: '总经理审批', approver: '刘大伟（总经理）', date: '2026-03-18', result: '通过', isActive: false },
-    ],
-    approvalLogs: [
-      { levelName: '部门经理审批', approver: '王建国', date: '2026-03-16 10:00', result: '通过', comment: '同意出售，建议公开竞价' },
-      { levelName: '分管领导审批', approver: '陈志明', date: '2026-03-17 14:20', result: '通过', comment: '金额合理，同意' },
-      { levelName: '总经理审批', approver: '刘大伟', date: '2026-03-18 09:15', result: '通过', comment: '批准出售，请做好资产评估' },
-    ]
-  },
-  {
-    id: 3, disposeNo: 'CZ-2026-003', assetName: '运输车辆', method: '转让', bookValue: 45, disposeValue: 38,
-    applicant: '张三', applyDate: '2026-03-10', status: '待审批', reason: '车辆更新换代', remark: '',
-    projectType: '分区产权', company: '产投集团', disposeDate: '2026-03-30', disposePerson: '王五',
-    createdAt: '2026-03-10 08:45', updatedAt: '2026-03-10 08:45', disposeStatus: '进行中',
-    assets: [
-      { assetNo: 'CT-061', assetName: '货运车辆闽A·D1234', disposeType: '转让', amount: 25 },
-      { assetNo: 'CT-062', assetName: '商务车辆闽A·D5678', disposeType: '转让', amount: 13 }
-    ],
-    approvalLevel: 1, totalLevels: 2,
-    approvalSteps: [
-      { levelName: '部门经理审批', approver: '王建国（部门经理）', date: '', result: '', isActive: true },
-      { levelName: '分管领导审批', approver: '陈志明（分管领导）', date: '', result: '', isActive: false },
-    ],
-    approvalLogs: []
-  },
-  {
-    id: 4, disposeNo: 'CZ-2026-004', assetName: '旧空调设备', method: '报废', bookValue: 12, disposeValue: 2,
-    applicant: '李四', applyDate: '2026-03-05', status: '已驳回', reason: '达到使用年限', remark: '需提供技术鉴定报告',
-    projectType: '资产产权', company: '水投集团', disposeDate: '2026-03-15', disposePerson: '李四',
-    createdAt: '2026-03-05 15:00', updatedAt: '2026-03-06 11:00', disposeStatus: '取消',
-    assets: [
-      { assetNo: 'CT-071', assetName: '旧空调设备一批', disposeType: '报废', amount: 2 }
-    ],
-    approvalLevel: 1, totalLevels: 1,
-    approvalSteps: [
-      { levelName: '部门经理审批', approver: '王建国（部门经理）', date: '2026-03-06', result: '驳回', isActive: false },
-    ],
-    approvalLogs: [
-      { levelName: '部门经理审批', approver: '王建国', date: '2026-03-06 11:00', result: '驳回', comment: '请提供技术鉴定报告后再申请' },
-    ]
-  },
-  {
-    id: 5, disposeNo: 'CZ-2026-005', assetName: '江田农贸市场2#', method: '出售', bookValue: 560, disposeValue: 680,
-    applicant: '王五', applyDate: '2026-04-01', status: '待审批', reason: '市场经营不善，整体出售', remark: '已委托评估机构评估',
-    projectType: '分区产权', company: '领航公司', disposeDate: '2026-04-30', disposePerson: '赵六',
-    createdAt: '2026-04-01 09:30', updatedAt: '2026-04-02 09:00', disposeStatus: '进行中',
-    assets: [
-      { assetNo: 'CT-055', assetName: '江田农贸市场2#主体', disposeType: '出售', amount: 600 },
-      { assetNo: 'CT-056', assetName: '江田农贸市场2#停车场', disposeType: '出售', amount: 80 }
-    ],
-    approvalLevel: 2, totalLevels: 4,
-    approvalSteps: [
-      { levelName: '部门经理审批', approver: '王建国（部门经理）', date: '2026-04-02', result: '通过', isActive: false },
-      { levelName: '分管领导审批', approver: '陈志明（分管领导）', date: '', result: '', isActive: true },
-      { levelName: '总经理审批', approver: '刘大伟（总经理）', date: '', result: '', isActive: false },
-      { levelName: '国资中心备案', approver: '国资中心', date: '', result: '', isActive: false },
-    ],
-    approvalLogs: [
-      { levelName: '部门经理审批', approver: '王建国', date: '2026-04-02 09:00', result: '通过', comment: '同意出售，金额较大，请逐级审批' },
-    ]
-  },
-])
-
-// 处置记录按登录公司隔离；新增/审批仍写回原始 records
 const myRecords = computed(() => userStore.isEnt ? records.value.filter(r => r.company === currentCompany.value) : records.value)
 
 const totalValue = computed(() => myRecords.value.reduce((sum, r) => sum + (r.disposeValue || 0), 0))
@@ -687,7 +581,6 @@ function handleRefresh() {
   ElMessage.success('列表已刷新')
 }
 
-// 待审批
 const pendingApprovals = computed(() => {
   return myRecords.value.filter(r => r.status === '待审批' && r.approvalSteps.some(s => s.isActive))
 })
@@ -699,7 +592,6 @@ const pagedPendingApprovals = computed(() => {
   return pendingApprovals.value.slice(start, start + pendingPageSize.value)
 })
 
-// 审批操作
 const showApproveDialog = ref(false)
 const approveRow = ref(null)
 const approveAction = ref('approve')
@@ -725,50 +617,21 @@ function submitApproval() {
     return
   }
   const row = approveRow.value
-  const activeStep = row.approvalSteps.find(s => s.isActive)
-  const now = new Date().toLocaleString('zh-CN')
-
   if (approveAction.value === 'approve') {
-    activeStep.result = '通过'
-    activeStep.date = now.slice(0, 10)
-    activeStep.isActive = false
-    row.approvalLogs.push({
-      levelName: activeStep.levelName,
-      approver: activeStep.approver.split('（')[0],
-      date: now,
-      result: '通过',
-      comment: approveComment.value
-    })
-
-    const nextStep = row.approvalSteps.find(s => !s.result && s !== activeStep)
-    if (nextStep) {
-      nextStep.isActive = true
-      row.approvalLevel++
-      ElMessage.success('审批通过，已流转至下一级审批人')
-    } else {
-      row.status = '已通过'
+    disposeStore.approveRecord(row.id, approveComment.value)
+    const updated = records.value.find(r => r.id === row.id)
+    if (updated && updated.status === '已通过') {
       ElMessage.success('所有审批级别已通过')
+    } else {
+      ElMessage.success('审批通过，已流转至下一级审批人')
     }
   } else {
-    activeStep.result = '驳回'
-    activeStep.date = now.slice(0, 10)
-    activeStep.isActive = false
-    row.status = '已驳回'
-    row.approvalLogs.push({
-      levelName: activeStep.levelName,
-      approver: activeStep.approver.split('（')[0],
-      date: now,
-      result: '驳回',
-      comment: approveComment.value
-    })
+    disposeStore.rejectRecord(row.id, approveComment.value)
     ElMessage.warning('已驳回')
   }
-
-  row.updatedAt = now
   showApproveDialog.value = false
 }
 
-// 审批记录
 const approvalHistory = computed(() => {
   const all = []
   records.value.forEach(r => {
@@ -792,7 +655,6 @@ const pagedHistory = computed(() => {
   return approvalHistory.value.slice(start, start + historyPageSize.value)
 })
 
-// 新增
 function handleCreate() {
   if (!createForm.value.assetId || !createForm.value.reason) {
     ElMessage.warning('请填写完整信息')
@@ -800,41 +662,22 @@ function handleCreate() {
   }
   if (!assertDisposalAllowed(createForm.value.assetId)) return
   const asset = assetOptions.value.find(a => a.id === createForm.value.assetId)
-  const { total } = getApprovalLevels(createForm.value.disposeValue)
-  const steps = buildApprovalSteps(createForm.value.disposeValue)
-  const now = new Date().toLocaleString('zh-CN')
-
-  records.value.unshift({
-    id: records.value.length + 1,
-    disposeNo: `CZ-${new Date().getFullYear()}-${String(records.value.length + 1).padStart(3, '0')}`,
+  disposeStore.addRecord({
     assetName: asset ? asset.name : createForm.value.assetId,
     method: createForm.value.method,
     bookValue: asset ? asset.bookValue : 0,
     disposeValue: createForm.value.disposeValue,
-    applicant: '当前用户',
-    applyDate: new Date().toISOString().slice(0, 10),
-    status: '待审批',
     reason: createForm.value.reason,
     remark: createForm.value.remark,
-    projectType: '资产产权',
     company: currentCompany.value,
-    disposeDate: new Date().toISOString().slice(0, 10),
-    disposePerson: '当前用户',
-    createdAt: now,
-    updatedAt: now,
-    disposeStatus: '进行中',
-    assets: [{ assetNo: asset ? asset.id : createForm.value.assetId, assetName: asset ? asset.name : createForm.value.assetId, disposeType: createForm.value.method, amount: createForm.value.disposeValue }],
-    approvalLevel: 1,
-    totalLevels: total,
-    approvalSteps: steps,
-    approvalLogs: []
+    assetIds: [createForm.value.assetId],
+    assets: [{ assetNo: createForm.value.assetId, assetName: asset ? asset.name : createForm.value.assetId, disposeType: createForm.value.method, amount: createForm.value.disposeValue }]
   })
   showCreate.value = false
   createForm.value = { assetId: '', method: '出售', disposeValue: 0, reason: '', remark: '', assessor: '' }
   ElMessage.success('处置申请已提交，进入审批流程')
 }
 
-// 保存处置记录
 const disposeSaveVisible = ref(false)
 const disposeEditRow = ref(null)
 
@@ -869,19 +712,16 @@ function submitDisposeSave() {
     ElMessage.warning('请填写完整信息')
     return
   }
-  if (!disposeEditRow.value && !assertDisposalAllowed(f.assetId)) return
-  const now = new Date().toLocaleString('zh-CN')
   const asset = assetOptions.value.find(a => a.id === f.assetId)
   if (disposeEditRow.value) {
-    Object.assign(disposeEditRow.value, {
+    disposeStore.updateRecord(disposeEditRow.value.id, {
       company: f.company,
       projectType: f.projectType,
       method: f.method,
       disposePerson: f.disposePerson,
       disposeValue: f.disposeValue,
       disposeDate: f.disposeDate,
-      remark: f.remark,
-      updatedAt: now
+      remark: f.remark
     })
     if (disposeEditRow.value.assets && disposeEditRow.value.assets[0]) {
       disposeEditRow.value.assets[0].disposeType = f.method
@@ -889,31 +729,20 @@ function submitDisposeSave() {
     }
     ElMessage.success('处置记录已更新')
   } else {
-    const { total } = getApprovalLevels(f.disposeValue)
-    records.value.unshift({
-      id: Date.now(),
-      disposeNo: `CZ-${new Date().getFullYear()}-${String(records.value.length + 1).padStart(3, '0')}`,
+    if (!assertDisposalAllowed(f.assetId)) return
+    disposeStore.addRecord({
       assetName: asset ? asset.name : f.assetId,
       method: f.method,
       bookValue: asset ? asset.bookValue : 0,
       disposeValue: f.disposeValue,
-      applicant: '当前用户',
-      applyDate: new Date().toISOString().slice(0, 10),
-      status: '待审批',
       reason: '处置登记',
       remark: f.remark,
       projectType: f.projectType,
       company: f.company,
       disposeDate: f.disposeDate,
       disposePerson: f.disposePerson,
-      createdAt: now,
-      updatedAt: now,
-      disposeStatus: '进行中',
-      assets: [{ assetNo: f.assetId, assetName: asset ? asset.name : f.assetId, disposeType: f.method, amount: f.disposeValue }],
-      approvalLevel: 1,
-      totalLevels: total,
-      approvalSteps: buildApprovalSteps(f.disposeValue),
-      approvalLogs: []
+      assetIds: [f.assetId],
+      assets: [{ assetNo: f.assetId, assetName: asset ? asset.name : f.assetId, disposeType: f.method, amount: f.disposeValue }]
     })
     ElMessage.success('处置记录保存成功')
   }
@@ -924,17 +753,14 @@ function handleRowCommand(cmd, row) {
   if (cmd === 'flow') {
     viewApprovalFlow(row)
   } else if (cmd === 'cancel') {
-    row.disposeStatus = '取消'
-    row.updatedAt = new Date().toLocaleString('zh-CN')
+    disposeStore.cancelDispose(row.id)
     ElMessage.warning(`处置记录 ${row.disposeNo} 已取消`)
   } else if (cmd === 'finish') {
-    row.disposeStatus = '完成'
-    row.updatedAt = new Date().toLocaleString('zh-CN')
-    ElMessage.success(`处置记录 ${row.disposeNo} 已标记完成`)
+    disposeStore.completeDispose(row.id)
+    ElMessage.success(`处置记录 ${row.disposeNo} 已完成，资产状态已更新`)
   } else if (cmd === 'delete') {
     ElMessageBox.confirm(`确认删除处置记录"${row.disposeNo}"？`, '提示', { type: 'warning' }).then(() => {
-      const idx = records.value.findIndex(r => r.id === row.id)
-      if (idx !== -1) records.value.splice(idx, 1)
+      disposeStore.removeRecord(row.id)
       ElMessage.success('删除成功')
     }).catch(() => {})
   }

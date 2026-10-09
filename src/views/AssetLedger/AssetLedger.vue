@@ -676,7 +676,7 @@
     <!-- 减免记录对话框 -->
     <el-dialog v-model="reductionDialogVisible" :title="'减免记录 - ' + (currentAsset.name || '')" width="640px">
       <el-table :data="reductionRecords" style="width: 100%">
-        <el-table-column prop="period" label="减免期间" width="140" />
+        <el-table-column prop="period" label="减免期间" min-width="140" />
         <el-table-column prop="type" label="减免类型" width="120" />
         <el-table-column prop="amount" label="减免金额(元)" width="130">
           <template #default="{ row }">¥{{ row.amount.toLocaleString() }}</template>
@@ -946,13 +946,17 @@ const handleLifecycle = (row) => {
 }
 
 const handleDelete = (row) => {
-  ElMessageBox.confirm(`确定要删除资产"${row.name}"吗？`, '提示', {
+  ElMessageBox.confirm(`确定要删除资产"${row.name}"吗？删除后关联的合同、抵押、权证等记录也将一并清除。`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    assetStore.deleteAsset(row.id)
-    ElMessage.success('删除成功')
+    const ok = assetStore.deleteAsset(row.id)
+    if (ok) {
+      ElMessage.success('删除成功')
+    } else {
+      ElMessage.warning('该资产存在活跃合同（在租/未终止），请先终止合同后再删除')
+    }
   }).catch(() => {})
 }
 

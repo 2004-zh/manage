@@ -138,7 +138,7 @@
             <template #default="{ row }">
               <el-button type="primary" link @click="$router.push(`/ent/contract/${row.id}`)">详情</el-button>
               <el-button v-if="!row.electronic" type="warning" link @click="startSign(row)">签章</el-button>
-              <el-button v-if="row.status === '正常'" type="success" link @click="handleArchive(row)">归档</el-button>
+              <el-button v-if="row.status === '正常' && !isArchived(row.id)" type="success" link @click="handleArchive(row)">归档</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -2008,7 +2008,15 @@ const filteredArchives = computed(() => {
   })
 })
 
+function isArchived(contractId) {
+  return archiveList.value.some(a => a.id === contractId)
+}
+
 function handleArchive(row) {
+  if (isArchived(row.id)) {
+    ElMessage.warning('该合同已归档，不可重复归档')
+    return
+  }
   ElMessageBox.confirm(`确认将合同"${row.id}"归档？归档后合同状态不变，但将纳入归档管理。`, '合同归档', { type: 'info' }).then(() => {
     archiveList.value.unshift({
       id: row.id,

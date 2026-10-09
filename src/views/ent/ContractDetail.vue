@@ -30,7 +30,7 @@
         <el-card style="margin-top: 16px">
           <template #header>缴费计划</template>
           <el-table :data="paymentPlan" border size="small">
-            <el-table-column prop="period" label="期间" width="160" />
+            <el-table-column prop="period" label="期间" min-width="160" />
             <el-table-column prop="amount" label="应缴金额(万元)" width="130" align="right" />
             <el-table-column prop="actual" label="实缴金额(万元)" width="130" align="right" />
             <el-table-column prop="status" label="状态" width="80">

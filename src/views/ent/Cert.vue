@@ -53,7 +53,7 @@
       <el-table-column prop="progress" label="办证进度" min-width="200" show-overflow-tooltip />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button v-if="row.certStatus.includes('未启动')" type="warning" link size="small" @click="startCert(row)">开始办理</el-button>
+          <el-button v-if="isCertNotStarted(row.certStatus)" type="warning" link size="small" @click="startCert(row)">开始办理</el-button>
           <el-button v-if="row.certStatus.includes('办理中')" type="success" link size="small" @click="completeCert(row)">完成办理</el-button>
           <el-button v-if="row.certStatus.includes('办理中')" type="info" link size="small" @click="revertCert(row)">退回未启动</el-button>
         </template>
@@ -349,7 +349,7 @@ const certStats = computed(() => {
   return {
     certified: all.filter(a => a.certStatus === '已办证').length,
     processing: all.filter(a => a.certStatus.includes('办理中')).length,
-    notStarted: all.filter(a => a.certStatus.includes('未启动')).length
+    notStarted: all.filter(a => isCertNotStarted(a.certStatus)).length
   }
 })
 
@@ -371,10 +371,14 @@ const filteredRecords = computed(() => {
     if (!filterStatus.value) return true
     if (filterStatus.value === '已办证') return r.certStatus.includes('已办证')
     if (filterStatus.value === '办理中') return r.certStatus.includes('办理中')
-    if (filterStatus.value === '未启动') return r.certStatus.includes('未启动')
+    if (filterStatus.value === '未启动') return isCertNotStarted(r.certStatus)
     return true
   })
 })
+
+function isCertNotStarted(status) {
+  return !status.includes('已办证') && !status.includes('办理中')
+}
 
 function certStatusTagType(status) {
   if (status.includes('已办证')) return 'success'
@@ -426,7 +430,7 @@ function confirmComplete() {
 }
 
 function batchStartCert() {
-  const targets = certSelection.value.filter(r => r.certStatus.includes('未启动'))
+  const targets = certSelection.value.filter(r => isCertNotStarted(r.certStatus))
   if (!targets.length) { ElMessage.warning('所选资产均非"未启动"状态'); return }
   ElMessageBox.confirm(`确认将 ${targets.length} 项资产开始办理？`, '批量开始办理', { type: 'info' }).then(() => {
     targets.forEach(r => assetStore.updateAsset(r.assetId, { certStatus: '未办证（办理中）' }))
