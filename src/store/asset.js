@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { chengtouAssets as initialAssets, SEED_IMPORT_TS } from '../data/mock'
 import { resolveAssetCategory } from '../data/assetCategory'
+import { PROJECT_COORDS, resolveTown } from '../data/locations'
 import { useProjectStore } from './project'
 import { useAuditStore } from './audit'
 import { useUserStore } from './user'
@@ -16,6 +17,8 @@ import { useWarningStore } from './warning'
 
 function roomToAsset(r, b, p, f) {
   const unitPrice = b.type.includes('住宅') ? 0.8 : b.type.includes('商业') || b.type.includes('办公') ? 1.2 : 1.0
+  const coords = (b.lng && b.lat) ? { lng: b.lng, lat: b.lat } : PROJECT_COORDS[b.id]
+  const townInfo = coords ? resolveTown(coords.lng, coords.lat) : { town: '', townCode: '' }
   return {
     id: r.id,
     name: r.name,
@@ -25,6 +28,10 @@ function roomToAsset(r, b, p, f) {
     area: r.area,
     bookValue: Math.round(r.area * unitPrice * 100) / 100,
     location: `${b.address} ${p.name} ${f.name}`,
+    lng: coords?.lng ?? null,
+    lat: coords?.lat ?? null,
+    town: townInfo.town,
+    townCode: townInfo.townCode,
     status: r.status,
     certStatus: r.certStatus || (r.hasPropertyRight ? '已办证' : '未办证（未启动）'),
     certDetail: r.hasPropertyRight ? `闽(2023)长乐区不动产权第${r.id.replace(/\D/g, '').padStart(7, '0')}号` : '',
@@ -450,6 +457,7 @@ export const useAssetStore = defineStore('asset', () => {
     unattachedAssets,
     attachToProject,
     detachFromProject,
+    isBaseAsset,
     certRecords,
     getAssetsByCompany,
     addAsset,

@@ -5,7 +5,7 @@
     </div>
     <el-card shadow="never" class="filter-card">
       <el-form inline>
-        <el-form-item label="公司">
+        <el-form-item v-if="companies.length > 1" label="公司">
           <el-input v-model="query.company" placeholder="公司" clearable style="width: 180px" />
         </el-form-item>
         <el-form-item label="预警等级">

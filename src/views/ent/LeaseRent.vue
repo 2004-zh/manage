@@ -633,6 +633,7 @@ const registerSearch = ref({ assetName: '', registrant: '' })
 
 const idleAssetOptions = computed(() =>
   assetStore.visibleAssets
+    .filter(a => a.mortgageStatus !== '已抵押')
     .map(a => ({ id: a.id, name: a.name, status: a.status, totalArea: a.area, area: contractStore.getLeaseSummary(a).availableArea }))
     .filter(a => a.area > 0 && a.status !== '自用')
 )
@@ -896,7 +897,7 @@ const releaseStats = computed(() => {
   }
 })
 
-const releaseAssetOptions = computed(() => assetStore.visibleAssets.filter(a => a.status !== '已出租'))
+const releaseAssetOptions = computed(() => assetStore.visibleAssets.filter(a => a.status !== '已出租' && a.mortgageStatus !== '已抵押'))
 
 const releaseFormVisible = ref(false)
 const releaseEditIndex = ref(-1)

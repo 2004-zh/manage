@@ -552,7 +552,7 @@ const evalInfoRecords = ref([
   },
   {
     id: 'PGX-008', projectType: '资产产权', company: '长乐区城市投资建设集团有限公司', org: '福建××资产评估有限公司', validFrom: '2026-01-20', validTo: '2028-01-19', status: '正常', createTime: '2026-01-20 09:12', updateTime: '2026-01-20 09:12', leasePrice: '1.50 元/㎡/天', files: ['评估报告.pdf', '产权核对表.docx'],
-    asset: { region: '福建省福州市长乐区', projectName: '漳港海鲜市场项目', projectAddr: '长乐区漳港街道海滨路21号', zone: 'B区', assetName: '漳港海鲜批发市场', assetNo: 'CT-012', assetAddr: '漳港海鲜市场主体及摊位', leaseStatus: '已出租', status: '正常' }
+    asset: { region: '福建省福州市长乐区', projectName: '首占新区保障房项目', projectAddr: '长乐区首占新区保障房小区', zone: '1#楼', assetName: '首占新区保障房 1# 楼', assetNo: 'CT-004', assetAddr: '长乐区首占新区保障房小区1#楼', leaseStatus: '部分出租', status: '正常' }
   }
 ])
 

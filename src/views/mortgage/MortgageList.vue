@@ -31,7 +31,6 @@
           <div class="scope-tag">所属公司锁定为「{{ currentCompany }}」，仅显示本公司抵押</div>
         </el-col>
         <el-col :span="3">
-          <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
         </el-col>
       </el-row>
@@ -58,10 +57,11 @@
             <el-tag :type="getStatusType(row.status)" size="small">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="viewMortgage(row)">查看</el-button>
             <el-button type="primary" link size="small" @click="editMortgage(row)">编辑</el-button>
+            <el-button v-if="row.status === '抵押中'" type="success" link size="small" @click="releaseMortgage(row)">解押</el-button>
             <el-button type="danger" link size="small" @click="deleteMortgage(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -86,9 +86,10 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="所属公司" prop="company">
-              <el-select v-model="form.company" placeholder="请选择" style="width: 100%">
+              <el-select v-if="groups.length > 1" v-model="form.company" placeholder="请选择" style="width: 100%">
                 <el-option v-for="g in groups" :key="g" :label="g" :value="g" />
               </el-select>
+              <el-input v-else :model-value="currentCompany" disabled style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -233,10 +234,7 @@ const filteredMortgages = computed(() => {
 })
 
 const availableAssets = computed(() => {
-  if (filters.company) {
-    return assetStore.getAssetsByCompany(filters.company)
-  }
-  return assetStore.visibleAssets
+  return mortgageStore.availableAssetsForMortgage
 })
 
 const formVisible = ref(false)
@@ -294,7 +292,7 @@ function showMortgageForm() {
   editId.value = null
   Object.assign(form, {
     projectType: '',
-    company: '',
+    company: groups.value.length === 1 ? groups.value[0] : '',
     assetId: '',
     mortgagor: '',
     contractNo: '',
@@ -341,6 +339,19 @@ function deleteMortgage(row) {
     .catch(() => {})
 }
 
+function releaseMortgage(row) {
+  ElMessageBox.confirm(`确认对 ${row.assetName} 进行解押？解押后资产将恢复可操作状态。`, '解押确认', { type: 'warning' })
+    .then(() => {
+      try {
+        mortgageStore.releaseMortgage(row.id)
+        ElMessage.success('解押成功')
+      } catch (e) {
+        ElMessage.error(e.message || '解押失败')
+      }
+    })
+    .catch(() => {})
+}
+
 function submitForm() {
   formRef.value.validate(valid => {
     if (!valid) return
@@ -359,19 +370,19 @@ function submitForm() {
       status: form.status,
       attachments: form.attachments
     }
-    if (isEdit.value) {
-      mortgageStore.updateMortgage(editId.value, data)
-      ElMessage.success('更新成功')
-    } else {
-      mortgageStore.addMortgage(data)
-      ElMessage.success('新增成功')
+    try {
+      if (isEdit.value) {
+        mortgageStore.updateMortgage(editId.value, data)
+        ElMessage.success('更新成功')
+      } else {
+        mortgageStore.addMortgage(data)
+        ElMessage.success('新增成功')
+      }
+      formVisible.value = false
+    } catch (e) {
+      ElMessage.error(e.message || '操作失败')
     }
-    formVisible.value = false
   })
-}
-
-function handleSearch() {
-  page.value = 1
 }
 
 function resetFilters() {
@@ -383,7 +394,22 @@ function resetFilters() {
 }
 
 function handleExport() {
-  ElMessage.success('导出功能开发中')
+  const rows = filteredMortgages.value
+  if (!rows.length) {
+    ElMessage.warning('暂无数据可导出')
+    return
+  }
+  const header = ['抵押编号', '资产名称', '项目类型', '所属公司', '抵押公司/人', '抵押合同编号', '抵押金额 (万元)', '抵押银行', '抵押期限 (月)', '开始日期', '结束日期', '状态']
+  const csvRows = rows.map(r => [r.id, r.assetName, r.projectType, r.company, r.mortgagor, r.contractNo, r.amount, r.bank, r.period, r.startDate, r.endDate, r.status])
+  const csv = [header, ...csvRows].map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `抵押列表_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success(`已导出 ${rows.length} 条记录`)
 }
 </script>
 

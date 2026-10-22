@@ -460,11 +460,13 @@ import { useAssetStore } from '../../store/asset'
 import { useUserStore } from '../../store/user'
 import { useControlStore } from '../../store/control'
 import { useDisposeStore } from '../../store/dispose'
+import { useMortgageStore } from '../../store/mortgage'
 
 const assetStore = useAssetStore()
 const userStore = useUserStore()
 const controlStore = useControlStore()
 const disposeStore = useDisposeStore()
+const mortgageStore = useMortgageStore()
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
 
 function assertDisposalAllowed(assetId) {
@@ -504,7 +506,7 @@ const createForm = ref({
 
 const assetOptions = computed(() =>
   assetStore.visibleAssets
-    .filter(a => a.status !== '已处置' && a.status !== '已报废')
+    .filter(a => a.status !== '已处置' && a.status !== '已报废' && a.mortgageStatus !== '已抵押')
     .map(a => ({ id: a.id, name: a.name, bookValue: Math.round(a.bookValue || 0) }))
 )
 

@@ -53,8 +53,8 @@ export function getSummary(year) {
 const groupList = ['城投集团', '产投集团', '水投集团', '领航公司']
 
 const detailedAssets = [
-  { id: 'CT-001', name: '吴航街道商业街 A-01 商铺', location: '吴航街道', type: '商铺', status: '已出租', area: 320, bookValue: 1860, annualRent: 42, certStatus: '已办证', certDetail: '闽(2020)长乐区不动产权第0012345号', group: '城投集团', assetCategory: '房产类', propertyRight: '有不动产证', assetUsage: '商铺', sourceType: '自购', acquisitionMethod: '自购', createdAt: '2020-06-15 08:30:00', purchaseDate: '2018-03-15' },
-  { id: 'CT-002', name: '航城商务楼 3F', location: '航城街道', type: '写字楼', status: '已出租', area: 1200, bookValue: 5400, annualRent: 156, certStatus: '已办证', certDetail: '闽(2019)长乐区不动产权第0023456号', group: '产投集团', assetCategory: '房产类', propertyRight: '两证齐全', assetUsage: '写字楼', sourceType: '自购', acquisitionMethod: '自购' },
+  { id: 'CT-001', name: '吴航街道商业街 A-01 商铺', location: '吴航街道', type: '商铺', status: '已出租', area: 320, bookValue: 1860, annualRent: 42, certStatus: '已办证', certDetail: '闽(2020)长乐区不动产权第0012345号', group: '城投集团', assetCategory: '房产类', propertyRight: '有不动产证', assetUsage: '商铺', sourceType: '自购', acquisitionMethod: '自购', mortgageStatus: '已抵押', createdAt: '2020-06-15 08:30:00', purchaseDate: '2018-03-15' },
+  { id: 'CT-002', name: '航城商务楼 3F', location: '航城街道', type: '写字楼', status: '已出租', area: 1200, bookValue: 5400, annualRent: 156, certStatus: '已办证', certDetail: '闽(2019)长乐区不动产权第0023456号', group: '产投集团', assetCategory: '房产类', propertyRight: '两证齐全', assetUsage: '写字楼', sourceType: '自购', acquisitionMethod: '自购', mortgageStatus: '已抵押' },
   { id: 'CT-003', name: '营前标准厂房 2#', location: '营前街道', type: '厂房', status: '已出租', area: 3600, bookValue: 2180, annualRent: 78, certStatus: '已办证', certDetail: '闽(2018)长乐区不动产权第0034567号', group: '水投集团', assetCategory: '房产类', propertyRight: '有不动产证', assetUsage: '厂房', sourceType: '自建', acquisitionMethod: '自建' },
   { id: 'CT-004', name: '首占新区保障房 1# 楼', location: '首占新区', type: '保障房', status: '部分出租', area: 4800, bookValue: 6200, annualRent: 96, certStatus: '已办证', certDetail: '闽(2021)长乐区不动产权第0045678号', group: '领航公司', assetCategory: '房产类', propertyRight: '有证', assetUsage: '住宅', sourceType: '自建', acquisitionMethod: '自建' },
   { id: 'CT-005', name: '江田镇仓储用地', location: '江田镇', type: '仓储/土地', status: '闲置', area: 12000, bookValue: 3100, annualRent: null, certStatus: '未办证（办理中）', certDetail: '', group: '城投集团', assetCategory: '土地类', propertyRight: '无证', assetUsage: '仓储', sourceType: '划拨', acquisitionMethod: '划拨' },
@@ -227,9 +227,9 @@ export const auditHistorySeeds = [
   { seedKey: 'seed-1', time: '2023-05-01 09:20:00', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', group: '城投集团', module: '合同管理', action: '签订合同', field: '', fieldLabel: '', before: '—', after: 'HT-2023-018 福州××商业管理有限公司', billNo: 'HT-2023-018', remark: '历史签约补录', operator: '陈××', operatorOrg: '城投集团', endpoint: 'sys' },
   { seedKey: 'seed-2', time: '2023-04-12 10:05:00', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', group: '城投集团', module: '资产台账', action: '用途变更', field: '', fieldLabel: '', before: '空置', after: '商铺出租', billNo: '', remark: '历史用途调整补录', operator: '陈××', operatorOrg: '城投集团', endpoint: 'sys' },
   { seedKey: 'seed-3', time: '2023-04-10 08:30:00', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', group: '城投集团', module: '资产登记', action: '入库登记', field: '', fieldLabel: '', before: '—', after: '自购入库', billNo: '', remark: '历史入库补录', operator: '陈××', operatorOrg: '城投集团', endpoint: 'sys' },
-  { seedKey: 'seed-4', time: '2024-12-20 15:40:00', assetId: 'CT-002', assetName: '航城商务楼 3F', group: '城投集团', module: '资产登记', action: '入库登记', field: '', fieldLabel: '', before: '—', after: '自建入库', billNo: '', remark: '历史入库补录', operator: '林××', operatorOrg: '城投集团', endpoint: 'sys' },
-  { seedKey: 'seed-5', time: '2025-01-01 09:10:00', assetId: 'CT-002', assetName: '航城商务楼 3F', group: '城投集团', module: '合同管理', action: '签订合同', field: '', fieldLabel: '', before: '—', after: 'HT-2025-006 福建××科技有限公司', billNo: 'HT-2025-006', remark: '历史签约补录', operator: '林××', operatorOrg: '城投集团', endpoint: 'sys' },
-  { seedKey: 'seed-6', time: '2024-03-01 11:00:00', assetId: 'CT-003', assetName: '营前标准厂房 2#', group: '城投集团', module: '合同管理', action: '签订合同', field: '', fieldLabel: '', before: '—', after: 'HT-2024-007 长乐××物流有限公司', billNo: 'HT-2024-007', remark: '历史签约补录', operator: '王××', operatorOrg: '城投集团', endpoint: 'sys' }
+  { seedKey: 'seed-4', time: '2024-12-20 15:40:00', assetId: 'CT-002', assetName: '航城商务楼 3F', group: '产投集团', module: '资产登记', action: '入库登记', field: '', fieldLabel: '', before: '—', after: '自建入库', billNo: '', remark: '历史入库补录', operator: '林××', operatorOrg: '产投集团', endpoint: 'sys' },
+  { seedKey: 'seed-5', time: '2025-01-01 09:10:00', assetId: 'CT-002', assetName: '航城商务楼 3F', group: '产投集团', module: '合同管理', action: '签订合同', field: '', fieldLabel: '', before: '—', after: 'HT-2025-006 福建××科技有限公司', billNo: 'HT-2025-006', remark: '历史签约补录', operator: '林××', operatorOrg: '产投集团', endpoint: 'sys' },
+  { seedKey: 'seed-6', time: '2024-03-01 11:00:00', assetId: 'CT-003', assetName: '营前标准厂房 2#', group: '水投集团', module: '合同管理', action: '签订合同', field: '', fieldLabel: '', before: '—', after: 'HT-2024-007 长乐××物流有限公司', billNo: 'HT-2024-007', remark: '历史签约补录', operator: '王××', operatorOrg: '水投集团', endpoint: 'sys' }
 ]
 
 // ===== 预警数据（全区口径）=====
@@ -241,18 +241,18 @@ export const warnings = {
 }
 
 export const warningList = [
-  { id: 'W001', type: '欠费', group: '城投集团', asset: 'CT-001 商铺', desc: '欠缴 10.5 万元，逾期 45 天', days: 45, amount: 10.5 },
-  { id: 'W002', type: '欠费', group: '城投集团', asset: 'CT-017 写字楼', desc: '欠缴 8.2 万元，逾期 30 天', days: 30, amount: 8.2 },
-  { id: 'W003', type: '欠费', group: '城投集团', asset: 'CT-007 吴航农贸市场', desc: '欠缴 5.6 万元，逾期 22 天', days: 22, amount: 5.6 },
-  { id: 'W004', type: '闲置超期', group: '城投集团', asset: 'CT-006 玉田镇旧工业厂房', desc: '空置 420 天，超阈值 365 天', days: 420, amount: null },
-  { id: 'W005', type: '闲置超期', group: '城投集团', asset: 'CT-097 江田镇闲置用地', desc: '空置 380 天，超阈值 365 天', days: 380, amount: null },
+  { id: 'W001', type: '欠费', group: '城投集团', asset: 'CT-001 吴航街道商业街 A-01 商铺', desc: '欠缴 10.5 万元，逾期 45 天', days: 45, amount: 10.5 },
+  { id: 'W002', type: '欠费', group: '产投集团', asset: 'CT-002 航城商务楼 3F', desc: '欠缴 8.2 万元，逾期 30 天', days: 30, amount: 8.2 },
+  { id: 'W003', type: '欠费', group: '水投集团', asset: 'CT-007 吴航农贸市场', desc: '欠缴 5.6 万元，逾期 22 天', days: 22, amount: 5.6 },
+  { id: 'W004', type: '闲置超期', group: '产投集团', asset: 'CT-006 玉田镇旧工业厂房', desc: '空置 420 天，超阈值 365 天', days: 420, amount: null },
+  { id: 'W005', type: '闲置超期', group: '城投集团', asset: 'CT-005 江田镇仓储用地', desc: '空置 380 天，超阈值 365 天', days: 380, amount: null },
   { id: 'W006', type: '未办证', group: '城投集团', asset: 'CT-005 江田镇仓储用地', desc: '未办证，办理中', days: null, amount: null },
-  { id: 'W007', type: '未办证', group: '城投集团', asset: 'CT-006 玉田镇旧工业厂房', desc: '未办证，超 12 个月未启动', days: null, amount: null },
-  { id: 'W008', type: '合同临期', group: '城投集团', asset: 'CT-003 营前标准厂房 2#', desc: '合同 2026-09-30 到期', days: null, amount: null },
-  { id: 'W009', type: '欠费', group: '产投集团', asset: 'CT-010 商铺', desc: '欠缴 12.3 万元，逾期 60 天', days: 60, amount: 12.3 },
-  { id: 'W010', type: '闲置超期', group: '产投集团', asset: 'CT-098 玉田镇闲置厂房', desc: '空置 400 天，超阈值 365 天', days: 400, amount: null },
-  { id: 'W011', type: '欠费', group: '水投集团', asset: 'CT-017 写字楼', desc: '欠缴 6.8 万元，逾期 35 天', days: 35, amount: 6.8 },
-  { id: 'W012', type: '未办证', group: '领航公司', asset: 'CT-012 保障房', desc: '未办证，办理中', days: null, amount: null }
+  { id: 'W007', type: '未办证', group: '产投集团', asset: 'CT-006 玉田镇旧工业厂房', desc: '未办证，超 12 个月未启动', days: null, amount: null },
+  { id: 'W008', type: '合同临期', group: '水投集团', asset: 'CT-003 营前标准厂房 2#', desc: '合同 2026-09-30 到期', days: null, amount: null },
+  { id: 'W009', type: '欠费', group: '产投集团', asset: 'CT-002 航城商务楼 3F', desc: '欠缴 12.3 万元，逾期 60 天', days: 60, amount: 12.3 },
+  { id: 'W010', type: '闲置超期', group: '领航公司', asset: 'CT-008 梅花镇综合楼', desc: '空置 400 天，超阈值 365 天', days: 400, amount: null },
+  { id: 'W011', type: '欠费', group: '水投集团', asset: 'CT-007 吴航农贸市场', desc: '欠缴 6.8 万元，逾期 35 天', days: 35, amount: 6.8 },
+  { id: 'W012', type: '未办证', group: '领航公司', asset: 'CT-004 首占新区保障房 1# 楼', desc: '未办证，办理中', days: null, amount: null }
 ]
 
 // ===== 督办单 =====
@@ -979,10 +979,10 @@ export const warningTasks = [
   { id: 'WT-002', name: 'CT-003 合同到期提醒', asset: 'CT-003 营前标准厂房 2#', type: '合同临期', deadline: '2026-09-30', status: '待处理', priority: '中', assignee: '运营人员', group: '水投集团' },
   { id: 'WT-003', name: 'CT-006 闲置超期预警', asset: 'CT-006 玉田镇旧工业厂房', type: '闲置超期', deadline: '2026-10-15', status: '进行中', priority: '中', assignee: '资产管理员', group: '产投集团' },
   { id: 'WT-004', name: 'CT-005 权证办理跟进', asset: 'CT-005 江田镇仓储用地', type: '未办证', deadline: '2026-11-30', status: '进行中', priority: '低', assignee: '权证专员', group: '城投集团' },
-  { id: 'WT-005', name: 'CT-017 写字楼欠费催缴', asset: 'CT-017 首占新区写字楼', type: '欠费催缴', deadline: '2026-09-25', status: '待处理', priority: '高', assignee: '资产管理员', group: '水投集团' },
-  { id: 'WT-006', name: 'CT-097 闲置用地招租', asset: 'CT-097 江田镇闲置用地', type: '闲置盘活', deadline: '2026-10-30', status: '待处理', priority: '中', assignee: '运营人员', group: '城投集团' },
-  { id: 'WT-007', name: 'CT-010 商铺欠费催缴', asset: 'CT-010 航城街道商铺', type: '欠费催缴', deadline: '2026-09-22', status: '待处理', priority: '高', assignee: '资产管理员', group: '产投集团' },
-  { id: 'WT-008', name: 'CT-012 保障房欠费催缴', asset: 'CT-012 首占新区保障房', type: '欠费催缴', deadline: '2026-09-28', status: '进行中', priority: '中', assignee: '资产管理员', group: '领航公司' }
+  { id: 'WT-005', name: 'CT-007 农贸市场欠费催缴', asset: 'CT-007 吴航农贸市场', type: '欠费催缴', deadline: '2026-09-25', status: '待处理', priority: '高', assignee: '资产管理员', group: '水投集团' },
+  { id: 'WT-006', name: 'CT-005 仓储用地闲置盘活', asset: 'CT-005 江田镇仓储用地', type: '闲置盘活', deadline: '2026-10-30', status: '待处理', priority: '中', assignee: '运营人员', group: '城投集团' },
+  { id: 'WT-007', name: 'CT-002 商务楼欠费催缴', asset: 'CT-002 航城商务楼 3F', type: '欠费催缴', deadline: '2026-09-22', status: '待处理', priority: '高', assignee: '资产管理员', group: '产投集团' },
+  { id: 'WT-008', name: 'CT-004 保障房欠费催缴', asset: 'CT-004 首占新区保障房 1# 楼', type: '欠费催缴', deadline: '2026-09-28', status: '进行中', priority: '中', assignee: '资产管理员', group: '领航公司' }
 ]
 
 // ===== 资产盘点任务 =====
@@ -1022,8 +1022,8 @@ export const paymentRecords = [
 // ===== 资产档案 =====
 export const assetArchives = [
   { id: 1, company: '城投集团', asset: '吴航街道商业街 A-01 商铺', assetNo: 'CT-001', archiveType: '产权档案', createTime: '2020-03-15', files: ['产权证扫描件.pdf', '购房合同.pdf'] },
-  { id: 2, company: '城投集团', asset: '航城商务楼 3F', assetNo: 'CT-002', archiveType: '合同档案', createTime: '2025-01-01', files: ['租赁合同.pdf', '电子签章记录.pdf'] },
-  { id: 3, company: '产投集团', asset: '营前标准厂房 2#', assetNo: 'CT-003', archiveType: '评估档案', createTime: '2023-11-20', files: ['评估报告.pdf'] },
+  { id: 2, company: '产投集团', asset: '航城商务楼 3F', assetNo: 'CT-002', archiveType: '合同档案', createTime: '2025-01-01', files: ['租赁合同.pdf', '电子签章记录.pdf'] },
+  { id: 3, company: '水投集团', asset: '营前标准厂房 2#', assetNo: 'CT-003', archiveType: '评估档案', createTime: '2023-11-20', files: ['评估报告.pdf'] },
   { id: 4, company: '水投集团', asset: '吴航农贸市场', assetNo: 'CT-007', archiveType: '产权档案', createTime: '2019-06-01', files: ['产权证扫描件.pdf', '土地证.pdf'] },
   { id: 5, company: '城投集团', asset: '安东大厦516', assetNo: 'A00D516', archiveType: '维修档案', createTime: '2026-05-10', files: ['维修工单.pdf', '维修前后照片.zip'] }
 ]

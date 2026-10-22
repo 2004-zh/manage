@@ -47,10 +47,16 @@
         <el-table-column prop="bookValue" label="账面价值(万元)" width="120" align="right">
           <template #default="{ row }">{{ row.bookValue ? Number(row.bookValue).toFixed(2) : '-' }}</template>
         </el-table-column>
-        <el-table-column prop="location" label="坐落位置" width="120" />
-        <el-table-column prop="status" label="状态" width="90">
+        <el-table-column label="坐落位置" min-width="180">
+          <template #default="{ row }">
+            <el-tag v-if="row.town" size="small" type="info" style="margin-right:4px">{{ row.town }}</el-tag>
+            <span>{{ row.location || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="120">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" size="small">{{ row.status }}</el-tag>
+            <el-tag v-if="row.mortgageStatus === '已抵押'" type="danger" size="small" style="margin-left:4px">已抵押</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="certStatus" label="权证状态" width="120">
@@ -146,8 +152,26 @@
         <el-divider content-position="left">位置与面积</el-divider>
         <el-row :gutter="20">
           <el-col :span="12">
+            <el-form-item label="所属乡镇">
+              <el-select v-model="form.townCode" placeholder="选择乡镇" clearable filterable style="width:100%" @change="onTownChange">
+                <el-option v-for="t in townOptions" :key="t.code" :label="t.name" :value="t.code" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="坐落" required>
-              <el-input v-model="form.location" placeholder="请输入详细地址" />
+              <div style="display:flex;gap:8px;width:100%">
+                <el-input v-model="form.location" placeholder="请输入详细地址" style="flex:1" />
+                <el-button @click="openMapPicker" :icon="MapLocation" title="地图选点">选点</el-button>
+              </div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24" v-if="form.lng && form.lat">
+            <el-form-item label="坐标">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:13px;color:#606266">经度 {{ Number(form.lng).toFixed(6) }}，纬度 {{ Number(form.lat).toFixed(6) }}</span>
+                <el-button type="danger" link size="small" @click="clearCoords">清除</el-button>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -263,7 +287,13 @@
           <el-descriptions-item label="资产类型">{{ currentRow.type }}</el-descriptions-item>
           <el-descriptions-item label="面积(㎡)">{{ currentRow.area }}</el-descriptions-item>
           <el-descriptions-item label="账面价值(万元)">{{ currentRow.bookValue ? Number(currentRow.bookValue).toFixed(2) : '-' }}</el-descriptions-item>
-          <el-descriptions-item label="坐落位置">{{ currentRow.location }}</el-descriptions-item>
+          <el-descriptions-item label="坐落位置">
+            <el-tag v-if="currentRow.town" size="small" type="info" style="margin-right:4px">{{ currentRow.town }}</el-tag>
+            {{ currentRow.location || '—' }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="currentRow.lng && currentRow.lat" label="坐标">
+            经度 {{ Number(currentRow.lng).toFixed(6) }}，纬度 {{ Number(currentRow.lat).toFixed(6) }}
+          </el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="getStatusType(currentRow.status)" size="small">{{ currentRow.status }}</el-tag>
           </el-descriptions-item>
@@ -274,6 +304,13 @@
         </el-descriptions>
       </template>
     </el-drawer>
+
+    <MapPickerDialog
+      v-model="mapPickerVisible"
+      :initial-lng="form.lng"
+      :initial-lat="form.lat"
+      @confirm="onMapConfirm"
+    />
 
     <el-dialog v-model="importDialogVisible" title="批量导入资产" width="500px" destroy-on-close>
       <el-upload drag action="" :auto-upload="false" accept=".csv,.xlsx,.xls" :on-change="onImportFileChange" :limit="1">
@@ -293,10 +330,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, MapLocation } from '@element-plus/icons-vue'
 import { useAssetStore } from '../../store/asset'
 import { useUserStore } from '../../store/user'
 import { ASSET_CATEGORIES } from '../../data/assetCategory'
+import { TOWN_SEED, resolveTown } from '../../data/locations'
+import MapPickerDialog from '../../components/MapPickerDialog.vue'
 
 const assetStore = useAssetStore()
 const userStore = useUserStore()
@@ -313,8 +352,35 @@ const currentRow = ref(null)
 
 const filters = ref({ keyword: '', assetType: '', status: '' })
 
-const defaultForm = { group: '', name: '', assetCategory: '', type: '', assetUsage: '', assetNature: '', location: '', area: 0, rentArea: 0, unitPrice: 0, bookValue: 0, floor: '', roomNo: '', orientation: '', buildYear: '', purchaseDate: '', structureType: '', decoration: '', sourceType: '' }
+const defaultForm = { group: '', name: '', assetCategory: '', type: '', assetUsage: '', assetNature: '', location: '', lng: null, lat: null, town: '', townCode: '', area: 0, rentArea: 0, unitPrice: 0, bookValue: 0, floor: '', roomNo: '', orientation: '', buildYear: '', purchaseDate: '', structureType: '', decoration: '', sourceType: '' }
 const form = ref({ ...defaultForm })
+
+const mapPickerVisible = ref(false)
+const townOptions = TOWN_SEED
+
+function onTownChange(code) {
+  const t = TOWN_SEED.find(t => t.code === code)
+  form.value.town = t ? t.name : ''
+}
+
+function openMapPicker() {
+  mapPickerVisible.value = true
+}
+
+function onMapConfirm(lng, lat, town) {
+  form.value.lng = lng
+  form.value.lat = lat
+  form.value.town = town
+  const t = TOWN_SEED.find(t => t.name === town)
+  form.value.townCode = t ? t.code : ''
+}
+
+function clearCoords() {
+  form.value.lng = null
+  form.value.lat = null
+  form.value.town = ''
+  form.value.townCode = ''
+}
 
 const evalTotal = computed(() => {
   const a = Number(form.value.area) || 0
@@ -332,7 +398,7 @@ const filteredAssets = computed(() => {
   return assetStore.visibleAssets.filter(a => {
     if (filters.value.keyword) {
       const kw = filters.value.keyword
-      const searchable = [a.name, a.id, a.assetNo, a.projectName, a.zoneName, a.floorName, a.location].filter(Boolean).join(' ')
+      const searchable = [a.name, a.id, a.assetNo, a.projectName, a.zoneName, a.floorName, a.location, a.town].filter(Boolean).join(' ')
       if (!searchable.includes(kw)) return false
     }
     if (filters.value.assetType && a.assetCategory !== filters.value.assetType) return false
@@ -354,7 +420,7 @@ function showRegisterForm() {
 
 function editAsset(row) {
   isEdit.value = true
-  form.value = { ...row, group: currentCompany.value, name: row.name, assetCategory: row.assetCategory, type: row.type, assetUsage: row.assetUsage || '', assetNature: '', location: row.location, area: row.area, rentArea: row.rentArea ?? row.area, unitPrice: row.unitPrice ?? 0, bookValue: row.bookValue ?? 0, floor: '', roomNo: '', orientation: '', buildYear: '', purchaseDate: row.purchaseDate || '', structureType: '', decoration: '', sourceType: row.sourceType || '' }
+  form.value = { ...row, group: currentCompany.value, name: row.name, assetCategory: row.assetCategory, type: row.type, assetUsage: row.assetUsage || '', assetNature: '', location: row.location, lng: row.lng ?? null, lat: row.lat ?? null, town: row.town || '', townCode: row.townCode || '', area: row.area, rentArea: row.rentArea ?? row.area, unitPrice: row.unitPrice ?? 0, bookValue: row.bookValue ?? 0, floor: '', roomNo: '', orientation: '', buildYear: '', purchaseDate: row.purchaseDate || '', structureType: '', decoration: '', sourceType: row.sourceType || '' }
   dialogVisible.value = true
 }
 

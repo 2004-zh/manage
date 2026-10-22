@@ -282,7 +282,7 @@
             <el-form-item>
               <el-input v-model="acFilter.keyword" placeholder="承租人/手机号/合同编号" clearable style="width:200px" />
             </el-form-item>
-            <el-form-item label="公司">
+            <el-form-item v-if="acCompanyOptions.length > 1" label="公司">
               <el-select v-model="acFilter.company" clearable placeholder="全部" style="width:130px">
                 <el-option v-for="c in acCompanyOptions" :key="c" :label="c" :value="c" />
               </el-select>
@@ -1403,6 +1403,7 @@ import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
 import { usePartyStore } from '../../store/party'
 import { useUserStore } from '../../store/user'
+import { useMortgageStore } from '../../store/mortgage'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Loading, CircleCheck, Search, Refresh, ArrowRight, Document, AlarmClock, WarningFilled,
@@ -1416,6 +1417,7 @@ const assetStore = useAssetStore()
 const contractStore = useContractStore()
 const partyStore = usePartyStore()
 const userStore = useUserStore()
+const mortgageStore = useMortgageStore()
 // 审批台是本页自带的演示数据，按登录公司过滤；合同列表本身走 store 的 visibleContracts
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
 const activeTab = ref('list')
@@ -1694,7 +1696,7 @@ function remainingOf(contract) {
 
 const leasableAssets = computed(() => {
   dataVersion.value
-  return assetStore.visibleAssets.filter(a => (a.area || 0) > 0 && availableOf(a) > 0)
+  return assetStore.visibleAssets.filter(a => (a.area || 0) > 0 && availableOf(a) > 0 && a.mortgageStatus !== '已抵押')
 })
 
 const pickedAsset = computed(() => assetStore.visibleAssets.find(a => a.id === createForm.value.assetId) || null)
@@ -2599,7 +2601,7 @@ const acContracts = ref([
     contractType: '资产租赁', rentType: '递增租金', usage: '餐饮', payCycle: '月缴', payDeadline: '2026-09-08',
     monthlyRent: 22000, reduction: 0, deposit: 44000, arrearsMonths: 0,
     flow: '一级审批流程', status: '审批完成', attachment: '合同正本.pdf', agreement: '',
-    assets: [{ region: '福建省福州市长乐区', project: '吴航街道商业街', zone: 'B区', name: 'B-05 商铺', code: 'CT-010', location: '吴航街道商业街 B 区', company: '领航公司', leaseType: '整租' }],
+    assets: [{ region: '福建省福州市长乐区', project: '航城商务楼', zone: '3F', name: '航城商务楼 3F', code: 'CT-002', location: '长乐区航城街道航城商务楼', company: '产投集团', leaseType: '整租' }],
     auditSteps: [
       { title: '提交申请', auditor: '赵磊', time: '2026-04-15 14:05' },
       { title: '部门初审', auditor: '李强', time: '2026-04-16 10:25' }

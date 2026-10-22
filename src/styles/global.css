@@ -281,12 +281,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 44px;
-  padding: 0 16px;
+  min-height: 44px;
+  padding: 8px 16px;
   background: var(--bg-card);
   border: 1px solid var(--bd);
   border-radius: var(--r-md);
   margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .page-header h2 {
@@ -311,11 +313,42 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--bd);
   border-radius: var(--r-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.filter-bar > .el-row {
+  width: 100%;
+}
+
+.filter-bar .el-form-item {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1100px) {
+  .filter-bar .el-col {
+    flex: 0 0 50%;
+    max-width: 50%;
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-bar .el-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
 }
 
 /* Table card */
 .table-card {
   border-radius: var(--r-md);
+}
+
+.table-card .el-card__body {
+  overflow-x: auto;
 }
 
 /* Timeline status */
@@ -628,6 +661,7 @@ body {
 .chip-row {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 8px;
   font-size: 13px;
@@ -704,6 +738,15 @@ body {
 
 .detail-grid .cell .value.hl {
   color: var(--c-primary);
+}
+
+@media (max-width: 1200px) {
+  .detail-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-grid .cell .label { width: 90px; }
 }
 
 /* 区块标题 */
@@ -908,6 +951,12 @@ body {
 .chart-row-1-1 { grid-template-columns: 1fr 1fr; }
 .chart-row-3-1 { grid-template-columns: 3fr 1fr; }
 
+@media (max-width: 1100px) {
+  .chart-row-7-5,
+  .chart-row-1-1,
+  .chart-row-3-1 { grid-template-columns: 1fr; }
+}
+
 /* 图表容器：全局只管宽度。高度必须由页面 scoped 自己给可解析值
    （ECharts 初始化要读到非 0 的 clientHeight，这里写 min-height 会把图表压没） */
 .chart-box {
@@ -943,4 +992,97 @@ body {
 .num {
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
+}
+
+/* ============ 响应式适配 ============ */
+
+/* 页面头部按钮组自动换行 */
+.page-header > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* filter-bar 内的表单控件宽度自适应 */
+.filter-bar .el-select,
+.filter-bar .el-input,
+.filter-bar .el-date-editor {
+  width: 100% !important;
+}
+
+/* KPI 卡片响应式 */
+@media (max-width: 1100px) {
+  .kpi-row .el-col-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-row .el-col-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+/* 统计条响应式 */
+@media (max-width: 768px) {
+  .stat-strip .stat-item {
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+  .stat-strip .stat-item + .stat-item {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}
+
+/* 主内容区小屏边距缩减 */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
+}
+
+/* 弹窗小屏宽度自适应 */
+@media (max-width: 768px) {
+  .el-dialog {
+    width: 90% !important;
+    margin: 5vh auto !important;
+  }
+}
+
+/* 顶栏小屏适配 */
+@media (max-width: 768px) {
+  .layout-header {
+    padding: 0 12px;
+  }
+  .header-left {
+    gap: 10px;
+  }
+  .header-right {
+    gap: 10px;
+  }
+  .scope-trigger span {
+    display: none;
+  }
+}
+
+/* 表格容器确保有横向滚动 */
+.el-table {
+  overflow: auto;
+}
+
+/* 避免固定像素宽度的控件在 grid 内溢出 */
+.grid-4 > *,
+.grid-3 > *,
+.grid-2 > * {
+  min-width: 0;
+}
+
+/* filter-bar 内 el-row 的 el-col 在小屏堆叠 */
+.filter-bar .el-row {
+  flex-wrap: wrap;
 }

@@ -177,11 +177,10 @@
                   <div class="pc-top">
                     <span class="pc-name" :title="a.name">{{ a.name }}</span>
                     <span class="pc-badge" :style="{ background: panoColor(a.status) }">{{ a.status }}</span>
+                    <el-tag v-if="(a.mortgageStatus === '已抵押' || a.mortgaged)" type="danger" size="small" effect="plain" style="margin-left:4px">已抵押</el-tag>
                   </div>
                   <div class="pc-row">编号：{{ a.assetNo }}</div>
                   <div class="pc-tags">
-                    <el-tag size="small" :type="a.mortgaged ? 'danger' : 'info'" effect="plain">{{ a.mortgaged ? '已抵押' : '未抵押' }}</el-tag>
-                    <span class="pc-sep">|</span>
                     <el-tag size="small" :type="a.propertyRight ? 'success' : 'info'" effect="plain">{{ a.propertyRight ? '有产权' : '无产权' }}</el-tag>
                     <el-tag size="small" :type="a.used ? 'warning' : 'info'">{{ a.used ? '已使用' : '未使用' }}</el-tag>
                   </div>
@@ -220,14 +219,10 @@
                 </template>
               </el-table-column>
               <el-table-column prop="propertyNo" label="产权编号" min-width="180" show-overflow-tooltip />
-              <el-table-column label="抵押状态" width="95" align="center">
-                <template #default="{ row }">
-                  <el-tag size="small" :type="row.mortgaged ? 'danger' : 'info'" effect="plain">{{ row.mortgaged ? '已抵押' : '未抵押' }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="租赁状态" width="95" align="center">
+              <el-table-column label="租赁状态" width="130" align="center">
                 <template #default="{ row }">
                   <el-tag size="small" :type="listStatusTag(row.status)">{{ row.status }}</el-tag>
+                  <el-tag v-if="row.mortgageStatus === '已抵押' || row.mortgaged" type="danger" size="small" style="margin-left:4px" effect="plain">已抵押</el-tag>
                 </template>
               </el-table-column>
             </el-table>

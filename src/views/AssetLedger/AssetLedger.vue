@@ -214,9 +214,10 @@
             <el-tag :type="getTypeColor(row.type)" size="small">{{ row.type }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="90">
+        <el-table-column prop="status" label="状态" width="110">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" size="small">{{ row.status }}</el-tag>
+            <el-tag v-if="row.mortgageStatus === '已抵押'" type="danger" size="small" style="margin-left:4px">已抵押</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建/修改时间" min-width="170" show-overflow-tooltip sortable>

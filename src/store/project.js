@@ -279,6 +279,14 @@ export const useProjectStore = defineStore('project', () => {
     return true
   }
 
+  function setProjectCoords(projectId, lng, lat) {
+    const project = getProjectById(projectId)
+    if (!project) return false
+    project.lng = lng
+    project.lat = lat
+    return true
+  }
+
   return {
     projects,
     allProjects,
@@ -292,6 +300,7 @@ export const useProjectStore = defineStore('project', () => {
     updatePartition,
     removePartition,
     findRoom,
-    updateRoom
+    updateRoom,
+    setProjectCoords
   }
 })

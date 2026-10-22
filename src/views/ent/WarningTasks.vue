@@ -31,7 +31,7 @@
         <el-option label="中" value="中" />
         <el-option label="低" value="低" />
       </el-select>
-      <el-select v-model="taskCompanyFilter" placeholder="请选择公司" clearable style="width:160px">
+      <el-select v-if="companyGroups.length > 1" v-model="taskCompanyFilter" placeholder="请选择公司" clearable style="width:160px">
         <el-option v-for="g in companyGroups" :key="g" :label="g" :value="g" />
       </el-select>
       <div class="grow"></div>

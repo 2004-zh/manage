@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const single = mode === 'singlefile'
   return {
     plugins: [vue(), ...(single ? [viteSingleFile()] : [])],
-    base: single ? './' : '/',
+    base: './',
     server: { port: 5173, open: true },
     build: single
       ? {

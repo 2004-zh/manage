@@ -4,50 +4,50 @@ import { useAssetStore } from './asset'
 import { useProjectStore } from './project'
 
 const SEED_INSPECTIONS = [
-  { inspectionNo: 'XC20260901001', zone: '吴航街道', assetName: '阳光花园1号楼', assetCode: 'ZC2024001', assetId: 'CT-004', address: '长乐区吴航街道阳光花园小区', company: '城市建设投资有限公司', assetType: '保障房', inspector: '李四', inspectionDate: '2026-09-01', status: '已完成', issueCount: 2 },
-  { inspectionNo: 'XC20260905001', zone: '航城街道', assetName: '万达广场商铺A座', assetCode: 'ZC2024010', assetId: 'CT-002', address: '长乐区航城街道万达广场A座', company: '置业发展有限公司', assetType: '商铺', inspector: '王五', inspectionDate: '2026-09-05', status: '进行中', issueCount: 0 },
-  { inspectionNo: 'XC20260910001', zone: '营前镇', assetName: '国贸写字楼A座', assetCode: 'ZC2024020', assetId: 'CT-003', address: '长乐区营前镇国贸中心A座', company: '置业发展有限公司', assetType: '写字楼', inspector: '赵六', inspectionDate: '2026-09-10', status: '待巡查', issueCount: 0 },
-  { inspectionNo: 'XC20260912001', zone: '玉田镇', assetName: '高新技术产业园厂房', assetCode: 'ZC2024030', assetId: 'CT-006', address: '长乐区玉田镇高新技术产业园C区', company: '物业管理服务有限公司', assetType: '厂房', inspector: '李四', inspectionDate: '2026-09-12', status: '待巡查', issueCount: 0 },
-  { inspectionNo: 'XC20260915001', zone: '江田镇', assetName: '朝阳农贸市场', assetCode: 'ZC2024040', assetId: 'CT-007', address: '长乐区江田镇朝阳路88号', company: '旅游开发投资有限公司', assetType: '农贸市场', inspector: '王五', inspectionDate: '2026-09-15', status: '进行中', issueCount: 1 }
+  { inspectionNo: 'XC20260901001', zone: '首占新区', assetName: '首占新区保障房1#楼', assetCode: 'ZC2024001', assetId: 'CT-004', address: '长乐区首占新区保障房小区', company: '领航公司', assetType: '保障房', inspector: '李四', inspectionDate: '2026-09-01', status: '已完成', issueCount: 2 },
+  { inspectionNo: 'XC20260905001', zone: '航城街道', assetName: '航城商务楼3F', assetCode: 'ZC2024010', assetId: 'CT-002', address: '长乐区航城街道航城商务楼', company: '产投集团', assetType: '写字楼', inspector: '王五', inspectionDate: '2026-09-05', status: '进行中', issueCount: 0 },
+  { inspectionNo: 'XC20260910001', zone: '营前街道', assetName: '营前标准厂房2#', assetCode: 'ZC2024020', assetId: 'CT-003', address: '长乐区营前街道标准厂房', company: '水投集团', assetType: '厂房', inspector: '赵六', inspectionDate: '2026-09-10', status: '待巡查', issueCount: 0 },
+  { inspectionNo: 'XC20260912001', zone: '玉田镇', assetName: '玉田镇旧工业厂房', assetCode: 'ZC2024030', assetId: 'CT-006', address: '长乐区玉田镇旧工业区', company: '产投集团', assetType: '厂房', inspector: '李四', inspectionDate: '2026-09-12', status: '待巡查', issueCount: 0 },
+  { inspectionNo: 'XC20260915001', zone: '吴航街道', assetName: '吴航农贸市场', assetCode: 'ZC2024040', assetId: 'CT-007', address: '长乐区吴航街道农贸市场', company: '水投集团', assetType: '农贸市场', inspector: '王五', inspectionDate: '2026-09-15', status: '进行中', issueCount: 1 }
 ]
 
 const SEED_PROJECT_INSPECTIONS = [
-  { inspectionNo: 'XM20260903001', zone: '航城片区', assetName: '红联壹城', assetCode: 'PRJ2024001', assetId: 'BLD-001', address: '长乐区航城街道商务楼', company: '城市建设投资有限公司', assetType: '改造项目', inspector: '王五', inspectionDate: '2026-09-03', status: '已完成', issueCount: 1 },
-  { inspectionNo: 'XM20260906001', zone: '吴航片区', assetName: '悦山小区', assetCode: 'PRJ2024002', assetId: 'BLD-004', address: '长乐区吴航街道阳光花园西侧', company: '城市建设投资有限公司', assetType: '保障房项目', inspector: '李四', inspectionDate: '2026-09-06', status: '进行中', issueCount: 0 },
-  { inspectionNo: 'XM20260909001', zone: '江田片区', assetName: '国子家缘', assetCode: 'PRJ2024003', assetId: 'BLD-005', address: '长乐区江田镇滨海大道', company: '旅游开发投资有限公司', assetType: '文旅项目', inspector: '赵六', inspectionDate: '2026-09-09', status: '待巡查', issueCount: 0 },
-  { inspectionNo: 'XM20260911001', zone: '营前片区', assetName: '府前御景阁', assetCode: 'PRJ2024004', assetId: 'BLD-008', address: '长乐区营前镇工业园', company: '置业发展有限公司', assetType: '厂房项目', inspector: '王五', inspectionDate: '2026-09-11', status: '进行中', issueCount: 2 }
+  { inspectionNo: 'XM20260903001', zone: '航城街道', assetName: '红联壹城', assetCode: 'PRJ2024001', assetId: 'BLD-001', address: '浦口区桥林街道浦口大道中桥壹城红寓小区', company: '城投集团', assetType: '住宅项目', inspector: '王五', inspectionDate: '2026-09-03', status: '已完成', issueCount: 1 },
+  { inspectionNo: 'XM20260906001', zone: '航城街道', assetName: '悦山小区', assetCode: 'PRJ2024002', assetId: 'BLD-004', address: '长乐区航城街道营前路与鹤上路交汇处', company: '城投集团', assetType: '住宅项目', inspector: '李四', inspectionDate: '2026-09-06', status: '进行中', issueCount: 0 },
+  { inspectionNo: 'XM20260909001', zone: '首占新区', assetName: '国子家缘', assetCode: 'PRJ2024003', assetId: 'BLD-005', address: '长乐区首占新区鹏城路国子家缘小区', company: '城投集团', assetType: '住宅项目', inspector: '赵六', inspectionDate: '2026-09-09', status: '待巡查', issueCount: 0 },
+  { inspectionNo: 'XM20260911001', zone: '航城街道', assetName: '府前御景阁', assetCode: 'PRJ2024004', assetId: 'BLD-008', address: '长乐区航城街道府前路168号', company: '城投集团', assetType: '住宅项目', inspector: '王五', inspectionDate: '2026-09-11', status: '进行中', issueCount: 2 }
 ]
 
 const SEED_REPAIRS = [
-  { repairNo: 'BX20260902001', zone: '吴航街道', assetName: '阳光花园1号楼101室', assetCode: 'ZC2024001-0101', assetId: 'CT-004', address: '长乐区吴航街道阳光花园小区1号楼101室', company: '城市建设投资有限公司', reporter: '张三', reporterPhone: '13800138001', reportDate: '2026-09-02', issue: '空调漏水，需要维修', status: '待处理' },
-  { repairNo: 'BX20260903001', zone: '航城街道', assetName: '万达广场商铺A101', assetCode: 'ZC2024010-A101', assetId: 'CT-002', address: '长乐区航城街道万达广场A座101铺', company: '置业发展有限公司', reporter: '王经理', reporterPhone: '13900139001', reportDate: '2026-09-03', issue: '电梯故障，无法运行', status: '处理中' },
-  { repairNo: 'BX20260905001', zone: '营前镇', assetName: '国贸写字楼A座1501', assetCode: 'ZC2024020-1501', assetId: 'CT-003', address: '长乐区营前镇国贸中心A座1501室', company: '置业发展有限公司', reporter: '刘总', reporterPhone: '13700137001', reportDate: '2026-09-05', issue: '卫生间水管破裂', status: '处理中' },
-  { repairNo: 'BX20260901001', zone: '玉田镇', assetName: '高新技术产业园厂房C1', assetCode: 'ZC2024030-C1', assetId: 'CT-006', address: '长乐区玉田镇高新技术产业园C1厂房', company: '物业管理服务有限公司', reporter: '陈厂长', reporterPhone: '13600136001', reportDate: '2026-09-01', issue: '门窗损坏，需要更换', status: '已完成' },
-  { repairNo: 'BX20260910001', zone: '江田镇', assetName: '朝阳农贸市场1号厅', assetCode: 'ZC2024040-01', assetId: 'CT-007', address: '长乐区江田镇朝阳路88号1号厅', company: '旅游开发投资有限公司', reporter: '孙老板', reporterPhone: '13500135001', reportDate: '2026-09-10', issue: '照明灯不亮', status: '已完成' }
+  { repairNo: 'BX20260902001', zone: '首占新区', assetName: '首占新区保障房1#楼101室', assetCode: 'ZC2024001-0101', assetId: 'CT-004', address: '长乐区首占新区保障房小区1#楼101室', company: '领航公司', reporter: '张三', reporterPhone: '13800138001', reportDate: '2026-09-02', issue: '空调漏水，需要维修', status: '待处理' },
+  { repairNo: 'BX20260903001', zone: '航城街道', assetName: '航城商务楼3F-301', assetCode: 'ZC2024010-301', assetId: 'CT-002', address: '长乐区航城街道航城商务楼301室', company: '产投集团', reporter: '王经理', reporterPhone: '13900139001', reportDate: '2026-09-03', issue: '电梯故障，无法运行', status: '处理中' },
+  { repairNo: 'BX20260905001', zone: '营前街道', assetName: '营前标准厂房2#-东侧', assetCode: 'ZC2024020-E', assetId: 'CT-003', address: '长乐区营前街道标准厂房2#东侧', company: '水投集团', reporter: '刘总', reporterPhone: '13700137001', reportDate: '2026-09-05', issue: '卫生间水管破裂', status: '处理中' },
+  { repairNo: 'BX20260901001', zone: '玉田镇', assetName: '玉田镇旧工业厂房C1', assetCode: 'ZC2024030-C1', assetId: 'CT-006', address: '长乐区玉田镇旧工业区C1厂房', company: '产投集团', reporter: '陈厂长', reporterPhone: '13600136001', reportDate: '2026-09-01', issue: '门窗损坏，需要更换', status: '已完成' },
+  { repairNo: 'BX20260910001', zone: '吴航街道', assetName: '吴航农贸市场1号厅', assetCode: 'ZC2024040-01', assetId: 'CT-007', address: '长乐区吴航街道农贸市场1号厅', company: '水投集团', reporter: '孙老板', reporterPhone: '13500135001', reportDate: '2026-09-10', issue: '照明灯不亮', status: '已完成' }
 ]
 
 const SEED_REPAIR_MGMT = [
-  { repairNo: 'WX20260902001', zone: '吴航街道', assetName: '阳光花园1号楼101室', assetCode: 'ZC2024001-0101', assetId: 'CT-004', address: '长乐区吴航街道阳光花园小区1号楼101室', company: '城市建设投资有限公司', reporter: '张三', reporterPhone: '13800138001', content: '空调漏水，需要维修', photoCount: 3, submitTime: '2026-09-02 10:20:00', auditStatus: '已通过', surveyor: '勘查员-陈志强' },
-  { repairNo: 'WX20260903001', zone: '航城街道', assetName: '万达广场商铺A101', assetCode: 'ZC2024010-A101', assetId: 'CT-002', address: '长乐区航城街道万达广场A座101铺', company: '置业发展有限公司', reporter: '王经理', reporterPhone: '13900139001', content: '电梯故障，无法运行', photoCount: 5, submitTime: '2026-09-03 09:15:00', auditStatus: '待审核', surveyor: '' },
-  { repairNo: 'WX20260905001', zone: '营前镇', assetName: '国贸写字楼A座1501', assetCode: 'ZC2024020-1501', assetId: 'CT-003', address: '长乐区营前镇国贸中心A座1501室', company: '置业发展有限公司', reporter: '刘总', reporterPhone: '13700137001', content: '卫生间水管破裂', photoCount: 2, submitTime: '2026-09-05 14:40:00', auditStatus: '待审核', surveyor: '' },
-  { repairNo: 'WX20260901001', zone: '玉田镇', assetName: '高新技术产业园厂房C1', assetCode: 'ZC2024030-C1', assetId: 'CT-006', address: '长乐区玉田镇高新技术产业园C1厂房', company: '物业管理服务有限公司', reporter: '陈厂长', reporterPhone: '13600136001', content: '门窗损坏，需要更换', photoCount: 4, submitTime: '2026-09-01 16:05:00', auditStatus: '已通过', surveyor: '勘查员-林晓' },
-  { repairNo: 'WX20260910001', zone: '江田镇', assetName: '朝阳农贸市场1号厅', assetCode: 'ZC2024040-01', assetId: 'CT-007', address: '长乐区江田镇朝阳路88号1号厅', company: '旅游开发投资有限公司', reporter: '孙老板', reporterPhone: '13500135001', content: '照明灯不亮', photoCount: 1, submitTime: '2026-09-10 11:30:00', auditStatus: '已驳回', surveyor: '勘查员-黄伟' }
+  { repairNo: 'WX20260902001', zone: '首占新区', assetName: '首占新区保障房1#楼101室', assetCode: 'ZC2024001-0101', assetId: 'CT-004', address: '长乐区首占新区保障房小区1#楼101室', company: '领航公司', reporter: '张三', reporterPhone: '13800138001', content: '空调漏水，需要维修', photoCount: 3, submitTime: '2026-09-02 10:20:00', auditStatus: '已通过', surveyor: '勘查员-陈志强' },
+  { repairNo: 'WX20260903001', zone: '航城街道', assetName: '航城商务楼3F-301', assetCode: 'ZC2024010-301', assetId: 'CT-002', address: '长乐区航城街道航城商务楼301室', company: '产投集团', reporter: '王经理', reporterPhone: '13900139001', content: '电梯故障，无法运行', photoCount: 5, submitTime: '2026-09-03 09:15:00', auditStatus: '待审核', surveyor: '' },
+  { repairNo: 'WX20260905001', zone: '营前街道', assetName: '营前标准厂房2#-东侧', assetCode: 'ZC2024020-E', assetId: 'CT-003', address: '长乐区营前街道标准厂房2#东侧', company: '水投集团', reporter: '刘总', reporterPhone: '13700137001', content: '卫生间水管破裂', photoCount: 2, submitTime: '2026-09-05 14:40:00', auditStatus: '待审核', surveyor: '' },
+  { repairNo: 'WX20260901001', zone: '玉田镇', assetName: '玉田镇旧工业厂房C1', assetCode: 'ZC2024030-C1', assetId: 'CT-006', address: '长乐区玉田镇旧工业区C1厂房', company: '产投集团', reporter: '陈厂长', reporterPhone: '13600136001', content: '门窗损坏，需要更换', photoCount: 4, submitTime: '2026-09-01 16:05:00', auditStatus: '已通过', surveyor: '勘查员-林晓' },
+  { repairNo: 'WX20260910001', zone: '吴航街道', assetName: '吴航农贸市场1号厅', assetCode: 'ZC2024040-01', assetId: 'CT-007', address: '长乐区吴航街道农贸市场1号厅', company: '水投集团', reporter: '孙老板', reporterPhone: '13500135001', content: '照明灯不亮', photoCount: 1, submitTime: '2026-09-10 11:30:00', auditStatus: '已驳回', surveyor: '勘查员-黄伟' }
 ]
 
 const SEED_WORK_ORDERS = [
-  { orderNo: 'GD20260902001', repairNo: 'BX20260902001', assetName: '阳光花园1号楼101室', assetId: 'CT-004', company: '城市建设投资有限公司', handler: '维修工A', handlerPhone: '13100131001', assignDate: '2026-09-02', completeDate: '-', status: '处理中' },
-  { orderNo: 'GD20260903001', repairNo: 'BX20260903001', assetName: '万达广场商铺A101', assetId: 'CT-002', company: '置业发展有限公司', handler: '维修工B', handlerPhone: '13100131002', assignDate: '2026-09-03', completeDate: '-', status: '处理中' },
-  { orderNo: 'GD20260905001', repairNo: 'BX20260905001', assetName: '国贸写字楼A座1501', assetId: 'CT-003', company: '置业发展有限公司', handler: '维修工C', handlerPhone: '13100131003', assignDate: '2026-09-05', completeDate: '-', status: '处理中' },
-  { orderNo: 'GD20260901001', repairNo: 'BX20260901001', assetName: '高新技术产业园厂房C1', assetId: 'CT-006', company: '物业管理服务有限公司', handler: '维修工D', handlerPhone: '13100131004', assignDate: '2026-09-01', completeDate: '2026-09-02', status: '已完成' },
-  { orderNo: 'GD20260910001', repairNo: 'BX20260910001', assetName: '朝阳农贸市场1号厅', assetId: 'CT-007', company: '旅游开发投资有限公司', handler: '维修工E', handlerPhone: '13100131005', assignDate: '2026-09-10', completeDate: '2026-09-11', status: '已完成' }
+  { orderNo: 'GD20260902001', repairNo: 'BX20260902001', assetName: '首占新区保障房1#楼101室', assetId: 'CT-004', company: '领航公司', handler: '维修工A', handlerPhone: '13100131001', assignDate: '2026-09-02', completeDate: '-', status: '处理中' },
+  { orderNo: 'GD20260903001', repairNo: 'BX20260903001', assetName: '航城商务楼3F-301', assetId: 'CT-002', company: '产投集团', handler: '维修工B', handlerPhone: '13100131002', assignDate: '2026-09-03', completeDate: '-', status: '处理中' },
+  { orderNo: 'GD20260905001', repairNo: 'BX20260905001', assetName: '营前标准厂房2#-东侧', assetId: 'CT-003', company: '水投集团', handler: '维修工C', handlerPhone: '13100131003', assignDate: '2026-09-05', completeDate: '-', status: '处理中' },
+  { orderNo: 'GD20260901001', repairNo: 'BX20260901001', assetName: '玉田镇旧工业厂房C1', assetId: 'CT-006', company: '产投集团', handler: '维修工D', handlerPhone: '13100131004', assignDate: '2026-09-01', completeDate: '2026-09-02', status: '已完成' },
+  { orderNo: 'GD20260910001', repairNo: 'BX20260910001', assetName: '吴航农贸市场1号厅', assetId: 'CT-007', company: '水投集团', handler: '维修工E', handlerPhone: '13100131005', assignDate: '2026-09-10', completeDate: '2026-09-11', status: '已完成' }
 ]
 
 const SEED_PLANS = [
-  { planNo: 'JH20260901001', scope: '阳光花园1号楼及周边商铺', cycle: '2026-09-01 ~ 2026-09-30', owner: '李四', status: '进行中', remark: '每月全覆盖巡查一次' },
-  { planNo: 'JH20260905001', scope: '万达广场商铺A座', cycle: '2026-09-05 ~ 2026-10-05', owner: '王五', status: '进行中', remark: '重点关注消防通道' },
-  { planNo: 'JH20260910001', scope: '国贸写字楼A座', cycle: '2026-09-10 ~ 2026-12-10', owner: '赵六', status: '未开始', remark: '季度计划' },
-  { planNo: 'JH20260915001', scope: '朝阳农贸市场', cycle: '2026-09-15 ~ 2026-10-15', owner: '王五', status: '未开始', remark: '' },
-  { planNo: 'JH20260801001', scope: '高新技术产业园厂房', cycle: '2026-08-01 ~ 2026-08-31', owner: '李四', status: '已完成', remark: '上月计划已归档' }
+  { planNo: 'JH20260901001', scope: '首占新区保障房1#楼及周边', cycle: '2026-09-01 ~ 2026-09-30', owner: '李四', status: '进行中', remark: '每月全覆盖巡查一次' },
+  { planNo: 'JH20260905001', scope: '航城商务楼3F', cycle: '2026-09-05 ~ 2026-10-05', owner: '王五', status: '进行中', remark: '重点关注消防通道' },
+  { planNo: 'JH20260910001', scope: '营前标准厂房2#', cycle: '2026-09-10 ~ 2026-12-10', owner: '赵六', status: '未开始', remark: '季度计划' },
+  { planNo: 'JH20260915001', scope: '吴航农贸市场', cycle: '2026-09-15 ~ 2026-10-15', owner: '王五', status: '未开始', remark: '' },
+  { planNo: 'JH20260801001', scope: '玉田镇旧工业厂房', cycle: '2026-08-01 ~ 2026-08-31', owner: '李四', status: '已完成', remark: '上月计划已归档' }
 ]
 
 export const useInspectionStore = defineStore('inspection', () => {

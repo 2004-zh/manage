@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuditStore } from './audit'
 import { useAssetStore } from './asset'
+import { useDisposeStore } from './dispose'
+import { useContractStore } from './contract'
 
 const initialMortgages = [
   {
@@ -59,6 +61,12 @@ export const useMortgageStore = defineStore('mortgage', () => {
 
   const allMortgages = computed(() => mortgages.value)
 
+  // 当前处于"抵押中"状态的抵押记录
+  const activeMortgages = computed(() => mortgages.value.filter(m => m.status === '抵押中'))
+
+  // 已被抵押的资产 ID 集合
+  const mortgagedAssetIds = computed(() => new Set(activeMortgages.value.map(m => m.assetId).filter(Boolean)))
+
   function getMortgagesByCompany(companyName) {
     return mortgages.value.filter(m => m.company === companyName)
   }
@@ -67,11 +75,70 @@ export const useMortgageStore = defineStore('mortgage', () => {
     return mortgages.value.filter(m => m.assetId === assetId)
   }
 
+  // 检查资产是否可抵押：未出租、未处置、未抵押
+  function canMortgage(assetId) {
+    const assetStore = useAssetStore()
+    const disposeStore = useDisposeStore()
+    const contractStore = useContractStore()
+    const asset = assetStore.getAssetById(assetId)
+    if (!asset) return { ok: false, reason: '资产不存在' }
+
+    // 1. 已出租的资产不可抵押
+    if (asset.status === '已出租' || asset.status === '部分出租') {
+      return { ok: false, reason: '资产已出租，不可抵押' }
+    }
+
+    // 2. 已处置/归档的资产不可抵押
+    const disposedAssets = disposeStore.records
+      .filter(r => r.status === '已完成' || r.disposeStatus === '完成')
+      .flatMap(r => r.assets || [])
+      .map(a => a.assetNo)
+    if (asset.assetNo && disposedAssets.includes(asset.assetNo)) {
+      return { ok: false, reason: '资产已处置，不可抵押' }
+    }
+
+    // 3. 已抵押的资产不可重复抵押
+    if (mortgagedAssetIds.value.has(assetId)) {
+      return { ok: false, reason: '资产已处于抵押状态，不可重复抵押' }
+    }
+
+    // 4. 有在租合同的资产不可抵押
+    const activeContracts = contractStore.contracts.filter(c =>
+      c.assetId === assetId && c.status !== '已终止' && c.status !== '退租'
+    )
+    if (activeContracts.length > 0) {
+      return { ok: false, reason: '资产存在有效租赁合同，不可抵押' }
+    }
+
+    return { ok: true, reason: '' }
+  }
+
+  // 获取可抵押的资产列表（过滤掉已出租、已处置、已抵押的资产）
+  const availableAssetsForMortgage = computed(() => {
+    const assetStore = useAssetStore()
+    return assetStore.visibleAssets.filter(a => {
+      const check = canMortgage(a.id)
+      return check.ok
+    })
+  })
+
   function addMortgage(mortgage) {
+    // 抵押前校验
+    const check = canMortgage(mortgage.assetId)
+    if (!check.ok) {
+      throw new Error(check.reason)
+    }
+
     const num = mortgages.value.length + 1
     const newId = `DY-2026-${String(num).padStart(3, '0')}`
     const newMortgage = { ...mortgage, id: newId }
     mortgages.value.push(newMortgage)
+
+    // 更新资产的抵押状态
+    if (mortgage.assetId) {
+      useAssetStore().updateAsset(mortgage.assetId, { mortgageStatus: '已抵押' })
+    }
+
     const asset = newMortgage.assetId ? useAssetStore().getAssetById(newMortgage.assetId) : null
     useAuditStore().recordEvent({
       assetId: newMortgage.assetId,
@@ -106,10 +173,43 @@ export const useMortgageStore = defineStore('mortgage', () => {
     }
   }
 
+  // 解押：将抵押状态改为已解押，并恢复资产的抵押状态
+  function releaseMortgage(id) {
+    const idx = mortgages.value.findIndex(m => m.id === id)
+    if (idx !== -1) {
+      const mortgage = mortgages.value[idx]
+      if (mortgage.status !== '抵押中') {
+        throw new Error('只有抵押中的记录才能解押')
+      }
+      mortgages.value[idx] = { ...mortgage, status: '已解押' }
+
+      // 恢复资产的抵押状态
+      if (mortgage.assetId) {
+        useAssetStore().updateAsset(mortgage.assetId, { mortgageStatus: '未抵押' })
+      }
+
+      const asset = mortgage.assetId ? useAssetStore().getAssetById(mortgage.assetId) : null
+      useAuditStore().recordEvent({
+        assetId: mortgage.assetId,
+        assetName: asset?.name || mortgage.assetName || mortgage.assetId,
+        group: mortgage.company,
+        module: '抵押管理',
+        action: '解押',
+        billNo: id,
+        remark: `抵押编号 ${id} 已解押`
+      })
+    }
+  }
+
   function deleteMortgage(id) {
     const idx = mortgages.value.findIndex(m => m.id === id)
     if (idx !== -1) {
-      const [removed] = mortgages.value.splice(idx, 1)
+      const removed = mortgages.value[idx]
+      // 如果是抵押中的记录，删除时恢复资产状态
+      if (removed.status === '抵押中' && removed.assetId) {
+        useAssetStore().updateAsset(removed.assetId, { mortgageStatus: '未抵押' })
+      }
+      mortgages.value.splice(idx, 1)
       const asset = removed.assetId ? useAssetStore().getAssetById(removed.assetId) : null
       useAuditStore().recordEvent({
         assetId: removed.assetId,
@@ -130,10 +230,15 @@ export const useMortgageStore = defineStore('mortgage', () => {
   return {
     mortgages,
     allMortgages,
+    activeMortgages,
+    mortgagedAssetIds,
+    availableAssetsForMortgage,
     getMortgagesByCompany,
     getMortgagesByAsset,
+    canMortgage,
     addMortgage,
     updateMortgage,
+    releaseMortgage,
     deleteMortgage,
     getMortgageById
   }

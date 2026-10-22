@@ -128,46 +128,39 @@
         <el-card class="calendar-card" shadow="never">
           <template #header>
             <div class="todo-header">
-              <span class="section-title">待办任务</span>
+              <span class="section-title">待办日历</span>
               <el-link type="primary" :underline="false" class="more-link" @click="navigate('/ent/warning-tasks')">更多&gt;</el-link>
             </div>
           </template>
-          <div class="todo-toolbar">
-            <el-select v-model="calendarMonth" size="small" style="width: 88px">
-              <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
-            </el-select>
-            <el-button size="small" @click="goToday">今日</el-button>
+          <div class="calendar-header">
+            <el-button :icon="ArrowLeft" link @click="changeMonth(-1)" />
+            <span class="calendar-title">{{ calendarYear }}年{{ calendarMonth }}月</span>
+            <el-button :icon="ArrowRight" link @click="changeMonth(1)" />
+            <el-button size="small" @click="goToday" style="margin-left:8px">今日</el-button>
           </div>
-          <div class="todo-body">
-            <div class="todo-calendar">
-              <div class="calendar-header">
-                <el-button :icon="ArrowLeft" link @click="changeMonth(-1)" />
-                <span class="calendar-title">{{ calendarYear }}年{{ calendarMonth }}月</span>
-                <el-button :icon="ArrowRight" link @click="changeMonth(1)" />
-              </div>
-              <div class="calendar-grid">
-                <div class="cal-head" v-for="d in weekDays" :key="d">{{ d }}</div>
-                <div
-                  v-for="(cell, idx) in calendarCells"
-                  :key="idx"
-                  class="cal-cell"
-                  :class="{ 'other-month': !cell.current, 'today': cell.isToday, 'has-todo': cell.todoCount > 0 }"
-                >
-                  <span class="cal-day">{{ cell.day }}</span>
-                  <span v-if="cell.todoCount > 0" class="cal-dot">{{ cell.todoCount }}</span>
-                </div>
+          <div class="calendar-grid">
+            <div class="cal-head" v-for="d in weekDays" :key="d">{{ d }}</div>
+            <div
+              v-for="(cell, idx) in calendarCells"
+              :key="idx"
+              class="cal-cell"
+              :class="{ 'other-month': !cell.current, 'today': cell.isToday, 'has-todo': cell.todoCount > 0, 'selected': selectedDate === cell.dateKey }"
+              @click="selectDate(cell)"
+            >
+              <span class="cal-day">{{ cell.day }}</span>
+              <span v-if="cell.todoCount > 0" class="cal-dot"></span>
+            </div>
+          </div>
+          <div class="todo-tasks">
+            <div class="task-filter-label">{{ selectedDateLabel }}</div>
+            <div v-for="t in displayedTasks" :key="t.docNo" class="task-row" @click="navigate(t.path)">
+              <el-tag size="small" :type="t.tagType">{{ t.type }}</el-tag>
+              <div class="task-main">
+                <div class="task-title">{{ t.title }}</div>
+                <div class="task-no">{{ t.docNo }} · {{ t.date }}</div>
               </div>
             </div>
-            <div class="todo-tasks">
-              <div v-for="t in filteredTasks" :key="t.docNo" class="task-row" @click="navigate(t.path)">
-                <el-tag size="small" :type="t.tagType">{{ t.type }}</el-tag>
-                <div class="task-main">
-                  <div class="task-title">{{ t.title }}</div>
-                  <div class="task-no">{{ t.docNo }} · {{ t.date }}</div>
-                </div>
-              </div>
-              <el-empty v-if="filteredTasks.length === 0" :image-size="56" description="本月暂无待办任务" />
-            </div>
+            <el-empty v-if="displayedTasks.length === 0" :image-size="48" description="无待办任务" />
           </div>
           <div class="todo-summary">
             <div class="todo-stat">
@@ -417,11 +410,36 @@ const filteredTasks = computed(() => monthTasks.filter(t => t.month === calendar
 const todoInProgress = computed(() => warningStore.warningTasks.filter(t => t.status === '进行中').length)
 const todoCompleted = computed(() => warningStore.warningTasks.filter(t => t.status === '已完成' || t.status === '已审核').length)
 
-const calendarYear = ref(2026)
-const calendarMonth = ref(9)
+const now = new Date()
+const calendarYear = ref(now.getFullYear())
+const calendarMonth = ref(now.getMonth() + 1)
+const selectedDate = ref(null)
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
-const todoDates = { '2026-9-20': 2, '2026-9-22': 1, '2026-9-25': 1, '2026-9-28': 1, '2026-9-30': 2, '2026-10-15': 1, '2026-10-30': 1 }
+const todoDateMap = computed(() => {
+  const map = {}
+  for (const t of monthTasks) {
+    const parts = t.date.split('-')
+    if (parts.length === 2) {
+      const key = `${t.month <= 8 ? calendarYear.value : calendarYear.value}-${parts[0]}-${parseInt(parts[1])}`
+      const m = parseInt(parts[0])
+      const d = parseInt(parts[1])
+      const fullKey = `${calendarYear.value}-${m}-${d}`
+      map[fullKey] = (map[fullKey] || 0) + 1
+    }
+  }
+  for (const wt of warningStore.warningTasks) {
+    if (wt.deadline) {
+      const dl = wt.deadline.replace(/-/g, '-')
+      const parts = wt.deadline.split('-')
+      if (parts.length === 3) {
+        const key = `${parseInt(parts[0])}-${parseInt(parts[1])}-${parseInt(parts[2])}`
+        map[key] = (map[key] || 0) + 1
+      }
+    }
+  }
+  return map
+})
 
 const calendarCells = computed(() => {
   const y = calendarYear.value
@@ -434,19 +452,39 @@ const calendarCells = computed(() => {
 
   for (let i = 0; i < firstDay; i++) {
     const d = daysInPrevMonth - firstDay + 1 + i
-    cells.push({ day: d, current: false, isToday: false, todoCount: 0 })
+    cells.push({ day: d, current: false, isToday: false, todoCount: 0, dateKey: '' })
   }
   for (let d = 1; d <= daysInMonth; d++) {
     const isToday = today.getFullYear() === y && today.getMonth() + 1 === m && today.getDate() === d
     const key = `${y}-${m}-${d}`
-    cells.push({ day: d, current: true, isToday, todoCount: todoDates[key] || 0 })
+    cells.push({ day: d, current: true, isToday, todoCount: todoDateMap.value[key] || 0, dateKey: key })
   }
   const remaining = 42 - cells.length
   for (let d = 1; d <= remaining; d++) {
-    cells.push({ day: d, current: false, isToday: false, todoCount: 0 })
+    cells.push({ day: d, current: false, isToday: false, todoCount: 0, dateKey: '' })
   }
   return cells
 })
+
+const selectedDateLabel = computed(() => {
+  if (!selectedDate.value) return `本月待办（${filteredTasks.value.length}）`
+  const parts = selectedDate.value.split('-')
+  return `${parseInt(parts[1])}月${parseInt(parts[2])}日待办`
+})
+
+const displayedTasks = computed(() => {
+  if (!selectedDate.value) return filteredTasks.value
+  const parts = selectedDate.value.split('-')
+  const m = parseInt(parts[1])
+  const d = parseInt(parts[2])
+  const dateStr = `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  return monthTasks.filter(t => t.month === calendarMonth.value && t.date === dateStr)
+})
+
+function selectDate(cell) {
+  if (!cell.current) return
+  selectedDate.value = selectedDate.value === cell.dateKey ? null : cell.dateKey
+}
 
 function changeMonth(delta) {
   let m = calendarMonth.value + delta
@@ -455,12 +493,15 @@ function changeMonth(delta) {
   if (m < 1) { m = 12; y-- }
   calendarMonth.value = m
   calendarYear.value = y
+  selectedDate.value = null
 }
 
 function goToday() {
-  const now = new Date()
-  calendarYear.value = now.getFullYear()
-  calendarMonth.value = now.getMonth() + 1
+  const today = new Date()
+  calendarYear.value = today.getFullYear()
+  calendarMonth.value = today.getMonth() + 1
+  const key = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
+  selectedDate.value = key
 }
 
 function navigate(path) {
@@ -756,29 +797,24 @@ function navigate(path) {
   font-size: 12px;
 }
 
-.todo-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
 .todo-body {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: flex-start;
-}
-
-.todo-calendar {
-  flex: none;
-  width: 52%;
 }
 
 .todo-tasks {
-  flex: 1;
-  min-width: 0;
-  max-height: 240px;
+  max-height: 180px;
   overflow-y: auto;
+  margin-top: 8px;
+  border-top: 1px solid var(--bd);
+  padding-top: 8px;
+}
+
+.task-filter-label {
+  font-size: 12px;
+  color: var(--t-weak);
+  margin-bottom: 6px;
 }
 
 .task-row {
@@ -849,14 +885,20 @@ function navigate(path) {
 
 .cal-cell {
   position: relative;
-  padding: 4px 0;
+  padding: 5px 0;
   font-size: 13px;
   border-radius: var(--r-sm);
-  cursor: default;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cal-cell:hover:not(.other-month) {
+  background: var(--c-primary-light);
 }
 
 .cal-cell.other-month {
   color: #ccc;
+  cursor: default;
 }
 
 .cal-cell.today {
@@ -866,20 +908,42 @@ function navigate(path) {
   font-weight: 600;
 }
 
+.cal-cell.today:hover {
+  background: var(--c-primary-dark, #145da0);
+}
+
+.cal-cell.selected {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -2px;
+  font-weight: 600;
+}
+
+.cal-cell.today.selected {
+  outline-color: #fff;
+}
+
 .cal-cell.has-todo {
   font-weight: 600;
   color: var(--c-primary);
 }
 
+.cal-cell.today.has-todo {
+  color: #fff;
+}
+
 .cal-dot {
   position: absolute;
-  bottom: 1px;
+  bottom: 2px;
   left: 50%;
   transform: translateX(-50%);
   width: 5px;
   height: 5px;
   border-radius: 50%;
   background: var(--c-danger);
+}
+
+.cal-cell.today .cal-dot {
+  background: #fff;
 }
 
 .todo-summary {

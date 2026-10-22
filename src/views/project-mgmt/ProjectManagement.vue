@@ -30,7 +30,7 @@
         :key="p.id"
         shadow="hover"
         class="project-card"
-        @click="goToProject(p)"
+        @click="goToProject(p, $event)"
       >
         <div class="card-img">
           <img v-if="p.image" :src="p.image" :alt="p.name" />
@@ -70,6 +70,7 @@
           <div class="card-actions">
             <el-button type="primary" link size="small" @click.stop="openAttach(p)">挂入已有资产</el-button>
             <el-button type="primary" link size="small" @click.stop="openPartitions(p)">分区管理</el-button>
+            <el-button type="primary" link size="small" @click.stop="goToMapPick(p)">地图选点</el-button>
             <span class="attach-count">已挂入 {{ attachedCount(p.id) }} 项</span>
           </div>
         </div>
@@ -111,6 +112,20 @@
           <el-col :span="12">
             <el-form-item label="项目地址" prop="address">
               <el-input v-model="form.address" placeholder="如：长乐区吴航街道" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="项目坐标">
+              <div class="coord-field">
+                <span v-if="form.lng && form.lat" class="coord-text">
+                  {{ form.lng.toFixed(6) }}, {{ form.lat.toFixed(6) }}
+                </span>
+                <span v-else class="coord-hint">未设置</span>
+                <el-button type="primary" link size="small" @click="openProjectMapPick">地图选点</el-button>
+                <el-button v-if="form.lng && form.lat" type="danger" link size="small" @click="form.lng = null; form.lat = null">清除</el-button>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -253,6 +268,21 @@
     </el-dialog>
 
     <PartitionManager v-model="partitionVisible" :project-id="partitionProjectId" />
+
+    <MapPickerDialog
+      v-model="mapPickDialogVisible"
+      :initial-lng="mapPickProject?.lng || PROJECT_COORDS[mapPickProject?.id]?.lng"
+      :initial-lat="mapPickProject?.lat || PROJECT_COORDS[mapPickProject?.id]?.lat"
+      @confirm="handleMapPickConfirm"
+    />
+
+    <!-- 项目创建时的地图选点 -->
+    <MapPickerDialog
+      v-model="createMapPickVisible"
+      :initial-lng="form.lng"
+      :initial-lat="form.lat"
+      @confirm="handleCreateMapPickConfirm"
+    />
   </div>
 </template>
 
@@ -265,6 +295,8 @@ import { useProjectStore } from '../../store/project'
 import { useAssetStore } from '../../store/asset'
 import { useUserStore } from '../../store/user'
 import PartitionManager from '../../components/PartitionManager.vue'
+import MapPickerDialog from '../../components/MapPickerDialog.vue'
+import { PROJECT_COORDS } from '../../data/locations'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -338,8 +370,41 @@ function resetFilters() {
   filterType.value = ''
 }
 
-function goToProject(p) {
+function goToProject(p, event) {
+  // 如果点击目标是按钮或按钮内的元素，不触发跳转，让按钮自己的处理器生效
+  if (event && (event.target.closest('button') || event.target.closest('.el-button'))) return
   router.push({ path: '/ent/asset-control', query: { projectId: p.id } })
+}
+
+function goToMapPick(p) {
+  mapPickProject.value = p
+  mapPickDialogVisible.value = true
+}
+
+// ===== 地图选点 =====
+const mapPickDialogVisible = ref(false)
+const mapPickProject = ref(null)
+
+function handleMapPickConfirm(lng, lat, town) {
+  if (!mapPickProject.value) return
+  projectStore.setProjectCoords(mapPickProject.value.id, lng, lat)
+  ElMessage.success(`项目「${mapPickProject.value.name}」位置已更新${town ? `（${town}）` : ''}`)
+  mapPickDialogVisible.value = false
+  mapPickProject.value = null
+}
+
+// ===== 项目创建时的地图选点 =====
+const createMapPickVisible = ref(false)
+
+function openProjectMapPick() {
+  createMapPickVisible.value = true
+}
+
+function handleCreateMapPickConfirm(lng, lat, town) {
+  form.lng = lng
+  form.lat = lat
+  createMapPickVisible.value = false
+  ElMessage.success(`已设置项目坐标${town ? `（${town}）` : ''}`)
 }
 
 // ===== 新增项目 =====
@@ -352,6 +417,8 @@ const defaultForm = () => ({
   group: userStore.isEnt ? currentCompany.value : '城投集团',
   address: '',
   image: '',
+  lng: null,
+  lat: null,
   partitions: []
 })
 
@@ -491,11 +558,52 @@ function submitCreate() {
       group: form.group,
       address: form.address,
       image: form.image,
+      lng: form.lng,
+      lat: form.lat,
       partitions: form.partitions
     })
+    // 自动同步房间到资产登记
+    syncRoomsToAssets(project)
     createDialogVisible.value = false
     const stats = assetStore.projectStats(project.id)
-    ElMessage.success(`项目「${project.name}」创建成功，共 ${stats.totalAssets} 项资产，可在卡片上点「挂入已有资产」继续归集`)
+    ElMessage.success(`项目「${project.name}」创建成功，共 ${stats.totalAssets} 项资产${form.lng && form.lat ? '，已设置项目坐标' : ''}`)
+  })
+}
+
+// 自动同步房间到资产登记
+const projectTypeToAsset = { '住宅项目': '保障房', '商业办公': '写字楼', '商业街区': '商铺', '商业综合': '商铺', '交通枢纽': '综合用房', '文化设施': '综合用房' }
+function syncRoomsToAssets(project) {
+  const assetType = projectTypeToAsset[project.type] || '综合用房'
+  project.partitions.forEach(partition => {
+    partition.floors.forEach(floor => {
+      floor.rooms.forEach(room => {
+        // 检查是否已存在相同编号的资产
+        const existing = assetStore.assets.find(a => a.assetNo === room.assetNo && room.assetNo)
+        if (existing) return
+        // 创建资产记录
+        assetStore.addAsset({
+          name: room.name || `${partition.name}-${floor.name}-${room.name || '房间'}`,
+          type: assetType,
+          assetCategory: '房产类',
+          group: project.group,
+          area: room.area || 0,
+          bookValue: 0,
+          status: room.status || '闲置',
+          acquisitionMethod: '自建',
+          location: `${project.address} ${partition.name} ${floor.name}`,
+          lng: project.lng,
+          lat: project.lat,
+          certStatus: '未办证（未启动）',
+          propertyRight: '无证',
+          sourceType: '自建',
+          projectId: project.id,
+          partitionName: partition.name,
+          floorName: floor.name,
+          assetNo: room.assetNo || '',
+          remark: `项目创建时自动同步`
+        }, { module: '项目管理', action: '创建项目自动同步', remark: `项目「${project.name}」创建时自动同步房间资产` })
+      })
+    })
   })
 }
 
@@ -805,6 +913,23 @@ function doDetach() {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.coord-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coord-text {
+  font-size: 13px;
+  color: var(--t-regular);
+  font-family: monospace;
+}
+
+.coord-hint {
+  font-size: 13px;
+  color: var(--t-placeholder);
 }
 
 .img-field :deep(.el-upload) {

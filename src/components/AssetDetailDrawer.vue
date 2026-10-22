@@ -17,12 +17,14 @@
         <el-descriptions-item label="资产编号">{{ info.code }}</el-descriptions-item>
         <el-descriptions-item label="经营状态">
           <el-tag :type="statusTagType(info.status)" size="small">{{ info.status }}</el-tag>
+          <el-tag v-if="info.mortgaged" type="danger" size="small" style="margin-left:4px">已抵押</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="资产来源">{{ info.source }}</el-descriptions-item>
         <el-descriptions-item label="资产属性">{{ info.attr }}</el-descriptions-item>
         <el-descriptions-item label="管理部门">{{ info.dept }}</el-descriptions-item>
         <el-descriptions-item label="管理人员">{{ info.manager }}</el-descriptions-item>
         <el-descriptions-item label="地址" :span="2">{{ info.address }}</el-descriptions-item>
+        <el-descriptions-item v-if="info.lng && info.lat" label="坐标" :span="2">经度 {{ Number(info.lng).toFixed(6) }}，纬度 {{ Number(info.lat).toFixed(6) }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ info.createdAt }}</el-descriptions-item>
         <el-descriptions-item label="购置时间">{{ info.purchaseDate }}</el-descriptions-item>
         <el-descriptions-item label="资产原值（万元）">{{ info.bookValue }}</el-descriptions-item>
@@ -37,8 +39,11 @@
       <el-descriptions :column="3" border size="small" class="info-grid">
         <el-descriptions-item label="是否抵押">{{ info.mortgaged ? '是' : '否' }}</el-descriptions-item>
         <template v-if="info.mortgaged">
-          <el-descriptions-item label="抵押权人">{{ info.mortgagee }}</el-descriptions-item>
-          <el-descriptions-item label="抵押金额（万元）">{{ info.mortgageAmount }}</el-descriptions-item>
+          <el-descriptions-item label="抵押权人">{{ activeMortgageRecords[0]?.bank || info.mortgagee || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="抵押金额（万元）">{{ activeMortgageRecords[0]?.amount || info.mortgageAmount || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="抵押合同编号">{{ activeMortgageRecords[0]?.contractNo || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="抵押期限（月）">{{ activeMortgageRecords[0]?.period || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="抵押起止时间">{{ activeMortgageRecords[0] ? `${activeMortgageRecords[0].startDate} ~ ${activeMortgageRecords[0].endDate}` : '—' }}</el-descriptions-item>
         </template>
       </el-descriptions>
 
@@ -251,7 +256,10 @@
         </el-tab-pane>
       </el-tabs>
     </div>
-    <el-empty v-else description="请选择资产查看详情" />
+    <div v-if="$slots['extra-actions']" style="padding:12px 20px;border-top:1px solid var(--bd);text-align:right">
+      <slot name="extra-actions"></slot>
+    </div>
+    <el-empty v-else-if="!asset" description="请选择资产查看详情" />
   </el-drawer>
 </template>
 
@@ -264,6 +272,7 @@ import { useAuditStore } from '../store/audit'
 import { useCredentialStore } from '../store/credential'
 import { useFinanceStore } from '../store/finance'
 import { useInspectionStore } from '../store/inspection'
+import { useMortgageStore } from '../store/mortgage'
 
 const assetStore = useAssetStore()
 const contractStore = useContractStore()
@@ -271,6 +280,7 @@ const auditStore = useAuditStore()
 const credentialStore = useCredentialStore()
 const financeStore = useFinanceStore()
 const inspectionStore = useInspectionStore()
+const mortgageStore = useMortgageStore()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -311,7 +321,9 @@ const info = computed(() => {
     attr: a.assetAttr || '经营性',
     dept: a.manageDept || '资产部门',
     manager: a.manager || '—',
-    address: a.location || a.address || '—',
+    address: [a.town, a.location || a.address].filter(Boolean).join(' ') || '—',
+    lng: a.lng ?? null,
+    lat: a.lat ?? null,
     createdAt: a.createdAt || '—',
     purchaseDate: a.purchaseDate || '—',
     bookValue: a.bookValue ?? '—',
@@ -320,7 +332,7 @@ const info = computed(() => {
     certStatus: a.certStatus || (a.hasPropertyRight === true ? '已办证' : a.hasPropertyRight === false ? '无' : '—'),
     usage: a.usage || a.type || '—',
     structure: a.structure || '—',
-    mortgaged: !!a.mortgaged,
+    mortgaged: a.mortgageStatus === '已抵押' || !!a.mortgaged,
     mortgagee: a.mortgagee || '—',
     mortgageAmount: a.mortgageAmount ?? '—',
     forRent: a.forRent || (rented ? '否' : a.status ? '是' : '—'),
@@ -342,6 +354,10 @@ const assetRecord = computed(() =>
 
 const assetContracts = computed(() =>
   assetId.value ? contractStore.visibleContracts.filter(c => c.assetId === assetId.value) : []
+)
+
+const activeMortgageRecords = computed(() =>
+  assetId.value ? mortgageStore.getMortgagesByAsset(assetId.value).filter(m => m.status === '抵押中') : []
 )
 
 const assetFees = computed(() => {

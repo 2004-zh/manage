@@ -1134,6 +1134,7 @@ const addForm = ref({ assetId: '', assetName: '', tenant: '', area: 0, monthlyRe
 // 可出租资产：从真实资产库取，按剩余可租面积过滤；企业端 visibleAssets 已按登录公司隔离
 const leaseAssetOptions = computed(() =>
   assetStore.visibleAssets
+    .filter(a => a.mortgageStatus !== '已抵押')
     .map(a => ({
       id: a.id,
       name: a.name,

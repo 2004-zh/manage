@@ -68,19 +68,19 @@
             <el-tag :type="getApprovalType(row.approvalStatus)" size="small">{{ row.approvalStatus }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="viewDetail(row)">详情</el-button>
-            <el-button type="primary" link size="small" @click="editRecord(row)">编辑</el-button>
-            <el-dropdown style="margin-left:8px" @command="cmd => handleRowCommand(cmd, row)">
+            <el-button v-if="row.approvalStatus === '待审批'" type="success" link size="small" @click="approveRecord(row)">审批</el-button>
+            <el-button v-if="row.approvalStatus !== '已审批'" type="primary" link size="small" @click="editRecord(row)">编辑</el-button>
+            <el-dropdown style="margin-left:4px" @command="cmd => handleRowCommand(cmd, row)">
               <el-button type="primary" link size="small">
                 <el-icon><MoreFilled /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="assetInfo">资产信息</el-dropdown-item>
-                  <el-dropdown-item command="view">查看</el-dropdown-item>
-                  <el-dropdown-item command="delete">删除</el-dropdown-item>
+                  <el-dropdown-item v-if="row.approvalStatus !== '已审批'" command="delete">删除</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -104,7 +104,7 @@
       <el-form :model="form" label-width="100px">
         <el-form-item label="资产选择" required>
           <el-select v-model="form.assetName" placeholder="请选择资产" style="width:100%" filterable>
-            <el-option v-for="a in assetStore.visibleAssets" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
+            <el-option v-for="a in assetStore.visibleAssets.filter(a => a.mortgageStatus !== '已抵押')" :key="a.id" :label="`${a.id} - ${a.name}`" :value="a.name" />
           </el-select>
         </el-form-item>
         <el-form-item label="调出单位" required>
@@ -179,6 +179,15 @@
           <el-col :span="12">
             <el-form-item label="调拨日期" required>
               <el-date-picker v-model="saveForm.transferDate" type="date" placeholder="请选择调拨日期" format="YYYY-MM-DD" value-format="YYYY-MM-DD" style="width:100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="调拨类型" required>
+              <el-select v-model="saveForm.transferType" placeholder="请选择调拨类型" style="width:100%">
+                <el-option label="划拨" value="划拨" />
+                <el-option label="转让" value="转让" />
+                <el-option label="置换" value="置换" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -289,6 +298,30 @@
         </el-descriptions>
       </template>
     </el-drawer>
+
+    <!-- 审批对话框 -->
+    <el-dialog v-model="approvalVisible" title="调拨审批" width="480px" destroy-on-close>
+      <template v-if="approvalTarget">
+        <el-descriptions :column="1" border size="small" style="margin-bottom:16px">
+          <el-descriptions-item label="调拨编号">{{ approvalTarget.transferNo }}</el-descriptions-item>
+          <el-descriptions-item label="资产名称">{{ approvalTarget.assetName }}</el-descriptions-item>
+          <el-descriptions-item label="调拨类型">{{ approvalTarget.transferType }}</el-descriptions-item>
+          <el-descriptions-item label="调出单位">{{ approvalTarget.fromUnit }}</el-descriptions-item>
+          <el-descriptions-item label="调入单位">{{ approvalTarget.toUnit }}</el-descriptions-item>
+          <el-descriptions-item label="调拨原因">{{ approvalTarget.reason }}</el-descriptions-item>
+        </el-descriptions>
+        <el-form label-width="80px">
+          <el-form-item label="审批意见">
+            <el-input v-model="approvalRemark" type="textarea" :rows="3" placeholder="请输入审批意见（可选）" />
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #footer>
+        <el-button @click="approvalVisible = false">取消</el-button>
+        <el-button type="danger" @click="doApproval('已驳回')">驳回</el-button>
+        <el-button type="primary" @click="doApproval('已审批')">通过</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -368,12 +401,40 @@ function editRecord(row) {
   dialogVisible.value = true
 }
 
-function viewRecord(row) {
+function viewDetail(row) {
   currentRow.value = row
   detailVisible.value = true
 }
 
+const approvalVisible = ref(false)
+const approvalTarget = ref(null)
+const approvalRemark = ref('')
+
+function approveRecord(row) {
+  approvalTarget.value = row
+  approvalRemark.value = ''
+  approvalVisible.value = true
+}
+
+function doApproval(status) {
+  if (!approvalTarget.value) return
+  const target = transferRecords.value.find(r => r.transferNo === approvalTarget.value.transferNo)
+  if (target) {
+    target.approvalStatus = status
+    if (status === '已审批') {
+      target.executeDate = target.approvalDeadline?.slice(0, 10) || ''
+    }
+    target.remark = approvalRemark.value || target.remark
+  }
+  approvalVisible.value = false
+  ElMessage.success(status === '已审批' ? '审批通过' : '已驳回')
+}
+
 function deleteRecord(row) {
+  if (row.approvalStatus === '已审批') {
+    ElMessage.warning('已审批的调拨记录不可删除')
+    return
+  }
   ElMessageBox.confirm(`确认删除调拨记录"${row.transferNo}"？`, '提示', { type: 'warning' }).then(() => {
     const idx = transferRecords.value.findIndex(r => r.transferNo === row.transferNo)
     if (idx !== -1) transferRecords.value.splice(idx, 1)
@@ -384,6 +445,10 @@ function deleteRecord(row) {
 function saveRecord() {
   if (!form.value.assetName || !form.value.fromUnit || !form.value.toUnit || !form.value.transferType || !form.value.transferDate) {
     ElMessage.warning('请填写必填项')
+    return
+  }
+  if (form.value.fromUnit === form.value.toUnit) {
+    ElMessage.warning('调出单位与调入单位不能相同')
     return
   }
   if (!isEdit.value) {
@@ -398,6 +463,9 @@ function saveRecord() {
     const target = transferRecords.value.find(r => r.transferNo === form.value.transferNo)
     if (target) Object.assign(target, { ...form.value })
   } else {
+    const asset = assetStore.visibleAssets.find(a => a.name === form.value.assetName)
+    const now = new Date()
+    const approvalDeadline = new Date(now.getTime() + 5 * 86400000).toISOString().slice(0, 16).replace('T', ' ')
     const newNo = 'DB-2026-' + String(transferRecords.value.length + 1).padStart(3, '0')
     transferRecords.value.unshift({
       transferNo: newNo,
@@ -407,13 +475,13 @@ function saveRecord() {
       remark: '',
       beforeDept: '',
       afterDept: '',
-      assetType: '',
-      assetStatus: '',
-      location: '',
-      opCompany: '',
+      assetType: asset?.type || asset?.assetType || '',
+      assetStatus: asset?.status || asset?.assetStatus || '',
+      location: asset?.location || '',
+      opCompany: asset?.opCompany || asset?.manageCompany || '',
       propCompany: form.value.fromUnit,
-      approvalDeadline: '',
-      approvalStartTime: ''
+      approvalDeadline,
+      approvalStartTime: now.toISOString().slice(0, 16).replace('T', ' ')
     })
     page.value = 1
   }
@@ -425,7 +493,8 @@ function handleSearch() { page.value = 1 }
 function resetFilters() { filters.value = { keyword: '', transferType: '', approvalStatus: '', group: '' } }
 function handleExport() {
   const headers = ['调拨编号', '资产名称', '调拨类型', '调拨日期', '执行日期', '调出单位', '调入单位', '调拨原因', '审批状态']
-  const rows = filteredData.value.map(item => [item.transferNo, item.assetName, item.transferType, item.transferDate, item.executeDate, item.fromUnit, item.toUnit, item.reason, item.approvalStatus])
+  const escape = v => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s }
+  const rows = filteredData.value.map(item => [item.transferNo, item.assetName, item.transferType, item.transferDate, item.executeDate, item.fromUnit, item.toUnit, item.reason, item.approvalStatus].map(escape))
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -441,18 +510,28 @@ const currentRow = ref(null)
 const detailVisible = ref(false)
 
 function viewAssetInfo(row) {
-  currentRow.value = row
-  detailVisible.value = true
-}
-
-function viewDetail(row) {
-  currentRow.value = row
-  detailVisible.value = true
+  const asset = assetStore.visibleAssets.find(a => a.name === row.assetName)
+  if (asset) {
+    ElMessageBox.alert(
+      `<div style="line-height:2">
+        <b>资产编号：</b>${asset.id}<br/>
+        <b>资产名称：</b>${asset.name}<br/>
+        <b>资产类型：</b>${asset.type || asset.assetType || '-'}<br/>
+        <b>资产状态：</b>${asset.status || asset.assetStatus || '-'}<br/>
+        <b>资产座落：</b>${asset.location || '-'}<br/>
+        <b>所属公司：</b>${asset.group || asset.propCompany || '-'}<br/>
+        <b>经营公司：</b>${asset.manageCompany || asset.opCompany || '-'}
+      </div>`,
+      '资产信息',
+      { dangerouslyUseHTMLString: true, customStyle: 'max-width:520px' }
+    )
+  } else {
+    ElMessage.info('未找到关联资产详情，可能为历史调拨记录')
+  }
 }
 
 function handleRowCommand(cmd, row) {
   if (cmd === 'assetInfo') viewAssetInfo(row)
-  else if (cmd === 'view') viewRecord(row)
   else if (cmd === 'delete') deleteRecord(row)
 }
 
@@ -463,24 +542,31 @@ const innerPageSize = ref(5)
 
 const defaultSaveForm = {
   company: '', beforeDept: '', beforePerson: '', afterDept: '', afterPerson: '',
-  transferDate: '', approvalDeadline: '', reason: '', remark: '', assets: []
+  transferType: '', transferDate: '', approvalDeadline: '', reason: '', remark: '', assets: []
 }
 const saveForm = ref({ ...defaultSaveForm, assets: [] })
 
-const assetPool = ref([
-  { region: '福建省福州市长乐区', project: '吴航商业街项目', zone: '吴航分区', opCompany: '城投经营公司', propCompany: '城投集团', assetNo: 'ZC-0101', assetName: '吴航街道商业街 A-02 商铺', location: '长乐区吴航街道商业街14号', assetType: '商铺', assetStatus: '闲置' },
-  { region: '福建省福州市长乐区', project: '航城商务项目', zone: '航城分区', opCompany: '产投经营公司', propCompany: '产投集团', assetNo: 'ZC-0205', assetName: '航城商务楼 5F', location: '长乐区航城街道商务楼5层', assetType: '办公楼', assetStatus: '闲置' },
-  { region: '福建省福州市长乐区', project: '营前厂房项目', zone: '营前分区', opCompany: '水投经营公司', propCompany: '水投集团', assetNo: 'ZC-0308', assetName: '营前标准厂房 3#', location: '长乐区营前街道标准厂房3#', assetType: '厂房', assetStatus: '闲置' },
-  { region: '福建省福州市长乐区', project: '首占保障房项目', zone: '首占分区', opCompany: '领航经营公司', propCompany: '领航公司', assetNo: 'ZC-0412', assetName: '首占新区保障房 2# 楼', location: '长乐区首占新区保障房2#楼', assetType: '住宅', assetStatus: '已出租' },
-  { region: '福建省福州市长乐区', project: '鹤上物流园项目', zone: '鹤上分区', opCompany: '城投经营公司', propCompany: '城投集团', assetNo: 'ZC-0517', assetName: '鹤上镇物流园 C 区仓库', location: '长乐区鹤上镇物流园C区', assetType: '仓库', assetStatus: '闲置' },
-  { region: '福建省福州市长乐区', project: '数字产业园项目', zone: '文武砂分区', opCompany: '产投经营公司', propCompany: '产投集团', assetNo: 'ZC-0623', assetName: '文武砂数字产业园 6F', location: '长乐区文武砂数字产业园6层', assetType: '办公楼', assetStatus: '闲置' },
-  { region: '福建省福州市长乐区', project: '漳港市场项目', zone: '漳港分区', opCompany: '领航经营公司', propCompany: '领航公司', assetNo: 'ZC-0728', assetName: '漳港海鲜市场摊位区 B 段', location: '长乐区漳港街道海鲜市场B段', assetType: '市场', assetStatus: '已出租' }
-])
+const assetPool = computed(() => {
+  return assetStore.visibleAssets
+    .filter(a => a.status === '闲置' || a.assetStatus === '闲置')
+    .map(a => ({
+      region: a.region || '福建省福州市长乐区',
+      project: a.project || '',
+      zone: a.zone || '',
+      opCompany: a.manageCompany || a.opCompany || '',
+      propCompany: a.group || a.propCompany || '',
+      assetNo: a.id,
+      assetName: a.name,
+      location: a.location || '',
+      assetType: a.type || a.assetType || '',
+      assetStatus: a.status || a.assetStatus || '',
+      mortgageStatus: a.mortgageStatus || ''
+    }))
+})
 
 const pickableAssets = computed(() => {
   const chosen = new Set(saveForm.value.assets.map(a => a.assetNo))
-  // 企业端只能挑本公司名下的资产
-  return assetPool.value.filter(a => !chosen.has(a.assetNo) && (!userStore.isEnt || a.propCompany === currentCompany.value))
+  return assetPool.value.filter(a => !chosen.has(a.assetNo) && (!userStore.isEnt || a.propCompany === currentCompany.value) && a.mortgageStatus !== '已抵押')
 })
 
 const pagedSaveAssets = computed(() => {
@@ -489,7 +575,7 @@ const pagedSaveAssets = computed(() => {
 })
 
 function showSaveDialog() {
-  saveForm.value = { ...defaultSaveForm, company: userStore.isEnt ? currentCompany.value : '', assets: [] }
+  saveForm.value = { ...defaultSaveForm, company: userStore.isEnt ? currentCompany.value : '', assets: [], transferType: '' }
   innerPage.value = 1
   saveDialogVisible.value = true
 }
@@ -507,30 +593,35 @@ function removeSaveAsset(index) {
 
 function submitSaveTransfer() {
   const f = saveForm.value
-  if (!f.company || !f.beforeDept || !f.beforePerson || !f.afterDept || !f.afterPerson || !f.transferDate || !f.approvalDeadline || !f.reason) {
+  if (!f.company || !f.beforeDept || !f.beforePerson || !f.afterDept || !f.afterPerson || !f.transferType || !f.transferDate || !f.approvalDeadline || !f.reason) {
     ElMessage.warning('请填写必填项')
     return
   }
+  if (f.assets.length === 0) {
+    ElMessage.warning('请至少添加一项资产')
+    return
+  }
+  const now = new Date()
   const newRecords = f.assets.map((asset, i) => ({
     transferNo: 'DB-2026-' + String(transferRecords.value.length + i + 1).padStart(3, '0'),
-    assetName: asset.name || asset.assetName || '批量调拨资产',
-    fromUnit: f.beforeDept,
-    toUnit: f.afterDept,
-    transferType: '批量调拨',
+    assetName: asset.assetName || '批量调拨资产',
+    fromUnit: f.company,
+    toUnit: f.company,
+    transferType: f.transferType,
     transferDate: f.transferDate,
     approvalStatus: '待审批',
     beforeDept: f.beforeDept,
     afterDept: f.afterDept,
     executeDate: '',
     reason: f.reason,
-    remark: '',
-    assetType: asset.type || '',
-    assetStatus: '',
+    remark: f.remark || '',
+    assetType: asset.assetType || '',
+    assetStatus: asset.assetStatus || '',
     location: asset.location || '',
-    opCompany: f.company,
-    propCompany: f.beforeDept,
+    opCompany: asset.opCompany || '',
+    propCompany: asset.propCompany || f.company,
     approvalDeadline: f.approvalDeadline,
-    approvalStartTime: new Date().toISOString().slice(0, 16).replace('T', ' ')
+    approvalStartTime: now.toISOString().slice(0, 16).replace('T', ' ')
   }))
   transferRecords.value.unshift(...newRecords)
   saveDialogVisible.value = false
