@@ -1,42 +1,39 @@
 <template>
-  <div class="tags-view">
-    <div class="tags-list">
+  <!-- 面包屑：菜单分组 > 当前页。分组与「首页」平级，首页不再作为所有页面的固定前缀 -->
+  <div class="breadcrumb-bar">
+    <template v-for="(crumb, i) in crumbs" :key="i">
+      <el-icon v-if="i > 0" class="crumb-sep"><ArrowRight /></el-icon>
       <span
-        v-for="v in appStore.visitedViews"
-        :key="v.path"
-        class="tag-item"
-        :class="{ active: v.path === route.path }"
-        @click="go(v.path)"
-      >
-        {{ v.title }}
-        <el-icon v-if="v.path !== home" class="tag-close" @click.stop="close(v)">
-          <Close />
-        </el-icon>
-      </span>
-    </div>
+        :class="crumb.current ? 'crumb-current' : crumb.link ? 'crumb-link' : 'crumb-parent'"
+        @click="crumb.link && go(crumb.link)"
+      >{{ crumb.label }}</span>
+    </template>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAppStore } from '../store/app'
-import { Close } from '@element-plus/icons-vue'
+import { ArrowRight } from '@element-plus/icons-vue'
 
 const props = defineProps({ home: { type: String, default: '/ent/home' } })
 const route = useRoute()
 const router = useRouter()
-const appStore = useAppStore()
+
+const crumbs = computed(() => {
+  const group = route.meta.parent || '首页'
+  const title = route.meta.title || group
+  // 首页分组保留可点击的返回入口；其他分组与首页平级，作为纯文本一级导航
+  const list = [{ label: group, link: group === '首页' ? props.home : null }]
+  if (title !== group) {
+    list.push({ label: title, current: true })
+  } else {
+    list[0].current = true
+  }
+  return list
+})
 
 function go(path) {
-  if (path !== route.path) router.push(path)
-}
-
-function close(v) {
-  const wasActive = v.path === route.path
-  appStore.removeView(v.path)
-  if (wasActive) {
-    const rest = appStore.visitedViews
-    router.push(rest.length ? rest[rest.length - 1].path : props.home)
-  }
+  if (route.path !== path) router.push(path)
 }
 </script>

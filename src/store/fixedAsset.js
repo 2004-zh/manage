@@ -149,6 +149,30 @@ export const useFixedAssetStore = defineStore('fixedAsset', () => {
     return record
   }
 
+  let ledgerSeq = 0
+
+  // 单据完结 → 台账登记：按 sourceDocNo 做 upsert，同一张单据只入账一次，修改单据后台账同步更新
+  function syncDocLedger(kind, sourceDocNo, record) {
+    const list = kind === 'change' ? changeRecords : disposeRecords
+    const idx = list.value.findIndex(r => r.sourceDocNo === sourceDocNo)
+    if (idx > -1) {
+      list.value[idx] = { ...list.value[idx], ...record }
+      return list.value[idx]
+    }
+    const noField = kind === 'change' ? 'changeNo' : 'disposeNo'
+    const prefix = kind === 'change' ? 'BG' : 'CZ'
+    const entry = { ...record, [noField]: `${prefix}${Date.now()}${++ledgerSeq}`, sourceDocNo }
+    list.value.unshift(entry)
+    return entry
+  }
+
+  // 单据回退/删除 → 撤销对应台账记录（历史补录记录无 sourceDocNo，不受影响）
+  function removeDocLedger(kind, sourceDocNo) {
+    const list = kind === 'change' ? changeRecords : disposeRecords
+    const idx = list.value.findIndex(r => r.sourceDocNo === sourceDocNo)
+    if (idx > -1) list.value.splice(idx, 1)
+  }
+
   const stats = computed(() => {
     const total = assets.value.length
     const totalValue = assets.value.reduce((s, a) => s + (a.original || 0), 0)
@@ -186,6 +210,8 @@ export const useFixedAssetStore = defineStore('fixedAsset', () => {
     addBorrow,
     addChange,
     addDispose,
+    syncDocLedger,
+    removeDocLedger,
     stats
   }
 })

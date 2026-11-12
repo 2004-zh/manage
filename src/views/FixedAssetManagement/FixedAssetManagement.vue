@@ -19,14 +19,6 @@
           <el-icon><Plus /></el-icon>
           新增借出
         </el-button>
-        <el-button type="primary" @click="handleChange" v-if="activeTab === 'change'">
-          <el-icon><Plus /></el-icon>
-          新增变更
-        </el-button>
-        <el-button type="primary" @click="handleDispose" v-if="activeTab === 'dispose'">
-          <el-icon><Plus /></el-icon>
-          新增处置
-        </el-button>
         <el-button type="primary" @click="handleCreatePlan" v-if="activeTab === 'inventory'">
           <el-icon><Plus /></el-icon>
           生成盘点计划
@@ -433,8 +425,15 @@
           </div>
         </el-tab-pane>
 
-        <!-- 资产变更 -->
+        <!-- 资产变更：变更单 / 调拨 / 维修 -->
         <el-tab-pane label="资产变更" name="change">
+          <el-tabs v-model="changeSub" type="card" class="sub-tabs">
+            <el-tab-pane label="调拨" name="transfer" />
+            <el-tab-pane label="维修" name="repair" />
+            <el-tab-pane label="变更台账" name="ledger" />
+          </el-tabs>
+
+          <template v-if="changeSub === 'ledger'">
           <el-form :inline="true" :model="changeSearch" class="search-form">
             <el-form-item label="资产名称">
               <el-input v-model="changeSearch.name" placeholder="请输入" clearable />
@@ -461,6 +460,12 @@
             <el-table-column prop="changeReason" label="变更原因" min-width="150" show-overflow-tooltip />
             <el-table-column prop="changeDate" label="变更日期" width="110" />
             <el-table-column prop="operator" label="操作人" width="100" />
+            <el-table-column label="来源单据" width="130">
+              <template #default="{ row }">
+                <el-link v-if="row.sourceDocNo" type="primary" :underline="false" @click="jumpToSourceDoc(row.sourceDocNo)">{{ row.sourceDocNo }}</el-link>
+                <span v-else>历史补录</span>
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="120" fixed="right">
               <template #default="{ row }">
                 <el-button link type="primary" size="small" @click="handleViewChange(row)">详情</el-button>
@@ -477,13 +482,85 @@
               layout="total, sizes, prev, pager, next, jumper"
             />
           </div>
+          </template>
+
+          <!-- 调拨 / 维修单据：与「资产处置」的单据表格同构，按 docLists 的 key 取数 -->
+          <template v-else>
+            <el-form :inline="true" class="search-form">
+              <el-form-item label="单据编号">
+                <el-input v-model="docLists[changeSub].search.docNo" placeholder="请输入单据编号" clearable style="width: 160px" />
+              </el-form-item>
+              <el-form-item label="公司">
+                <el-select v-model="docLists[changeSub].search.company" placeholder="请选择公司" clearable style="width: 200px">
+                  <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="单据状态">
+                <el-select v-model="docLists[changeSub].search.status" placeholder="请选择状态" clearable style="width: 130px">
+                  <el-option v-for="s in docStatusOptions" :key="s" :label="s" :value="s" />
+                </el-select>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="docLists[changeSub].page = 1">
+                  <el-icon><Search /></el-icon>
+                  查询
+                </el-button>
+                <el-button @click="resetDocSearch(changeSub)">重置</el-button>
+                <el-button type="primary" @click="openDocDialog(changeSub)">
+                  <el-icon><Plus /></el-icon>
+                  新增单据
+                </el-button>
+              </el-form-item>
+            </el-form>
+
+            <el-table :data="pagedDocs(changeSub)" style="width: 100%">
+              <el-table-column prop="docNo" label="单据编号" width="130">
+                <template #default="{ row }">
+                  <el-link type="primary" :underline="false" @click="viewDocApproval(row)">{{ row.docNo }}</el-link>
+                </template>
+              </el-table-column>
+              <el-table-column prop="assetName" label="关联资产" min-width="150" show-overflow-tooltip />
+              <el-table-column v-if="changeSub === 'transfer'" prop="toDept" label="调入部门" width="110" />
+              <el-table-column v-if="changeSub === 'repair'" prop="cost" label="维修费用(元)" width="120" />
+              <el-table-column prop="company" label="所属公司" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="createTime" label="创建时间" width="160" />
+              <el-table-column label="完结时间" width="160">
+                <template #default="{ row }">{{ row.finishTime || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="备注" min-width="160" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.remark || '-' }}</template>
+              </el-table-column>
+              <el-table-column prop="status" label="单据状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="docStatusType(row.status)" size="small">{{ row.status }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="260" fixed="right">
+                <template #default="{ row }">
+                  <el-button link type="primary" size="small" @click="viewDocApproval(row)">审批信息</el-button>
+                  <el-button v-if="canFinishDoc(row)" link type="success" size="small" @click="finishDoc(changeSub, row)">完结</el-button>
+                  <el-button link type="primary" size="small" @click="openDocDialog(changeSub, row)">修改</el-button>
+                  <el-button link type="danger" size="small" @click="deleteDoc(changeSub, row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <div class="pager">
+              <el-pagination
+                v-model:current-page="docLists[changeSub].page"
+                v-model:page-size="docLists[changeSub].pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :total="docTotal(changeSub)"
+                layout="total, sizes, prev, pager, next, jumper"
+              />
+            </div>
+          </template>
         </el-tab-pane>
 
         <!-- 资产处置 -->
         <el-tab-pane label="资产处置" name="dispose">
+          <!-- 调拨、维修已归入「资产变更」，此处只保留处置类目录 -->
           <el-tabs v-model="disposeSub" type="card" class="sub-tabs">
-            <el-tab-pane label="调拨" name="transfer" />
-            <el-tab-pane label="维修" name="repair" />
             <el-tab-pane label="处置" name="dispose" />
             <el-tab-pane label="处置台账" name="ledger" />
           </el-tabs>
@@ -522,6 +599,8 @@
                   <el-link type="primary" :underline="false" @click="viewDocApproval(row)">{{ row.docNo }}</el-link>
                 </template>
               </el-table-column>
+              <el-table-column prop="assetName" label="处置资产" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="disposeType" label="处置方式" width="100" />
               <el-table-column prop="company" label="所属公司" min-width="200" show-overflow-tooltip />
               <el-table-column prop="createTime" label="创建时间" width="160" />
               <el-table-column label="完结时间" width="160">
@@ -535,9 +614,10 @@
                   <el-tag :type="docStatusType(row.status)" size="small">{{ row.status }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="190" fixed="right">
+              <el-table-column label="操作" width="260" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="viewDocApproval(row)">审批信息</el-button>
+                  <el-button v-if="canFinishDoc(row)" link type="success" size="small" @click="finishDoc(disposeSub, row)">完结</el-button>
                   <el-button link type="primary" size="small" @click="openDocDialog(disposeSub, row)">修改</el-button>
                   <el-button link type="danger" size="small" @click="deleteDoc(disposeSub, row)">删除</el-button>
                 </template>
@@ -587,6 +667,12 @@
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }">
                 <el-tag :type="row.status === '已完成' ? 'success' : 'warning'" size="small">{{ row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="来源单据" width="130">
+              <template #default="{ row }">
+                <el-link v-if="row.sourceDocNo" type="primary" :underline="false" @click="jumpToSourceDoc(row.sourceDocNo)">{{ row.sourceDocNo }}</el-link>
+                <span v-else>历史补录</span>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120" fixed="right">
@@ -1485,7 +1571,7 @@
       </template>
     </el-drawer>
 
-    <el-dialog v-model="docDialogVisible" :title="docDialogTitle" width="520px">
+    <el-dialog v-model="docDialogVisible" :title="docDialogTitle" width="640px">
       <el-form :model="docForm" label-width="90px">
         <el-form-item label="单据名称">
           <el-input v-model="docForm.name" maxlength="50" show-word-limit placeholder="请输入单据名称" />
@@ -1495,8 +1581,73 @@
             <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
           </el-select>
         </el-form-item>
+
+        <!-- 调拨 / 维修 / 处置：办理单据时登记业务明细，完结后据此自动写入台账 -->
+        <template v-if="isBizDoc">
+          <el-form-item label="关联资产" required>
+            <el-select v-model="docForm.assetNo" placeholder="请选择资产" filterable style="width:100%" @change="onDocAssetChange">
+              <el-option v-for="a in assetOptions" :key="a.code" :label="`${a.name}（${a.code}）`" :value="a.code" />
+            </el-select>
+          </el-form-item>
+
+          <template v-if="docDialogKey === 'transfer'">
+            <el-form-item label="调出部门">
+              <el-input v-model="docForm.fromDept" placeholder="如：技术部" />
+            </el-form-item>
+            <el-form-item label="调入公司">
+              <el-select v-model="docForm.toCompany" placeholder="请选择公司" style="width:100%">
+                <el-option v-for="c in companyOptions" :key="c" :label="c" :value="c" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="调入部门" required>
+              <el-input v-model="docForm.toDept" placeholder="如：市场部" />
+            </el-form-item>
+            <el-form-item label="调拨日期">
+              <el-date-picker v-model="docForm.bizDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width:100%" />
+            </el-form-item>
+          </template>
+
+          <template v-else-if="docDialogKey === 'repair'">
+            <el-form-item label="故障描述" required>
+              <el-input v-model="docForm.fault" type="textarea" :rows="2" placeholder="请输入故障描述" />
+            </el-form-item>
+            <el-form-item label="维修商">
+              <el-input v-model="docForm.vendor" placeholder="请输入维修商" />
+            </el-form-item>
+            <el-form-item label="维修费用(元)">
+              <el-input-number v-model="docForm.cost" :min="0" style="width:100%" />
+            </el-form-item>
+          </template>
+
+          <template v-else-if="docDialogKey === 'dispose'">
+            <el-form-item label="处置方式" required>
+              <el-select v-model="docForm.disposeType" placeholder="请选择" style="width:100%">
+                <el-option label="报废" value="报废" />
+                <el-option label="变卖" value="变卖" />
+                <el-option label="捐赠" value="捐赠" />
+                <el-option label="转让" value="转让" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="残值(元)">
+              <el-input-number v-model="docForm.residualValue" :min="0" style="width:100%" />
+            </el-form-item>
+          </template>
+
+          <el-form-item label="原因说明">
+            <el-input v-model="docForm.reason" type="textarea" :rows="2" placeholder="请输入原因" />
+          </el-form-item>
+          <el-form-item label="经办人">
+            <el-input v-model="docForm.operator" placeholder="请输入经办人" />
+          </el-form-item>
+          <el-form-item label="单据状态">
+            <el-select v-model="docForm.status" style="width:100%">
+              <el-option v-for="s in docStatusOptions" :key="s" :label="s" :value="s" />
+            </el-select>
+          </el-form-item>
+        </template>
+
         <el-form-item label="备注">
-          <el-input v-model="docForm.remark" type="textarea" :rows="3" maxlength="250" show-word-limit placeholder="请输入备注" />
+          <el-input v-model="docForm.remark" type="textarea" :rows="2" maxlength="250" show-word-limit placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -1673,7 +1824,8 @@ const fixedAssetStore = useFixedAssetStore()
 const activeTab = ref('asset')
 const inboundSub = ref('docs')
 const dispatchSub = ref('alloc')
-const disposeSub = ref('transfer')
+const changeSub = ref('transfer')
+const disposeSub = ref('dispose')
 const inventorySub = ref('docs')
 
 const companyOptions = ['华信科技集团有限公司', '云鼎资产管理有限公司', '恒信融资租赁有限公司', '中天建设集团有限公司']
@@ -2601,20 +2753,67 @@ function deleteScheme(row) {
 
 const docStatusPool = ['已完结', '进行中', '待提交', '已驳回', '已撤销']
 const docNotePool = ['按季度例行办理', '需资产管理员现场复核', '已完成实物验收', '等待财务确认金额', '附现场照片存档']
+const docDeptPool = ['技术部', '财务部', '行政部', '市场部', '运营部', '生产部']
+const docOperatorPool = ['张志刚', '李秀兰', '王建军', '赵晓梅']
+const docFaultPool = ['屏幕显示异常，更换排线', '电池续航衰减，需更换电池', '打印机卡纸，更换进纸组件', '空调机组制冷异常，补充冷媒']
+const docDisposeTypePool = ['报废', '变卖', '捐赠', '转让']
 
-function buildDocs(prefix, count, names) {
+// 调拨 / 维修 / 处置单据的业务明细，完结后用于自动登记台账
+function buildDocBiz(kind, i, company, date) {
+  const opt = assetOptions.value[i % assetOptions.value.length] || { code: '', name: '' }
+  const base = {
+    assetNo: opt.code,
+    assetName: opt.name,
+    operator: docOperatorPool[i % docOperatorPool.length],
+    bizDate: date,
+    reason: ''
+  }
+  if (kind === 'transfer') {
+    return {
+      ...base,
+      fromCompany: company,
+      fromDept: docDeptPool[i % docDeptPool.length],
+      toCompany: companyOptions[(i + 1) % companyOptions.length],
+      toDept: docDeptPool[(i + 2) % docDeptPool.length],
+      reason: '部门资产配置调整'
+    }
+  }
+  if (kind === 'repair') {
+    return {
+      ...base,
+      fault: docFaultPool[i % docFaultPool.length],
+      vendor: ['联想售后', '第三方维修商', '设备厂商'][i % 3],
+      cost: 200 + i * 120
+    }
+  }
+  if (kind === 'dispose') {
+    return {
+      ...base,
+      disposeType: docDisposeTypePool[i % docDisposeTypePool.length],
+      disposeReason: '达到使用年限，按流程处置',
+      residualValue: 100 + i * 200,
+      reason: '达到使用年限，按流程处置'
+    }
+  }
+  return {}
+}
+
+function buildDocs(prefix, count, names, kind) {
   const docs = []
   for (let i = 0; i < count; i++) {
     const status = docStatusPool[i % docStatusPool.length]
+    const company = companyOptions[i % companyOptions.length]
+    const date = `2026-0${(i % 8) + 1}-${String(10 + i).padStart(2, '0')}`
     docs.push({
       id: `${prefix}-${i + 1}`,
       docNo: `${prefix}2026${900 - i * 13}`,
       name: names[i % names.length],
-      company: companyOptions[i % companyOptions.length],
-      createTime: `2026-0${(i % 8) + 1}-${String(10 + i).padStart(2, '0')} 09:${String((i * 7) % 60).padStart(2, '0')}:00`,
+      company,
+      createTime: `${date} 09:${String((i * 7) % 60).padStart(2, '0')}:00`,
       finishTime: status === '已完结' ? `2026-0${(i % 8) + 1}-${String(15 + i).padStart(2, '0')} 17:20:00` : '',
       remark: docNotePool[i % docNotePool.length],
-      status
+      status,
+      ...(kind ? buildDocBiz(kind, i, company, date) : {})
     })
   }
   return docs
@@ -2634,15 +2833,15 @@ const docLists = reactive({
     search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   },
   transfer: {
-    docs: buildDocs('DB', 6, ['总部调拨至分公司', '仓库间资产调拨', '跨区域调拨支援项目']),
+    docs: buildDocs('DB', 6, ['总部调拨至分公司', '仓库间资产调拨', '跨区域调拨支援项目'], 'transfer'),
     search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   },
   repair: {
-    docs: buildDocs('WX', 6, ['打印机故障送修', '车辆年度维修保养', '空调机组检修']),
+    docs: buildDocs('WX', 6, ['打印机故障送修', '车辆年度维修保养', '空调机组检修'], 'repair'),
     search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   },
   dispose: {
-    docs: buildDocs('CZ', 7, ['超期设备报废处置', '盘亏资产核销处置', '旧家具变卖处置']),
+    docs: buildDocs('CZ', 7, ['超期设备报废处置', '盘亏资产核销处置', '旧家具变卖处置'], 'dispose'),
     search: { docNo: '', company: '', status: '' }, page: 1, pageSize: 15
   }
 })
@@ -2903,16 +3102,126 @@ function submitWizard() {
 const docDialogVisible = ref(false)
 const docDialogMode = ref('add')
 const docDialogKey = ref('inbound')
-const docForm = reactive({ id: '', name: '', company: '', remark: '' })
 const docPrefixMap = { inbound: 'RK', alloc: 'FP', back: 'TK', transfer: 'DB', repair: 'WX', dispose: 'CZ', inventory: 'PD' }
 const docDialogTitle = computed(() => (docDialogMode.value === 'edit' ? '修改单据' : '新增单据'))
+
+const BIZ_DOC_KEYS = ['transfer', 'repair', 'dispose']
+const emptyDocForm = () => ({
+  id: '', name: '', company: '', remark: '',
+  assetNo: '', assetName: '', fromCompany: '', fromDept: '', toCompany: '', toDept: '',
+  fault: '', vendor: '', cost: 0, disposeType: '', disposeReason: '', residualValue: 0,
+  reason: '', operator: '', bizDate: '', status: '待提交'
+})
+const docForm = reactive(emptyDocForm())
+const isBizDoc = computed(() => BIZ_DOC_KEYS.includes(docDialogKey.value))
+
+function onDocAssetChange(code) {
+  docForm.assetName = assetOptions.value.find(a => a.code === code)?.name || ''
+}
+
+function ledgerKind(key) {
+  if (key === 'dispose') return 'dispose'
+  if (key === 'transfer' || key === 'repair') return 'change'
+  return null
+}
+
+function validateDocBiz(key, doc) {
+  if (!doc.assetNo) return '关联资产'
+  if (key === 'transfer' && !doc.toDept) return '调入部门'
+  if (key === 'repair' && !doc.fault) return '故障描述'
+  if (key === 'dispose' && !doc.disposeType) return '处置方式'
+  return ''
+}
+
+// 单据业务明细 → 台账字段映射：台账只由单据派生，不再手工录入
+function docLedgerRecord(key, doc) {
+  const date = (doc.bizDate || doc.finishTime || doc.createTime || '').slice(0, 10)
+  const common = { assetName: doc.assetName || '', assetNo: doc.assetNo || '' }
+  if (key === 'transfer') {
+    return {
+      kind: 'change',
+      record: {
+        ...common,
+        changeType: '调拨',
+        changeReason: `${doc.fromCompany || doc.company || ''}${doc.fromDept ? ' ' + doc.fromDept : ''} → ${doc.toCompany || ''}${doc.toDept ? ' ' + doc.toDept : ''}${doc.reason ? '；' + doc.reason : ''}`,
+        changeDate: date,
+        operator: doc.operator || '管理员'
+      }
+    }
+  }
+  if (key === 'repair') {
+    return {
+      kind: 'change',
+      record: {
+        ...common,
+        changeType: '维修',
+        changeReason: `${doc.fault || '设备故障维修'}${doc.vendor ? '；维修商 ' + doc.vendor : ''}${Number(doc.cost) ? '；费用 ' + doc.cost + ' 元' : ''}${doc.reason ? '；' + doc.reason : ''}`,
+        changeDate: date,
+        operator: doc.operator || '管理员'
+      }
+    }
+  }
+  return {
+    kind: 'dispose',
+    record: {
+      ...common,
+      disposeType: doc.disposeType || '报废',
+      disposeReason: doc.reason || doc.disposeReason || doc.remark || '',
+      residualValue: Number(doc.residualValue) || 0,
+      disposeDate: date,
+      status: '已完成'
+    }
+  }
+}
+
+function syncDocToLedger(key, doc) {
+  if (doc.status !== '已完结') return
+  const kind = ledgerKind(key)
+  if (!kind) return
+  fixedAssetStore.syncDocLedger(kind, doc.docNo, docLedgerRecord(key, doc).record)
+}
+
+function removeDocFromLedger(key, doc) {
+  const kind = ledgerKind(key)
+  if (kind) fixedAssetStore.removeDocLedger(kind, doc.docNo)
+}
+
+function canFinishDoc(doc) {
+  return ['待提交', '进行中'].includes(doc.status)
+}
+
+function finishDoc(key, doc) {
+  const missing = validateDocBiz(key, doc)
+  if (missing) {
+    ElMessage.warning(`请先补全「${missing}」再完结单据`)
+    return
+  }
+  doc.status = '已完结'
+  doc.finishTime = nowText()
+  syncDocToLedger(key, doc)
+  ElMessage.success('单据已完结，台账已自动登记')
+}
+
+function jumpToSourceDoc(docNo) {
+  const prefix = (docNo || '').slice(0, 2)
+  if (prefix === 'DB') { activeTab.value = 'change'; changeSub.value = 'transfer' }
+  else if (prefix === 'WX') { activeTab.value = 'change'; changeSub.value = 'repair' }
+  else if (prefix === 'CZ') { activeTab.value = 'dispose'; disposeSub.value = 'dispose' }
+}
 
 function openDocDialog(key, row) {
   docDialogKey.value = key
   docDialogMode.value = row ? 'edit' : 'add'
-  Object.assign(docForm, row
-    ? { id: row.id, name: row.name || '', company: row.company, remark: row.remark || '' }
-    : { id: '', name: '', company: '', remark: '' })
+  Object.assign(docForm, emptyDocForm(), row ? {
+    id: row.id, name: row.name || '', company: row.company, remark: row.remark || '',
+    assetNo: row.assetNo || '', assetName: row.assetName || '',
+    fromCompany: row.fromCompany || '', fromDept: row.fromDept || '',
+    toCompany: row.toCompany || '', toDept: row.toDept || '',
+    fault: row.fault || '', vendor: row.vendor || '', cost: row.cost || 0,
+    disposeType: row.disposeType || '', disposeReason: row.disposeReason || '', residualValue: row.residualValue || 0,
+    reason: row.reason || '', operator: row.operator || '', bizDate: row.bizDate || '',
+    status: row.status || '待提交'
+  } : {})
   docDialogVisible.value = true
 }
 
@@ -2922,6 +3231,14 @@ function submitDocDialog() {
     return
   }
   const key = docDialogKey.value
+  const biz = isBizDoc.value
+  if (biz) {
+    const missing = validateDocBiz(key, docForm)
+    if (missing) {
+      ElMessage.warning(`请补全「${missing}」后再保存`)
+      return
+    }
+  }
   if (key === 'inventory') {
     const target = inventoryDocs.value.find(d => d.id === docForm.id)
     if (target) Object.assign(target, { name: docForm.name, company: docForm.company, remark: docForm.remark })
@@ -2930,22 +3247,48 @@ function submitDocDialog() {
     return
   }
   const list = docLists[key]
+  const common = { name: docForm.name, company: docForm.company, remark: docForm.remark }
+  const bizFields = biz ? {
+    assetNo: docForm.assetNo, assetName: docForm.assetName,
+    fromCompany: docForm.fromCompany, fromDept: docForm.fromDept,
+    toCompany: docForm.toCompany, toDept: docForm.toDept,
+    fault: docForm.fault, vendor: docForm.vendor, cost: docForm.cost,
+    disposeType: docForm.disposeType, disposeReason: docForm.reason, residualValue: docForm.residualValue,
+    reason: docForm.reason, operator: docForm.operator, bizDate: docForm.bizDate,
+    status: docForm.status
+  } : {}
+
   if (docDialogMode.value === 'edit') {
     const target = list.docs.find(d => d.id === docForm.id)
-    if (target) Object.assign(target, { name: docForm.name, company: docForm.company, remark: docForm.remark })
+    if (target) {
+      const wasCompleted = target.status === '已完结'
+      Object.assign(target, common, bizFields)
+      if (biz) {
+        if (wasCompleted && target.status !== '已完结') {
+          target.finishTime = ''
+          removeDocFromLedger(key, target)
+        } else if (!wasCompleted && target.status === '已完结') {
+          target.finishTime = nowText()
+          syncDocToLedger(key, target)
+        } else if (target.status === '已完结') {
+          syncDocToLedger(key, target)
+        }
+      }
+    }
     ElMessage.success('单据已保存')
   } else {
     const prefix = docPrefixMap[key]
-    list.docs.unshift({
+    const doc = {
       id: `${prefix}-${Date.now()}`,
       docNo: `${prefix}2026${Math.floor(Math.random() * 800) + 100}`,
-      name: docForm.name,
-      company: docForm.company,
+      ...common,
       createTime: nowText(),
       finishTime: '',
-      remark: docForm.remark,
-      status: '待提交'
-    })
+      ...(biz ? bizFields : { status: '待提交' })
+    }
+    if (biz && doc.status === '已完结') doc.finishTime = nowText()
+    list.docs.unshift(doc)
+    if (biz && doc.status === '已完结') syncDocToLedger(key, doc)
     list.page = 1
     ElMessage.success('单据已创建')
   }
@@ -2989,9 +3332,16 @@ function deleteDoc(key, row) {
     const list = docLists[key]
     const idx = list.docs.findIndex(d => d.id === row.id)
     if (idx > -1) list.docs.splice(idx, 1)
+    removeDocFromLedger(key, row)
     ElMessage.success('单据已删除')
   }).catch(() => {})
 }
+
+// 初始化：把已有的「已完结」单据补登台账，保证单据与台账起点一致
+const seedLedgerKeys = ['transfer', 'repair', 'dispose']
+seedLedgerKeys.forEach(k => {
+  docLists[k].docs.filter(d => d.status === '已完结').forEach(d => syncDocToLedger(k, d))
+})
 
 const locationOptions = ref(['总部办公楼1层', '总部办公楼2层', '总部办公楼3层', '仓库A区', '仓库B区', '车库', '数据中心机房'])
 
