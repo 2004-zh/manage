@@ -1817,9 +1817,20 @@ import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, ArrowLeft, Picture } from '@element-plus/icons-vue'
 import QRCode from 'qrcode'
+import { storeToRefs } from 'pinia'
 import { useFixedAssetStore } from '../../store/fixedAsset'
+import { statusValues, todayISO, nextSeqNo } from '../../utils/model'
+import {
+  EMP_POOL as empPool, buildCheckItems, buildCounters,
+  FIXED_ASSET_COMPANIES as companyOptions
+} from '../../data/assetConfig'
 
 const fixedAssetStore = useFixedAssetStore()
+// P1：折旧方案与存放位置配置统一由 fixedAsset store 持有；状态字典读 P0 模型底座
+const {
+  depreciationSchemes, locations: locationOptions,
+  depreciationReports, inventoryDocs
+} = storeToRefs(fixedAssetStore)
 
 const activeTab = ref('asset')
 const inboundSub = ref('docs')
@@ -1828,11 +1839,11 @@ const changeSub = ref('transfer')
 const disposeSub = ref('dispose')
 const inventorySub = ref('docs')
 
-const companyOptions = ['华信科技集团有限公司', '云鼎资产管理有限公司', '恒信融资租赁有限公司', '中天建设集团有限公司']
+// companyOptions 已由 assetConfig 统一提供（设置页与管理页同源）
 const assetTypeOptions = ['电子设备', '机械设备', '运输设备', '办公家具', '房屋建筑物', '其他设备']
 const purchaseModeOptions = ['购买', '租赁', '自建', '受赠']
-const assetStatusOptions = ['空闲', '派发中', '借出中', '维修中', '处置中']
-const docStatusOptions = ['已撤销', '待提交', '已完结', '进行中', '已驳回']
+const assetStatusOptions = statusValues('fixedAssetStatus')
+const docStatusOptions = statusValues('fixedDocStatus')
 
 // 入库/验收
 const inboundSearch = reactive({ name: '', category: '', status: '' })
@@ -2117,7 +2128,7 @@ const handleReturnBorrow = (row) => {
     type: 'info'
   }).then(() => {
     row.status = '已归还'
-    row.actualReturnDate = new Date().toISOString().slice(0, 10)
+    row.actualReturnDate = todayISO()
     ElMessage.success('归还成功')
   }).catch(() => {})
 }
@@ -2143,7 +2154,7 @@ const handleChangeSubmit = () => {
     assetNo: changeForm.assetId,
     changeType: changeForm.changeType,
     changeReason: changeForm.changeReason,
-    changeDate: new Date().toISOString().slice(0, 10),
+    changeDate: todayISO(),
     operator: '管理员'
   })
   changeDialogVisible.value = false
@@ -2163,7 +2174,7 @@ const handleDisposeSubmit = () => {
     disposeType: disposeForm.disposeType,
     disposeReason: disposeForm.disposeReason,
     residualValue: disposeForm.residualValue,
-    disposeDate: new Date().toISOString().slice(0, 10),
+    disposeDate: todayISO(),
     status: '已完成'
   })
   disposeDialogVisible.value = false
@@ -2375,7 +2386,7 @@ function submitPlan() {
     return
   }
   inventoryPlans.value.unshift({
-    planNo: `PD-${new Date().getFullYear()}-${String(inventoryPlans.value.length + 1).padStart(3, '0')}`,
+    planNo: nextSeqNo(`PD-${new Date().getFullYear()}-`, inventoryPlans.value.map(p => p.planNo), 3),
     planName: planForm.planName,
     scope: scopeLabel(planForm.scopeType, planForm.scopeValue),
     counter: planForm.counter,
@@ -2438,7 +2449,7 @@ function addProfitItem() {
     inputValidator: v => (v && v.trim() ? true : '资产名称不能为空')
   }).then(({ value }) => {
     currentPlan.value.items.unshift({
-      assetNo: `PY-${Date.now().toString().slice(-6)}`,
+      assetNo: nextSeqNo('PY-', currentPlan.value.items.map(i => i.assetNo)),
       assetName: value,
       category: '其他',
       department: currentPlan.value.counter + '（现场发现）',
@@ -2497,7 +2508,7 @@ function approveInventory(row) {
         disposeType: '报废',
         disposeReason: `盘点盘亏核销：${item.remark || '现场未找到实物'}`,
         residualValue: 0,
-        disposeDate: new Date().toISOString().slice(0, 10),
+        disposeDate: todayISO(),
         status: '待处置'
       })
     })
@@ -2530,53 +2541,31 @@ function deletePlan(row) {
 }
 
 // ==================== 折旧管理 ====================
-const depreciationSchemes = ref([
-  { schemeNo: 'ZJ-001', schemeName: '电子设备年限平均法', method: '年限平均法', years: 3, residualRate: 5, monthlyRate: 2.6389, applicableCategory: '设备', enabled: true },
-  { schemeNo: 'ZJ-002', schemeName: '运输工具年限平均法', method: '年限平均法', years: 5, residualRate: 5, monthlyRate: 1.5833, applicableCategory: '车辆', enabled: true },
-  { schemeNo: 'ZJ-003', schemeName: '办公家具年限平均法', method: '年限平均法', years: 5, residualRate: 5, monthlyRate: 1.5833, applicableCategory: '办公用品', enabled: true },
-  { schemeNo: 'ZJ-004', schemeName: '低值易耗品一次摊销', method: '年限平均法', years: 1, residualRate: 0, monthlyRate: 8.3333, applicableCategory: '材料', enabled: false }
-])
+// depreciationSchemes 已收编至 fixedAssetStore（见文件头 storeToRefs 解构）
 
-function schemeFor(category) {
-  return depreciationSchemes.value.find(s => s.enabled && (s.applicableCategory === category || s.applicableCategory === '全部分类')) || null
-}
-
-const depreciationLedger = computed(() => assetLedger.value.map(a => {
-  const s = schemeFor(a.category)
-  const cap = s ? a.original * (1 - s.residualRate / 100) : 0
-  const monthly = s ? cap / (s.years * 12) : 0
-  const months = monthsSince(a.inboundDate, currentPeriod())
-  const accumulated = Math.min(Math.round(monthly * months * 100) / 100, Math.round(cap * 100) / 100)
+// P2：折旧台账改以资产卡片 + store 的按月计提明细为准，净值与资产主数据同源
+const depreciationLedger = computed(() => fixedAssetStore.assets.map(a => {
+  const d = fixedAssetStore.assetDepreciation(a)
   return {
-    ...a,
-    schemeName: s ? s.schemeName : '未配置',
-    residualRate: s ? s.residualRate : 0,
-    years: s ? s.years : 0,
-    monthly: Math.round(monthly * 100) / 100,
-    months,
-    accumulated,
-    net: Math.round((a.original - accumulated) * 100) / 100
+    assetNo: a.code,
+    assetName: a.name,
+    category: a.type,
+    department: a.dept || '未派发',
+    location: a.location || '',
+    inboundDate: a.inboundDate,
+    original: d.original,
+    schemeName: d.scheme ? d.scheme.schemeName : '未配置',
+    residualRate: d.scheme ? d.scheme.residualRate : 0,
+    years: d.scheme ? d.scheme.years : 0,
+    monthly: d.monthly,
+    months: d.months,
+    accumulated: d.accumulated,
+    net: d.net
   }
 }))
 
 function currentPeriod(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
-function monthsSince(inboundDate, period) {
-  const start = new Date(inboundDate)
-  const [y, m] = period.split('-').map(Number)
-  return Math.max(0, (y - start.getFullYear()) * 12 + (m - 1 - start.getMonth()))
-}
-
-function accumulatedThrough(period) {
-  return Math.round(depreciationLedger.value.reduce((sum, a) => {
-    const s = schemeFor(a.category)
-    if (!s) return sum
-    const cap = a.original * (1 - s.residualRate / 100)
-    const monthly = cap / (s.years * 12)
-    return sum + Math.min(monthly * monthsSince(a.inboundDate, period), cap)
-  }, 0) * 100) / 100
 }
 
 const totalOriginal = computed(() => Math.round(depreciationLedger.value.reduce((s, a) => s + a.original, 0) * 100) / 100)
@@ -2592,48 +2581,15 @@ const depreciationSummary = computed(() => {
   }
 })
 
-const depreciationReports = ref(['2026-07', '2026-08'].map(period => ({
-  period,
-  openingValue: totalOriginal.value,
-  periodDepreciation: 0,
-  accumulated: 0,
-  closingNet: 0,
-  assetCount: 0,
-  operator: '系统自动',
-  runDate: `${period}-28`
-})))
-
-function prevPeriod(period) {
-  const [y, m] = period.split('-').map(Number)
-  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`
-}
-
-depreciationReports.value.forEach(report => {
-  report.accumulated = accumulatedThrough(report.period)
-  report.periodDepreciation = Math.round((report.accumulated - accumulatedThrough(prevPeriod(report.period))) * 100) / 100
-  report.closingNet = Math.round((totalOriginal.value - report.accumulated) * 100) / 100
-  report.assetCount = depreciationLedger.value.filter(a => schemeFor(a.category)).length
-})
-
+// 历史期间由 store 初始化时补齐；本页只负责触发当期计提
 function runDepreciation() {
   const period = currentPeriod()
-  if (depreciationReports.value.some(r => r.period === period)) {
+  const report = fixedAssetStore.runMonthlyDepreciation(period, { operator: '管理员' })
+  if (!report) {
     ElMessage.warning(`${period} 折旧已计提，请勿重复计提`)
     return
   }
-  const accumulated = accumulatedThrough(period)
-  const periodAmount = Math.round((accumulated - accumulatedThrough(prevPeriod(period))) * 100) / 100
-  depreciationReports.value.push({
-    period,
-    openingValue: totalOriginal.value,
-    periodDepreciation: periodAmount,
-    accumulated,
-    closingNet: Math.round((totalOriginal.value - accumulated) * 100) / 100,
-    assetCount: depreciationLedger.value.filter(a => schemeFor(a.category)).length,
-    operator: '管理员',
-    runDate: nowText()
-  })
-  ElMessage.success(`${period} 折旧计提完成，本期计提 ¥${periodAmount.toLocaleString()}`)
+  ElMessage.success(`${period} 折旧计提完成，本期计提 ¥${report.periodDepreciation.toLocaleString()}，共 ${report.assetCount} 项资产`)
 }
 
 function exportDepreciation() {
@@ -2725,7 +2681,7 @@ function submitScheme() {
     ElMessage.success('折旧方案已更新，折旧台账已按新方案重算')
   } else {
     depreciationSchemes.value.push({
-      schemeNo: `ZJ-${String(depreciationSchemes.value.length + 1).padStart(3, '0')}`,
+      schemeNo: nextSeqNo('ZJ-', depreciationSchemes.value.map(s => s.schemeNo), 3),
       schemeName: schemeForm.schemeName,
       method: schemeForm.method,
       years: schemeForm.years,
@@ -2751,7 +2707,7 @@ function deleteScheme(row) {
   }).catch(() => {})
 }
 
-const docStatusPool = ['已完结', '进行中', '待提交', '已驳回', '已撤销']
+const docStatusPool = statusValues('docStatus')
 const docNotePool = ['按季度例行办理', '需资产管理员现场复核', '已完成实物验收', '等待财务确认金额', '附现场照片存档']
 const docDeptPool = ['技术部', '财务部', '行政部', '市场部', '运营部', '生产部']
 const docOperatorPool = ['张志刚', '李秀兰', '王建军', '赵晓梅']
@@ -2879,83 +2835,7 @@ function docStatusType(status) {
   return m[status] || 'info'
 }
 
-const empPool = [
-  { name: '张志刚', dept: '资产管理部', phone: '13800000001' },
-  { name: '李秀兰', dept: '财务部', phone: '13800000002' },
-  { name: '王建军', dept: '行政部', phone: '13800000003' },
-  { name: '赵晓梅', dept: '运营部', phone: '13800000004' },
-  { name: '陈立新', dept: '技术部', phone: '13800000005' },
-  { name: '刘洋', dept: '资产管理部', phone: '13800000006' },
-  { name: '杨帆', dept: '后勤部', phone: '13800000007' },
-  { name: '徐磊', dept: '技术部', phone: '13800000008' }
-]
-
-const assetNamePool = ['联想ThinkPad笔记本', '戴尔OptiPlex台式机', '惠普激光打印机', '爱普生投影仪', '华为会议平板', '格力中央空调机组', '丰田考斯特商务车', '实木会议桌', '人体工学办公椅', '服务器机柜', '不间断电源UPS', '高速扫描仪']
-const assetStatusPool = ['空闲', '使用中', '维修中', '借出中', '派发中']
-const invLocationPool = ['总部办公楼1层', '总部办公楼2层', '总部办公楼3层', '仓库A区', '仓库B区', '数据中心机房']
-
-function buildCheckItems(total, counted, seed) {
-  const items = []
-  for (let i = 0; i < total; i++) {
-    let itemStatus = '未盘'
-    let remark = ''
-    let checker = ''
-    let checkTime = ''
-    if (i < counted) {
-      itemStatus = '已盘'
-      remark = '账实相符'
-      checker = empPool[(i + seed) % empPool.length].name
-      checkTime = `2026-09-${String(10 + (i % 8)).padStart(2, '0')} ${String(9 + (i % 8)).padStart(2, '0')}:${String((i * 7) % 60).padStart(2, '0')}:00`
-    } else if (i === counted && seed % 3 === 1) {
-      itemStatus = '盘亏'
-      remark = '现场未找到实物，待核销'
-      checker = empPool[(i + seed) % empPool.length].name
-      checkTime = `2026-09-${String(12 + (i % 6)).padStart(2, '0')} 15:30:00`
-    } else if (i === counted && seed % 3 === 2) {
-      itemStatus = '异常'
-      remark = '编号标签破损，待补贴标签'
-      checker = empPool[(i + seed) % empPool.length].name
-      checkTime = `2026-09-${String(12 + (i % 6)).padStart(2, '0')} 16:10:00`
-    }
-    items.push({
-      assetNo: `ZC2026${100 + seed * 13 + i}`,
-      assetName: assetNamePool[(i + seed) % assetNamePool.length],
-      assetStatus: assetStatusPool[(i + seed) % assetStatusPool.length],
-      location: invLocationPool[(i + seed) % invLocationPool.length],
-      itemStatus,
-      remark,
-      checker,
-      createTime: `2026-09-0${(seed % 8) + 1} 10:00:00`,
-      checkTime
-    })
-  }
-  return items
-}
-
-function buildCounters(n, doneCount, seed) {
-  const list = []
-  for (let i = 0; i < n; i++) {
-    const e = empPool[(i + seed) % empPool.length]
-    const assigned = 4 + (seed % 3)
-    list.push({
-      name: e.name,
-      dept: e.dept,
-      phone: e.phone,
-      assigned,
-      done: i < doneCount ? assigned : 0,
-      status: i < doneCount ? '已完成' : '盘点中'
-    })
-  }
-  return list
-}
-
-const inventoryDocs = ref([
-  { id: 'IV1', docNo: 'PD202609001', name: '2026年三季度全面盘点', company: companyOptions[0], applicant: '张志刚', scope: '全部资产', assetTypes: [], createTime: '2026-09-01 09:00:00', finishTime: '', remark: '季度例行全面盘点', status: '盘点中', items: buildCheckItems(24, 9, 1), counters: buildCounters(8, 0, 1) },
-  { id: 'IV2', docNo: 'PD202608002', name: '车辆资产专项盘点', company: companyOptions[1], applicant: '李秀兰', scope: '按资产类型', assetTypes: ['运输设备'], createTime: '2026-08-12 10:20:00', finishTime: '', remark: '车辆专项核查', status: '盘点报告审批中', items: buildCheckItems(6, 6, 2), counters: buildCounters(3, 2, 2) },
-  { id: 'IV3', docNo: 'PD202607003', name: '2026年二季度全面盘点', company: companyOptions[0], applicant: '王建军', scope: '全部资产', assetTypes: [], createTime: '2026-07-02 09:30:00', finishTime: '2026-07-20 16:40:00', remark: '账实核对完成', status: '已完结', items: buildCheckItems(30, 30, 3), counters: buildCounters(8, 8, 3) },
-  { id: 'IV4', docNo: 'PD202606004', name: '仓库资产抽盘', company: companyOptions[2], applicant: '赵晓梅', scope: '按存放地点', assetTypes: [], createTime: '2026-06-15 14:00:00', finishTime: '2026-06-25 11:20:00', remark: '仓库抽样盘点', status: '已完结', items: buildCheckItems(12, 12, 4), counters: buildCounters(4, 4, 4) },
-  { id: 'IV5', docNo: 'PD202605005', name: '电子设备年度盘点', company: companyOptions[3], applicant: '陈立新', scope: '按资产类型', assetTypes: ['电子设备'], createTime: '2026-05-08 09:10:00', finishTime: '', remark: '年度电子设备核查', status: '盘点中', items: buildCheckItems(18, 3, 5), counters: buildCounters(5, 1, 5) }
-])
+// empPool / buildCheckItems / buildCounters 及盘点单 seed 已统一由 assetConfig + fixedAssetStore 提供
 
 const invSearch = reactive({ docNo: '', company: '', status: '', createRange: null, finishRange: null })
 const invPage = ref(1)
@@ -3079,7 +2959,7 @@ function submitWizard() {
   })
   const seq = inventoryDocs.value.length + 6
   inventoryDocs.value.unshift({
-    id: `IV${Date.now()}`,
+    id: nextSeqNo('IV', inventoryDocs.value.map(d => d.id)),
     docNo: `PD2026${String(1000 + inventoryDocs.value.length * 11).slice(0, 4)}`,
     name: wizardForm.name,
     company: wizardForm.company,
@@ -3279,8 +3159,8 @@ function submitDocDialog() {
   } else {
     const prefix = docPrefixMap[key]
     const doc = {
-      id: `${prefix}-${Date.now()}`,
-      docNo: `${prefix}2026${Math.floor(Math.random() * 800) + 100}`,
+      id: nextSeqNo(`${prefix}-`, list.docs.map(d => d.id)),
+      docNo: nextSeqNo(`${prefix}2026`, list.docs.map(d => d.docNo), 3),
       ...common,
       createTime: nowText(),
       finishTime: '',
@@ -3343,7 +3223,7 @@ seedLedgerKeys.forEach(k => {
   docLists[k].docs.filter(d => d.status === '已完结').forEach(d => syncDocToLedger(k, d))
 })
 
-const locationOptions = ref(['总部办公楼1层', '总部办公楼2层', '总部办公楼3层', '仓库A区', '仓库B区', '车库', '数据中心机房'])
+// locationOptions 已收编至 fixedAssetStore.locations（见文件头 storeToRefs 解构）
 
 const assetList = computed(() => fixedAssetStore.assets)
 
@@ -3395,7 +3275,7 @@ function openAssetDialog(row) {
 function addLocationOption() {
   ElMessageBox.prompt('请输入新的存放地点名称', '新增存放地点', { inputPattern: /\S+/, inputErrorMessage: '存放地点不能为空' }).then(({ value }) => {
     const v = value.trim()
-    if (!locationOptions.value.includes(v)) locationOptions.value.push(v)
+    fixedAssetStore.addLocationByName(v)
     assetForm.location = v
     ElMessage.success('存放地点已新增')
   }).catch(() => {})
@@ -3465,7 +3345,7 @@ function downloadAssetQr(row) {
   QRCode.toDataURL(qrData, { width: 400, margin: 2, color: { dark: '#1a1a1a', light: '#ffffff' } }).then(dataUrl => {
     const a = document.createElement('a')
     a.href = dataUrl
-    a.download = `二维码_${row.code}_${new Date().toISOString().slice(0, 10)}.png`
+    a.download = `二维码_${row.code}_${todayISO()}.png`
     a.click()
     ElMessage.success(`资产 ${row.code} 二维码已下载`)
   })

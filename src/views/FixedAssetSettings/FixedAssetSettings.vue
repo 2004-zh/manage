@@ -428,8 +428,18 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
+import { storeToRefs } from 'pinia'
+import { useFixedAssetStore } from '../../store/fixedAsset'
+import { nextSeqNo } from '../../utils/model'
 
 const activeTab = ref('location')
+
+// P1 续：六类基础设置统一由 fixedAsset store 持有（跨模块共享 + 自动持久化）
+const fixedAssetStore = useFixedAssetStore()
+const {
+  locationList, locationOptions, categoryTree,
+  depreciationRules, depreciationPlans, approvalFlows
+} = storeToRefs(fixedAssetStore)
 
 const companyOptions = ['华信科技集团有限公司', '云鼎资产管理有限公司', '恒信融资租赁有限公司', '中天建设集团有限公司']
 const assetTypeOptions = ['电子设备', '机械设备', '运输设备', '办公家具', '房屋建筑物', '其他设备']
@@ -437,23 +447,7 @@ const purchaseModeOptions = ['购买', '租赁', '自建', '受赠']
 const calcTimeOptions = ['按月计提', '按季计提', '按年计提']
 const depreciationMethodOptions = ['年限平均法', '直线法', '双倍余额递减法', '年数总和法', '工作量法']
 
-// 位置设置
-const locationList = ref([
-  { code: 'LOC001', name: '总部办公楼', parentName: '-', manager: '张三', assetCount: 135 },
-  { code: 'LOC001-01', name: '总部办公楼1层', parentName: '总部办公楼', manager: '张三', assetCount: 45 },
-  { code: 'LOC001-02', name: '总部办公楼2层', parentName: '总部办公楼', manager: '张三', assetCount: 38 },
-  { code: 'LOC001-03', name: '总部办公楼3层', parentName: '总部办公楼', manager: '张三', assetCount: 52 },
-  { code: 'LOC002', name: '仓库', parentName: '-', manager: '李四', assetCount: 110 },
-  { code: 'LOC002-01', name: '仓库A区', parentName: '仓库', manager: '李四', assetCount: 68 },
-  { code: 'LOC002-02', name: '仓库B区', parentName: '仓库', manager: '李四', assetCount: 42 },
-  { code: 'LOC003', name: '车库', parentName: '-', manager: '王五', assetCount: 12 }
-])
-
-const locationOptions = ref([
-  { code: 'LOC001', name: '总部办公楼' },
-  { code: 'LOC002', name: '仓库' },
-  { code: 'LOC003', name: '车库' }
-])
+// 位置设置：locationList / locationOptions 已收编至 fixedAssetStore
 
 const locationDialogVisible = ref(false)
 const isEditLocation = ref(false)
@@ -516,53 +510,7 @@ const handleLocationSubmit = () => {
   locationDialogVisible.value = false
 }
 
-// 分类设置
-const categoryTree = ref([
-  {
-    id: 'CAT000', code: 'CAT000', name: '高价值资产', parentCode: '', parentName: '-', depreciationMethod: '年限平均法', usefulLife: 10, assetCount: 326, status: '启用', createTime: '2026-01-06 09:12:00', updateTime: '2026-09-12 14:30:21',
-    children: [
-      {
-        id: 'CAT000-01', code: 'CAT000-01', name: '机械类', parentCode: 'CAT000', parentName: '高价值资产', depreciationMethod: '年限平均法', usefulLife: 10, assetCount: 128, status: '启用', createTime: '2026-01-06 09:20:00', updateTime: '2026-09-10 11:05:33',
-        children: [
-          { id: 'CAT000-0101', code: 'CAT000-0101', name: '一般机械类', parentCode: 'CAT000-01', parentName: '机械类', depreciationMethod: '年限平均法', usefulLife: 10, assetCount: 62, status: '启用', createTime: '2026-01-06 09:26:00', updateTime: '2026-09-08 16:41:02', children: [] },
-          { id: 'CAT000-0102', code: 'CAT000-0102', name: '数控机床类', parentCode: 'CAT000-01', parentName: '机械类', depreciationMethod: '年数总和法', usefulLife: 12, assetCount: 38, status: '启用', createTime: '2026-01-06 09:28:00', updateTime: '2026-09-07 10:22:45', children: [] },
-          { id: 'CAT000-0103', code: 'CAT000-0103', name: '工程机械类', parentCode: 'CAT000-01', parentName: '机械类', depreciationMethod: '工作量法', usefulLife: 8, assetCount: 28, status: '禁用', createTime: '2026-01-06 09:30:00', updateTime: '2026-08-30 09:14:18', children: [] }
-        ]
-      },
-      {
-        id: 'CAT000-02', code: 'CAT000-02', name: '运输设备类', parentCode: 'CAT000', parentName: '高价值资产', depreciationMethod: '双倍余额递减法', usefulLife: 8, assetCount: 96, status: '启用', createTime: '2026-01-06 09:34:00', updateTime: '2026-09-05 15:38:27',
-        children: [
-          { id: 'CAT000-0201', code: 'CAT000-0201', name: '商务客车', parentCode: 'CAT000-02', parentName: '运输设备类', depreciationMethod: '双倍余额递减法', usefulLife: 8, assetCount: 41, status: '启用', createTime: '2026-01-06 09:36:00', updateTime: '2026-09-04 10:11:52', children: [] },
-          { id: 'CAT000-0202', code: 'CAT000-0202', name: '货运车辆', parentCode: 'CAT000-02', parentName: '运输设备类', depreciationMethod: '工作量法', usefulLife: 6, assetCount: 55, status: '启用', createTime: '2026-01-06 09:38:00', updateTime: '2026-09-03 14:02:09', children: [] }
-        ]
-      },
-      {
-        id: 'CAT000-03', code: 'CAT000-03', name: '房屋建筑物类', parentCode: 'CAT000', parentName: '高价值资产', depreciationMethod: '年限平均法', usefulLife: 30, assetCount: 102, status: '启用', createTime: '2026-01-06 09:40:00', updateTime: '2026-09-02 09:47:36',
-        children: [
-          { id: 'CAT000-0301', code: 'CAT000-0301', name: '办公用房', parentCode: 'CAT000-03', parentName: '房屋建筑物类', depreciationMethod: '年限平均法', usefulLife: 30, assetCount: 64, status: '启用', createTime: '2026-01-06 09:42:00', updateTime: '2026-08-28 17:20:44', children: [] },
-          { id: 'CAT000-0302', code: 'CAT000-0302', name: '生产厂房', parentCode: 'CAT000-03', parentName: '房屋建筑物类', depreciationMethod: '年限平均法', usefulLife: 25, assetCount: 38, status: '启用', createTime: '2026-01-06 09:44:00', updateTime: '2026-08-26 11:33:15', children: [] }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'CAT001', code: 'CAT001', name: '办公用品', parentCode: '', parentName: '-', depreciationMethod: '直线法', usefulLife: 5, assetCount: 156, status: '启用', createTime: '2026-01-06 10:02:00', updateTime: '2026-09-11 09:26:40',
-    children: [
-      { id: 'CAT001-01', code: 'CAT001-01', name: '办公家具', parentCode: 'CAT001', parentName: '办公用品', depreciationMethod: '直线法', usefulLife: 10, assetCount: 88, status: '启用', createTime: '2026-01-06 10:04:00', updateTime: '2026-09-09 15:52:11', children: [] },
-      { id: 'CAT001-02', code: 'CAT001-02', name: '办公耗材', parentCode: 'CAT001', parentName: '办公用品', depreciationMethod: '直线法', usefulLife: 1, assetCount: 68, status: '启用', createTime: '2026-01-06 10:06:00', updateTime: '2026-09-06 08:41:57', children: [] }
-    ]
-  },
-  { id: 'CAT002', code: 'CAT002', name: '车辆', parentCode: '', parentName: '-', depreciationMethod: '双倍余额递减法', usefulLife: 8, assetCount: 12, status: '启用', createTime: '2026-01-06 10:10:00', updateTime: '2026-08-25 14:18:03', children: [] },
-  {
-    id: 'CAT003', code: 'CAT003', name: '设备', parentCode: '', parentName: '-', depreciationMethod: '直线法', usefulLife: 5, assetCount: 89, status: '启用', createTime: '2026-01-06 10:14:00', updateTime: '2026-09-13 10:07:29',
-    children: [
-      { id: 'CAT003-01', code: 'CAT003-01', name: '电子设备', parentCode: 'CAT003', parentName: '设备', depreciationMethod: '直线法', usefulLife: 5, assetCount: 65, status: '启用', createTime: '2026-01-06 10:16:00', updateTime: '2026-09-12 09:31:48', children: [] },
-      { id: 'CAT003-02', code: 'CAT003-02', name: '机械设备', parentCode: 'CAT003', parentName: '设备', depreciationMethod: '直线法', usefulLife: 10, assetCount: 24, status: '启用', createTime: '2026-01-06 10:18:00', updateTime: '2026-09-01 16:44:22', children: [] }
-    ]
-  },
-  { id: 'CAT004', code: 'CAT004', name: '材料', parentCode: '', parentName: '-', depreciationMethod: '直线法', usefulLife: 1, assetCount: 230, status: '启用', createTime: '2026-01-06 10:22:00', updateTime: '2026-08-20 11:09:36', children: [] },
-  { id: 'CAT005', code: 'CAT005', name: '其他', parentCode: '', parentName: '-', depreciationMethod: '直线法', usefulLife: 5, assetCount: 45, status: '禁用', createTime: '2026-01-06 10:26:00', updateTime: '2026-08-18 15:27:50', children: [] }
-])
+// 分类设置：categoryTree 已收编至 fixedAssetStore
 
 const catSearch = reactive({ status: '', keyword: '' })
 const catPage = ref(1)
@@ -741,7 +689,9 @@ const handleCategorySubmit = () => {
     ElMessage.warning('上级分类不能选择自身或其下级分类')
     return
   }
-  const code = categoryForm.code || `${parent ? parent.code : 'CAT'}${String(Date.now()).slice(-4)}`
+  const base = parent ? parent.code : 'CAT'
+  const siblingCodes = parent ? (parent.children || []).map(c => c.code) : categoryTree.value.map(c => c.code)
+  const code = categoryForm.code || nextSeqNo(base, siblingCodes, 4)
   if (isEditCategory.value) {
     const node = findCategoryNode(categoryTree.value, editingCategoryId.value)
     if (node) {
@@ -765,8 +715,11 @@ const handleCategorySubmit = () => {
     }
     ElMessage.success('修改成功')
   } else {
+    const allCategoryIds = []
+    const walkIds = (ns) => ns.forEach(n => { if (n.id) allCategoryIds.push(n.id); if (n.children) walkIds(n.children) })
+    walkIds(categoryTree.value)
     const node = {
-      id: `${code}-${Date.now()}`,
+      id: nextSeqNo(`${code}-`, allCategoryIds, 4),
       code,
       name: categoryForm.name,
       parentCode: parent ? parent.code : '',
@@ -790,14 +743,7 @@ const handleCategorySubmit = () => {
   categoryDialogVisible.value = false
 }
 
-// 折旧设置
-const depreciationRules = ref([
-  { name: '电子设备折旧', method: '直线法', usefulLife: 5, residualRate: 5, description: '适用于电脑、打印机等电子设备' },
-  { name: '车辆折旧', method: '双倍余额递减法', usefulLife: 8, residualRate: 5, description: '适用于公司车辆' },
-  { name: '办公家具折旧', method: '直线法', usefulLife: 10, residualRate: 5, description: '适用于桌椅、柜子等家具' },
-  { name: '机械设备折旧', method: '年数总和法', usefulLife: 10, residualRate: 5, description: '适用于大型机械设备' },
-  { name: '低值易耗品', method: '直线法', usefulLife: 1, residualRate: 0, description: '适用于办公用品等低值易耗品' }
-])
+// 折旧设置：depreciationRules 已收编至 fixedAssetStore
 
 const depreciationDialogVisible = ref(false)
 const isEditDepreciation = ref(false)
@@ -847,19 +793,7 @@ const handleDepreciationSubmit = () => {
   depreciationDialogVisible.value = false
 }
 
-const depreciationPlans = ref([
-  { id: 'DP1', company: '华信科技集团有限公司', name: '电子设备年限平均折旧', method: '年限平均法', assetTypes: ['电子设备'], residualRate: 5, calcTime: '按月计提', monthlyDay: 25, purchaseMode: '购买', remark: '每月25日计提当期折旧', createTime: '2026-01-10 09:20:00', updateTime: '2026-09-01 10:15:00' },
-  { id: 'DP2', company: '华信科技集团有限公司', name: '租赁设备按起租日折旧', method: '年限平均法', assetTypes: ['机械设备', '电子设备'], residualRate: 3, calcTime: '按月计提', monthlyDay: 28, purchaseMode: '租赁', remark: '按租赁合同起租日开始计提', createTime: '2026-02-14 14:02:00', updateTime: '2026-08-30 16:44:12' },
-  { id: 'DP3', company: '云鼎资产管理有限公司', name: '运输设备双倍余额折旧', method: '双倍余额递减法', assetTypes: ['运输设备'], residualRate: 5, calcTime: '按月计提', monthlyDay: 20, purchaseMode: '购买', remark: '车辆按双倍余额递减法计提', createTime: '2026-03-02 10:35:00', updateTime: '2026-08-28 09:26:41' },
-  { id: 'DP4', company: '云鼎资产管理有限公司', name: '房屋建筑物年度折旧', method: '年限平均法', assetTypes: ['房屋建筑物'], residualRate: 10, calcTime: '按年计提', monthlyDay: 31, purchaseMode: '自建', remark: '每年12月31日一次性计提', createTime: '2026-03-18 15:48:00', updateTime: '2026-08-25 11:03:57' },
-  { id: 'DP5', company: '恒信融资租赁有限公司', name: '机械设备工作量折旧', method: '工作量法', assetTypes: ['机械设备'], residualRate: 5, calcTime: '按季计提', monthlyDay: 15, purchaseMode: '租赁', remark: '按季度结合台班工作量计提', createTime: '2026-04-06 09:12:00', updateTime: '2026-08-20 14:37:26' },
-  { id: 'DP6', company: '恒信融资租赁有限公司', name: '办公家具直线折旧', method: '直线法', assetTypes: ['办公家具'], residualRate: 5, calcTime: '按月计提', monthlyDay: 25, purchaseMode: '购买', remark: '', createTime: '2026-05-11 11:26:00', updateTime: '2026-08-18 10:52:03' },
-  { id: 'DP7', company: '中天建设集团有限公司', name: '工程机械按台班折旧', method: '工作量法', assetTypes: ['机械设备', '运输设备'], residualRate: 4, calcTime: '按月计提', monthlyDay: 5, purchaseMode: '自建', remark: '按现场台班记录计提', createTime: '2026-06-09 08:44:00', updateTime: '2026-09-05 17:08:35' },
-  { id: 'DP8', company: '中天建设集团有限公司', name: '受赠资产季度折旧', method: '年数总和法', assetTypes: ['其他设备'], residualRate: 0, calcTime: '按季计提', monthlyDay: 30, purchaseMode: '受赠', remark: '受赠资产按年数总和法计提', createTime: '2026-07-15 16:20:00', updateTime: '2026-09-10 09:41:18' },
-  { id: 'DP9', company: '华信科技集团有限公司', name: '低值易耗品一次摊销', method: '直线法', assetTypes: ['其他设备'], residualRate: 0, calcTime: '按月计提', monthlyDay: 1, purchaseMode: '购买', remark: '单价2000元以下一次性摊销', createTime: '2026-08-03 10:05:00', updateTime: '2026-09-12 15:33:47' },
-  { id: 'DP10', company: '云鼎资产管理有限公司', name: '电子设备加速折旧', method: '双倍余额递减法', assetTypes: ['电子设备'], residualRate: 5, calcTime: '按月计提', monthlyDay: 26, purchaseMode: '租赁', remark: '租赁电子设备加速计提', createTime: '2026-08-21 13:52:00', updateTime: '2026-09-14 09:19:24' },
-  { id: 'DP11', company: '恒信融资租赁有限公司', name: '房屋建筑物直线折旧', method: '直线法', assetTypes: ['房屋建筑物'], residualRate: 8, calcTime: '按年计提', monthlyDay: 31, purchaseMode: '购买', remark: '', createTime: '2026-09-02 09:36:00', updateTime: '2026-09-15 11:47:52' }
-])
+// depreciationPlans 已收编至 fixedAssetStore
 
 const depSearch = reactive({ company: '', name: '', calcTime: '', purchaseMode: '' })
 const depPage = ref(1)
@@ -939,7 +873,7 @@ const handlePlanSubmit = () => {
     ElMessage.success('修改成功')
   } else {
     depreciationPlans.value.unshift({
-      id: `DP${Date.now()}`,
+      id: nextSeqNo('DP', depreciationPlans.value.map(p => p.id)),
       company: planForm.company,
       name: planForm.name,
       method: planForm.method,
@@ -958,14 +892,7 @@ const handlePlanSubmit = () => {
   planDialogVisible.value = false
 }
 
-// 审批设置
-const approvalFlows = ref([
-  { name: '入库验收审批', type: '入库验收', steps: '部门经理->财务->总经理', status: '启用' },
-  { name: '派发退库审批', type: '派发退库', steps: '部门经理->行政部', status: '启用' },
-  { name: '借出归还审批', type: '借出归还', steps: '部门经理->行政部', status: '启用' },
-  { name: '资产变更审批', type: '资产变更', steps: '部门经理->财务->总经理', status: '启用' },
-  { name: '资产处置审批', type: '资产处置', steps: '部门经理->财务->副总经理->总经理', status: '启用' }
-])
+// 审批设置：approvalFlows 已收编至 fixedAssetStore
 
 const approvalDialogVisible = ref(false)
 const isEditApproval = ref(false)

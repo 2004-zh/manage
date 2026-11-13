@@ -35,7 +35,7 @@
             <el-table-column prop="actual" label="实缴金额(万元)" width="130" align="right" />
             <el-table-column prop="status" label="状态" width="80">
               <template #default="{ row }">
-                <el-tag :type="row.status === '已缴' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
+                <el-tag :type="row.status === '已缴' ? 'success' : row.status === '欠缴' ? 'danger' : 'info'" size="small">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -90,6 +90,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useContractStore } from '../../store/contract'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { todayISO } from '../../utils/model'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,13 +98,20 @@ const contractStore = useContractStore()
 
 const contract = computed(() => contractStore.getContractById(route.params.id))
 
+// P2：缴费计划读 store 的收款计划（递增 / 免租 / 付款周期已参与金额计算），不再硬编码两行
 const paymentPlan = computed(() => {
   if (!contract.value) return []
-  const rent = contract.value.annualRent
-  return [
-    { period: '2026-01 至 2026-06', amount: (rent / 2).toFixed(1), actual: contract.value.status === '欠缴' ? (rent / 2 - contract.value.arrears).toFixed(1) : (rent / 2).toFixed(1), status: contract.value.status === '欠缴' ? '欠缴' : '已缴' },
-    { period: '2026-07 至 2026-12', amount: (rent / 2).toFixed(1), actual: '0', status: '待缴' }
-  ]
+  return contractStore.getPaymentPlan(contract.value.id).map((p, i) => {
+    const owed = contract.value.status === '欠缴' && i === 0
+    return {
+      period: p.period,
+      amount: p.amount.toFixed(1),
+      actual: owed
+        ? Math.max(0, p.amount - Number(contract.value.arrears || 0)).toFixed(1)
+        : (p.paidAmount || 0).toFixed(1),
+      status: owed ? '欠缴' : (p.paidAmount > 0 ? '已缴' : p.status)
+    }
+  })
 })
 
 const baseRecords = computed(() => {
@@ -137,7 +145,7 @@ function handleUrge() {
     cancelButtonText: '取消'
   }).then(() => {
     extraRecords.value.push({
-      time: new Date().toISOString().slice(0, 10),
+      time: todayISO(),
       content: '发送催缴通知',
       type: 'warning'
     })

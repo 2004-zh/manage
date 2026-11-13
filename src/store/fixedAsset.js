@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuditStore } from './audit'
+import {
+  SEED_LOCATION_LIST, SEED_LOCATION_OPTIONS, SEED_CATEGORY_TREE,
+  SEED_DEPRECIATION_RULES, SEED_DEPRECIATION_PLANS, SEED_APPROVAL_FLOWS,
+  buildSeedInventoryDocs
+} from '../data/assetConfig'
+import { nextSeqNo } from '../utils/model'
 
 const SEED_ASSETS = [
   { id: 'A01', code: 'GD20260001', name: '联想ThinkPad笔记本电脑', type: '电子设备', brand: '联想', model: 'ThinkPad T14', company: '华信科技集团有限公司', location: '总部办公楼2层', purchaseDate: '2026-03-12', amount: 8500, inboundDate: '2026-03-15', original: 8500, net: 7650, user: '张伟', dept: '技术部', status: '空闲', depreciate: true, purchaseMode: '购买', leaseMonths: 36, updateTime: '2026-09-18 10:22:31' },
@@ -51,6 +57,30 @@ const SEED_DISPOSE = [
   { disposeNo: 'CZ2026002', assetName: '旧办公桌', assetNo: 'ZC2023005', disposeType: '变卖', disposeReason: '办公区改造，旧家具处理', residualValue: 200, disposeDate: '2026-09-01', status: '已完成' }
 ]
 
+// P1 收编：原 FixedAssetManagement.vue 内的折旧方案与存放位置配置
+const SEED_DEPRECIATION_SCHEMES = [
+  { schemeNo: 'ZJ-001', schemeName: '电子设备年限平均法', method: '年限平均法', years: 3, residualRate: 5, monthlyRate: 2.6389, applicableCategory: '设备', enabled: true },
+  { schemeNo: 'ZJ-002', schemeName: '运输工具年限平均法', method: '年限平均法', years: 5, residualRate: 5, monthlyRate: 1.5833, applicableCategory: '车辆', enabled: true },
+  { schemeNo: 'ZJ-003', schemeName: '办公家具年限平均法', method: '年限平均法', years: 5, residualRate: 5, monthlyRate: 1.5833, applicableCategory: '办公用品', enabled: true },
+  { schemeNo: 'ZJ-004', schemeName: '低值易耗品一次摊销', method: '年限平均法', years: 1, residualRate: 0, monthlyRate: 8.3333, applicableCategory: '材料', enabled: false }
+]
+
+// P2：位置唯一事实源是 locationList（带编码的层级），下拉选项由它派生。
+// 只取「没有子位置」的节点，避免把父级目录当成可选存放地点。
+function deriveLocations(list) {
+  return list.filter(l => !list.some(x => x.parentName === l.name)).map(l => l.name)
+}
+
+// P2：资产分类 → 折旧方案适用分类的映射（卡片用 type，方案用历史短名）
+const CATEGORY_TO_SCHEME = {
+  '电子设备': '设备', '机械设备': '设备', '运输设备': '车辆',
+  '办公家具': '办公用品', '其他设备': '材料'
+}
+
+function round2(n) {
+  return Math.round((Number(n) || 0) * 100) / 100
+}
+
 function nowText() {
   const d = new Date()
   const pad = n => String(n).padStart(2, '0')
@@ -64,13 +94,29 @@ export const useFixedAssetStore = defineStore('fixedAsset', () => {
   const borrowRecords = ref(JSON.parse(JSON.stringify(SEED_BORROW)))
   const changeRecords = ref(JSON.parse(JSON.stringify(SEED_CHANGE)))
   const disposeRecords = ref(JSON.parse(JSON.stringify(SEED_DISPOSE)))
+  // P1 收编自页面的配置数据（可跨模块共享 + 自动持久化）
+  const depreciationSchemes = ref(JSON.parse(JSON.stringify(SEED_DEPRECIATION_SCHEMES)))
+  const locationList = ref(JSON.parse(JSON.stringify(SEED_LOCATION_LIST)))
+  const locationOptions = ref(JSON.parse(JSON.stringify(SEED_LOCATION_OPTIONS)))
+  const categoryTree = ref(JSON.parse(JSON.stringify(SEED_CATEGORY_TREE)))
+  const depreciationRules = ref(JSON.parse(JSON.stringify(SEED_DEPRECIATION_RULES)))
+  const depreciationPlans = ref(JSON.parse(JSON.stringify(SEED_DEPRECIATION_PLANS)))
+  const approvalFlows = ref(JSON.parse(JSON.stringify(SEED_APPROVAL_FLOWS)))
+
+  // P2：位置口径统一。locations 由 locationList 派生，不再单独维护一份名称数组
+  const locations = ref(deriveLocations(locationList.value))
+  watch(locationList, () => { locations.value = deriveLocations(locationList.value) }, { deep: true })
+
+  // P2：按月计提明细、期间汇总、盘点单（运行时数据全部归 store）
+  const depreciationEntries = ref([])
+  const depreciationReports = ref([])
+  const inventoryDocs = ref(buildSeedInventoryDocs())
 
   function addAsset(data) {
-    const seq = 200 + assets.value.length
-    const code = data.code || `GD2026${seq}`
+    const code = data.code || nextSeqNo('GD2026', assets.value.map(a => a.code))
     const original = data.depreciate && data.original ? data.original : data.amount
     const asset = {
-      id: `A${Date.now()}`,
+      id: nextSeqNo('A', assets.value.map(a => a.id)),
       code,
       name: data.name,
       type: data.type,
@@ -120,36 +166,34 @@ export const useFixedAssetStore = defineStore('fixedAsset', () => {
   }
 
   function addInbound(data) {
-    const record = { ...data, assetNo: data.assetNo || `ZC${Date.now()}` }
+    const record = { ...data, assetNo: data.assetNo || nextSeqNo('ZC', inboundRecords.value.map(r => r.assetNo)) }
     inboundRecords.value.unshift(record)
     return record
   }
 
   function addDispatch(data) {
-    const record = { ...data, dispatchNo: data.dispatchNo || `PF${Date.now()}` }
+    const record = { ...data, dispatchNo: data.dispatchNo || nextSeqNo('PF', dispatchRecords.value.map(r => r.dispatchNo)) }
     dispatchRecords.value.unshift(record)
     return record
   }
 
   function addBorrow(data) {
-    const record = { ...data, borrowNo: data.borrowNo || `JC${Date.now()}` }
+    const record = { ...data, borrowNo: data.borrowNo || nextSeqNo('JC', borrowRecords.value.map(r => r.borrowNo)) }
     borrowRecords.value.unshift(record)
     return record
   }
 
   function addChange(data) {
-    const record = { ...data, changeNo: data.changeNo || `BG${Date.now()}` }
+    const record = { ...data, changeNo: data.changeNo || nextSeqNo('BG', changeRecords.value.map(r => r.changeNo)) }
     changeRecords.value.unshift(record)
     return record
   }
 
   function addDispose(data) {
-    const record = { ...data, disposeNo: data.disposeNo || `CZ${Date.now()}` }
+    const record = { ...data, disposeNo: data.disposeNo || nextSeqNo('CZ', disposeRecords.value.map(r => r.disposeNo)) }
     disposeRecords.value.unshift(record)
     return record
   }
-
-  let ledgerSeq = 0
 
   // 单据完结 → 台账登记：按 sourceDocNo 做 upsert，同一张单据只入账一次，修改单据后台账同步更新
   function syncDocLedger(kind, sourceDocNo, record) {
@@ -161,7 +205,7 @@ export const useFixedAssetStore = defineStore('fixedAsset', () => {
     }
     const noField = kind === 'change' ? 'changeNo' : 'disposeNo'
     const prefix = kind === 'change' ? 'BG' : 'CZ'
-    const entry = { ...record, [noField]: `${prefix}${Date.now()}${++ledgerSeq}`, sourceDocNo }
+    const entry = { ...record, [noField]: nextSeqNo(prefix, list.value.map(r => r[noField])), sourceDocNo }
     list.value.unshift(entry)
     return entry
   }
@@ -171,6 +215,110 @@ export const useFixedAssetStore = defineStore('fixedAsset', () => {
     const list = kind === 'change' ? changeRecords : disposeRecords
     const idx = list.value.findIndex(r => r.sourceDocNo === sourceDocNo)
     if (idx > -1) list.value.splice(idx, 1)
+  }
+
+  // ---- P2：折旧从「按入库日期静态反推」升级为「按资产按月计提」，净值是唯一派生结果 ----
+  function schemeForAsset(asset) {
+    const key = CATEGORY_TO_SCHEME[asset.type] || asset.type
+    return depreciationSchemes.value.find(s =>
+      s.enabled && (s.applicableCategory === key || s.applicableCategory === asset.type || s.applicableCategory === '全部分类')
+    ) || null
+  }
+
+  function accumulatedOf(assetId) {
+    return round2(depreciationEntries.value
+      .filter(e => e.assetId === assetId && e.status === '已计提')
+      .reduce((s, e) => s + e.periodDepreciation, 0))
+  }
+
+  function assetDepreciation(asset) {
+    const scheme = schemeForAsset(asset)
+    const original = Number(asset.original) || 0
+    const cap = scheme ? round2(original * (1 - (scheme.residualRate || 0) / 100)) : 0
+    const monthly = scheme ? cap / (scheme.years * 12) : 0
+    const accumulated = accumulatedOf(asset.id)
+    const months = depreciationEntries.value.filter(e => e.assetId === asset.id && e.status === '已计提').length
+    return { scheme, original, cap, monthly: round2(monthly), accumulated, months, net: round2(original - accumulated) }
+  }
+
+  function runMonthlyDepreciation(period, { operator = '管理员', runDate = null } = {}) {
+    if (depreciationReports.value.some(r => r.period === period)) return null
+    const rows = []
+    assets.value.forEach(asset => {
+      const d = assetDepreciation(asset)
+      if (!d.scheme) return
+      const remaining = Math.max(0, d.cap - d.accumulated)
+      const amount = round2(Math.min(d.monthly, remaining))
+      if (amount <= 0) return
+      rows.push({
+        id: `${period}-${asset.id}`,
+        assetId: asset.id,
+        assetNo: asset.code,
+        assetName: asset.name,
+        period,
+        schemeNo: d.scheme.schemeNo,
+        schemeName: d.scheme.schemeName,
+        openingValue: d.net,
+        periodDepreciation: amount,
+        accumulated: round2(d.accumulated + amount),
+        closingNet: round2(d.original - d.accumulated - amount),
+        status: '已计提',
+        operator,
+        runAt: nowText()
+      })
+    })
+    depreciationEntries.value.push(...rows)
+    rows.forEach(r => {
+      const a = assets.value.find(x => x.id === r.assetId)
+      if (!a) return
+      a.net = r.closingNet
+      a.accumulatedDepreciation = r.accumulated
+      a.depreciatedMonths = depreciationEntries.value.filter(e => e.assetId === a.id && e.status === '已计提').length
+      a.updateTime = nowText()
+    })
+    const openingValue = round2(assets.value.reduce((s, a) => s + (Number(a.original) || 0), 0))
+    const periodDepreciation = round2(rows.reduce((s, r) => s + r.periodDepreciation, 0))
+    const accumulated = round2(depreciationEntries.value.filter(e => e.status === '已计提').reduce((s, e) => s + e.periodDepreciation, 0))
+    const report = {
+      period, openingValue, periodDepreciation, accumulated,
+      closingNet: round2(openingValue - accumulated),
+      assetCount: rows.length,
+      operator,
+      runDate: runDate || nowText()
+    }
+    depreciationReports.value.push(report)
+    return report
+  }
+
+  function revertDepreciation(period) {
+    const idx = depreciationReports.value.findIndex(r => r.period === period)
+    if (idx === -1) return false
+    depreciationReports.value.splice(idx, 1)
+    depreciationEntries.value = depreciationEntries.value.filter(e => e.period !== period)
+    assets.value.forEach(a => {
+      const acc = accumulatedOf(a.id)
+      a.net = round2((Number(a.original) || 0) - acc)
+      a.accumulatedDepreciation = acc
+      a.depreciatedMonths = depreciationEntries.value.filter(e => e.assetId === a.id && e.status === '已计提').length
+    })
+    return true
+  }
+
+  function addLocationByName(name) {
+    const val = String(name || '').trim()
+    if (!val || locationList.value.some(l => l.name === val)) return null
+    const row = {
+      code: nextSeqNo('LOC-N-', locationList.value.map(l => l.code)),
+      name: val, parentName: '-', manager: '', assetCount: 0
+    }
+    locationList.value.push(row)
+    return row
+  }
+
+  // 首次创建 store 时补齐两期历史计提（持久化后不重复），保证任何页面打开都能读到一致的明细与汇总
+  if (!depreciationReports.value.length) {
+    runMonthlyDepreciation('2026-07', { operator: '系统自动', runDate: '2026-07-28' })
+    runMonthlyDepreciation('2026-08', { operator: '系统自动', runDate: '2026-08-28' })
   }
 
   const stats = computed(() => {
@@ -203,6 +351,17 @@ export const useFixedAssetStore = defineStore('fixedAsset', () => {
     borrowRecords,
     changeRecords,
     disposeRecords,
+    depreciationSchemes,
+    locations,
+    locationList,
+    locationOptions,
+    categoryTree,
+    depreciationRules,
+    depreciationPlans,
+    approvalFlows,
+    depreciationEntries,
+    depreciationReports,
+    inventoryDocs,
     addAsset,
     updateAsset,
     addInbound,
@@ -212,6 +371,12 @@ export const useFixedAssetStore = defineStore('fixedAsset', () => {
     addDispose,
     syncDocLedger,
     removeDocLedger,
+    schemeForAsset,
+    assetDepreciation,
+    accumulatedOf,
+    runMonthlyDepreciation,
+    revertDepreciation,
+    addLocationByName,
     stats
   }
 })

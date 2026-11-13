@@ -18,14 +18,14 @@
             <el-card v-for="item in categoryStats" :key="item.name" shadow="hover" class="stat-card">
               <div class="stat-name">{{ item.name }}</div>
               <div class="stat-value"><span class="num">{{ item.count }}</span> <span class="stat-unit">件</span></div>
-              <div class="stat-amount num">¥{{ item.amount.toLocaleString() }}</div>
+              <div class="stat-amount num">¥{{ formatMoney(item.amount) }}</div>
             </el-card>
           </div>
           <el-table :data="pagedCategoryStats" style="width: 100%">
             <el-table-column prop="name" label="资产分类" width="120" />
             <el-table-column prop="count" label="数量" width="100" />
             <el-table-column prop="amount" label="总金额" width="150" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.amount.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.amount) }}</span></template>
             </el-table-column>
             <el-table-column prop="percentage" label="占比" width="100">
               <template #default="{ row }">{{ row.percentage }}%</template>
@@ -54,7 +54,7 @@
             <el-table-column prop="location" label="存放位置" min-width="180" />
             <el-table-column prop="count" label="资产数量" width="120" />
             <el-table-column prop="amount" label="资产总值" width="150" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.amount.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.amount) }}</span></template>
             </el-table-column>
             <el-table-column prop="departments" label="涉及部门" min-width="200" show-overflow-tooltip />
             <el-table-column label="占比" width="150">
@@ -81,11 +81,11 @@
             <el-table-column prop="department" label="部门名称" min-width="150" />
             <el-table-column prop="assetCount" label="资产数量" width="120" />
             <el-table-column prop="assetAmount" label="资产总值" width="150" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.assetAmount.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.assetAmount) }}</span></template>
             </el-table-column>
             <el-table-column prop="userCount" label="使用人数" width="100" />
             <el-table-column prop="perCapita" label="人均资产" width="130" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.perCapita.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.perCapita) }}</span></template>
             </el-table-column>
             <el-table-column label="占比" min-width="200">
               <template #default="{ row }">
@@ -126,7 +126,7 @@
             <el-table-column prop="position" label="职位" width="100" />
             <el-table-column prop="assetCount" label="持有资产数" width="120" />
             <el-table-column prop="assetAmount" label="资产总值" width="140" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.assetAmount.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.assetAmount) }}</span></template>
             </el-table-column>
             <el-table-column prop="assetDetail" label="资产明细" min-width="200" show-overflow-tooltip />
           </el-table>
@@ -178,18 +178,18 @@
             <el-table-column prop="assetType" label="资产类型" width="110" />
             <el-table-column prop="company" label="所属承租公司" min-width="190" show-overflow-tooltip />
             <el-table-column prop="original" label="原值(元)" width="120" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.original.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.original) }}</span></template>
             </el-table-column>
             <el-table-column prop="netValue" label="当前净值(元)" width="130" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.netValue.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.netValue) }}</span></template>
             </el-table-column>
             <el-table-column prop="periodAmount" label="本期折旧额(元)" width="140" align="center">
               <template #default="{ row }">
-                <el-tag type="primary" size="small" effect="light">¥{{ row.periodAmount.toLocaleString() }}</el-tag>
+                <el-tag type="primary" size="small" effect="light">¥{{ formatMoney(row.periodAmount) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="accumulatedDepreciation" label="累计折旧额(元)" width="140" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.accumulatedDepreciation.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.accumulatedDepreciation) }}</span></template>
             </el-table-column>
             <el-table-column prop="residualRate" label="残值率(%)" width="100" align="right">
               <template #default="{ row }">{{ row.residualRate }}%</template>
@@ -236,15 +236,15 @@
             <el-table-column prop="assetNo" label="资产编号" width="130" fixed />
             <el-table-column prop="name" label="资产名称" min-width="160" show-overflow-tooltip />
             <el-table-column prop="originalValue" label="原值" width="120" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.originalValue.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.originalValue) }}</span></template>
             </el-table-column>
             <el-table-column prop="depreciationMethod" label="折旧方式" width="130" />
             <el-table-column prop="usefulLife" label="使用年限" width="100" align="right" />
             <el-table-column prop="accumulatedDepreciation" label="累计折旧" width="130" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.accumulatedDepreciation.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.accumulatedDepreciation) }}</span></template>
             </el-table-column>
             <el-table-column prop="netValue" label="净值" width="120" align="right">
-              <template #default="{ row }"><span class="num">¥{{ row.netValue.toLocaleString() }}</span></template>
+              <template #default="{ row }"><span class="num">¥{{ formatMoney(row.netValue) }}</span></template>
             </el-table-column>
             <el-table-column prop="depreciationRate" label="折旧进度" width="150">
               <template #default="{ row }">
@@ -274,6 +274,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Download, Search } from '@element-plus/icons-vue'
 import { useFixedAssetStore } from '../../store/fixedAsset'
+import { todayISO, formatMoney } from '../../utils/model'
 
 const fixedAssetStore = useFixedAssetStore()
 
@@ -380,15 +381,21 @@ const userTotal = computed(() => filteredUserStats.value.length)
 const depreciationSearch = reactive({ name: '', method: '' })
 watch(depreciationSearch, () => { depreciationPage.value = 1 }, { deep: true })
 
-const depreciationList = ref([
-  { assetNo: 'ZC2024001', name: '联想ThinkPad笔记本电脑', originalValue: 85000, depreciationMethod: '直线法', usefulLife: 5, accumulatedDepreciation: 34000, netValue: 51000, depreciationRate: 40, purchaseDate: '2024-01-15' },
-  { assetNo: 'ZC2024002', name: '惠普打印机', originalValue: 16000, depreciationMethod: '直线法', usefulLife: 5, accumulatedDepreciation: 4800, netValue: 11200, depreciationRate: 30, purchaseDate: '2024-06-01' },
-  { assetNo: 'ZC2023001', name: '丰田凯美瑞轿车', originalValue: 360000, depreciationMethod: '双倍余额递减法', usefulLife: 8, accumulatedDepreciation: 135000, netValue: 225000, depreciationRate: 37.5, purchaseDate: '2023-03-20' },
-  { assetNo: 'ZC2023002', name: '办公桌', originalValue: 24000, depreciationMethod: '直线法', usefulLife: 10, accumulatedDepreciation: 7200, netValue: 16800, depreciationRate: 30, purchaseDate: '2023-08-10' },
-  { assetNo: 'ZC2022001', name: '旧款联想台式机', originalValue: 50000, depreciationMethod: '直线法', usefulLife: 5, accumulatedDepreciation: 50000, netValue: 0, depreciationRate: 100, purchaseDate: '2022-01-05' },
-  { assetNo: 'ZC2025001', name: 'A4复印纸', originalValue: 2500, depreciationMethod: '直线法', usefulLife: 1, accumulatedDepreciation: 1250, netValue: 1250, depreciationRate: 50, purchaseDate: '2025-09-01' },
-  { assetNo: 'ZC2025002', name: '服务器', originalValue: 120000, depreciationMethod: '年数总和法', usefulLife: 5, accumulatedDepreciation: 48000, netValue: 72000, depreciationRate: 40, purchaseDate: '2025-02-15' }
-])
+// P2：折旧明细与净值统一读 fixedAsset store 的按月计提结果，不再内置演示数字
+const depreciationList = computed(() => fixedAssetStore.assets.map(a => {
+  const d = fixedAssetStore.assetDepreciation(a)
+  return {
+    assetNo: a.code,
+    name: a.name,
+    originalValue: d.original,
+    depreciationMethod: d.scheme ? d.scheme.method : '未配置',
+    usefulLife: d.scheme ? d.scheme.years : 0,
+    accumulatedDepreciation: d.accumulated,
+    netValue: d.net,
+    depreciationRate: d.original ? Math.round(d.accumulated / d.original * 1000) / 10 : 0,
+    purchaseDate: a.purchaseDate || a.inboundDate || ''
+  }
+}))
 
 const filteredDepreciationList = computed(() => {
   return depreciationList.value.filter(item => {
@@ -448,7 +455,7 @@ const handleExport = () => {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `导出_${tabNames[activeTab.value]}_${new Date().toISOString().slice(0, 10)}.csv`
+  link.download = `导出_${tabNames[activeTab.value]}_${todayISO()}.csv`
   link.click()
   URL.revokeObjectURL(url)
   ElMessage.success(`导出${tabNames[activeTab.value]}报表成功`)
@@ -475,39 +482,36 @@ const pagedDepartmentStats = computed(() => {
   return departmentStats.value.slice(start, start + deptPageSize.value)
 })
 
-const depreciationDetailSource = [
-  { planName: '电子设备年限平均折旧', assetCode: 'GD20260001', assetName: '联想ThinkPad笔记本电脑', assetType: '电子设备', company: '华信科技集团有限公司', original: 8500, residualRate: 5, totalLife: 36, usedLife: 6, depDate: '2026-09-25', finished: false },
-  { planName: '电子设备年限平均折旧', assetCode: 'GD20260006', assetName: '华为会议平板', assetType: '电子设备', company: '华信科技集团有限公司', original: 26800, residualRate: 5, totalLife: 36, usedLife: 5, depDate: '2026-09-25', finished: false },
-  { planName: '租赁设备按起租日折旧', assetCode: 'GD20260010', assetName: '服务器机柜', assetType: '电子设备', company: '恒信融资租赁有限公司', original: 42000, residualRate: 5, totalLife: 36, usedLife: 22, depDate: '2026-09-28', finished: false },
-  { planName: '运输设备双倍余额折旧', assetCode: 'GD20260004', assetName: '丰田考斯特商务车', assetType: '运输设备', company: '中天建设集团有限公司', original: 385000, residualRate: 5, totalLife: 60, usedLife: 15, depDate: '2026-09-20', finished: false },
-  { planName: '机械设备工作量折旧', assetCode: 'GD20260005', assetName: '数控车床CK6140', assetType: '机械设备', company: '恒信融资租赁有限公司', original: 268000, residualRate: 5, totalLife: 48, usedLife: 24, depDate: '2026-09-15', finished: false },
-  { planName: '办公家具直线折旧', assetCode: 'GD20260008', assetName: '实木会议桌', assetType: '办公家具', company: '中天建设集团有限公司', original: 12800, residualRate: 5, totalLife: 60, usedLife: 9, depDate: '2026-09-25', finished: false },
-  { planName: '房屋建筑物年度折旧', assetCode: 'GD20250021', assetName: '总部办公楼附属用房', assetType: '房屋建筑物', company: '云鼎资产管理有限公司', original: 1280000, residualRate: 10, totalLife: 240, usedLife: 66, depDate: '2026-09-30', finished: false },
-  { planName: '电子设备年限平均折旧', assetCode: 'GD20240018', assetName: '旧款联想台式机', assetType: '电子设备', company: '华信科技集团有限公司', original: 5600, residualRate: 5, totalLife: 36, usedLife: 36, depDate: '2026-09-25', finished: true },
-  { planName: '电子设备年限平均折旧', assetCode: 'GD20260012', assetName: '爱普生投影仪', assetType: '电子设备', company: '云鼎资产管理有限公司', original: 4600, residualRate: 5, totalLife: 36, usedLife: 3, depDate: '2026-08-25', finished: false },
-  { planName: '机械设备工作量折旧', assetCode: 'GD20260011', assetName: '合力3吨叉车', assetType: '机械设备', company: '中天建设集团有限公司', original: 96000, residualRate: 5, totalLife: 60, usedLife: 13, depDate: '2026-08-15', finished: false },
-  { planName: '租赁设备按起租日折旧', assetCode: 'GD20260007', assetName: '格力中央空调机组', assetType: '机械设备', company: '云鼎资产管理有限公司', original: 158000, residualRate: 5, totalLife: 120, usedLife: 18, depDate: '2026-08-28', finished: false },
-  { planName: '电子设备年限平均折旧', assetCode: 'GD20260013', assetName: '不间断电源UPS', assetType: '电子设备', company: '华信科技集团有限公司', original: 18600, residualRate: 5, totalLife: 48, usedLife: 11, depDate: '2026-08-25', finished: false },
-  { planName: '运输设备双倍余额折旧', assetCode: 'GD20250009', assetName: '别克GL8商务车', assetType: '运输设备', company: '云鼎资产管理有限公司', original: 268000, residualRate: 5, totalLife: 60, usedLife: 26, depDate: '2026-07-20', finished: false },
-  { planName: '办公家具直线折旧', assetCode: 'GD20260009', assetName: '人体工学办公椅', assetType: '办公家具', company: '华信科技集团有限公司', original: 1580, residualRate: 5, totalLife: 24, usedLife: 8, depDate: '2026-07-25', finished: false },
-  { planName: '房屋建筑物年度折旧', assetCode: 'GD20240006', assetName: '一号生产厂房', assetType: '房屋建筑物', company: '中天建设集团有限公司', original: 2600000, residualRate: 10, totalLife: 300, usedLife: 92, depDate: '2026-07-31', finished: false },
-  { planName: '电子设备年限平均折旧', assetCode: 'GD20230012', assetName: '惠普激光打印机', assetType: '电子设备', company: '恒信融资租赁有限公司', original: 3200, residualRate: 5, totalLife: 24, usedLife: 24, depDate: '2026-07-25', finished: true }
-]
+// P2：折旧进度明细来自 store 的按月计提流水（一资产一期一条），不再内置演示常量
+const depreciationDetails = computed(() => {
+  const entries = fixedAssetStore.depreciationEntries
+  const assets = fixedAssetStore.assets
+  return entries.map(e => {
+    const a = assets.find(x => x.id === e.assetId) || {}
+    const scheme = fixedAssetStore.depreciationSchemes.find(s => s.schemeNo === e.schemeNo)
+    const totalLife = scheme ? scheme.years * 12 : 0
+    const usedLife = entries.filter(x => x.assetId === e.assetId && x.status === '已计提' && x.period <= e.period).length
+    return {
+      planName: e.schemeName,
+      assetCode: e.assetNo,
+      assetName: e.assetName,
+      assetType: a.type || '其他设备',
+      company: a.company || '',
+      original: Number(a.original) || 0,
+      residualRate: scheme ? scheme.residualRate : 0,
+      totalLife,
+      usedLife,
+      depDate: `${e.period}-28`,
+      finished: totalLife > 0 && usedLife >= totalLife,
+      periodAmount: e.periodDepreciation,
+      accumulatedDepreciation: e.accumulated,
+      netValue: e.closingNet,
+      remainLife: Math.max(0, totalLife - usedLife)
+    }
+  })
+})
 
-const depreciationDetails = computed(() => depreciationDetailSource.map(r => {
-  const monthly = r.original * (1 - r.residualRate / 100) / r.totalLife
-  const cap = r.original * (1 - r.residualRate / 100)
-  const accumulated = Math.min(monthly * r.usedLife, cap)
-  return {
-    ...r,
-    periodAmount: r.finished ? 0 : Math.round(monthly * 100) / 100,
-    accumulatedDepreciation: Math.round(accumulated * 100) / 100,
-    netValue: Math.round((r.original - accumulated) * 100) / 100,
-    remainLife: Math.max(r.totalLife - r.usedLife, 0)
-  }
-}))
-
-const detailSearch = reactive({ month: '2026-09', keyword: '' })
+const detailSearch = reactive({ month: '', keyword: '' })
 const detPage = ref(1)
 const detPageSize = ref(15)
 watch(detailSearch, () => { detPage.value = 1 }, { deep: true })

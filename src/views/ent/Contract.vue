@@ -90,10 +90,7 @@
           <el-form :inline="true">
             <el-form-item label="状态">
               <el-select v-model="filterStatus" clearable placeholder="全部" style="width: 120px">
-                <el-option label="正常" value="正常" />
-                <el-option label="欠缴" value="欠缴" />
-                <el-option label="临期" value="临期" />
-                <el-option label="已到期" value="已到期" />
+                <el-option v-for="s in statusValues('contractStatus')" :key="s" :label="s" :value="s" />
               </el-select>
             </el-form-item>
             <el-form-item>
@@ -289,10 +286,7 @@
             </el-form-item>
             <el-form-item label="合同状态">
               <el-select v-model="acFilter.status" clearable placeholder="全部" style="width:120px">
-                <el-option label="待审批" value="待审批" />
-                <el-option label="审批中" value="审批中" />
-                <el-option label="审批完成" value="审批完成" />
-                <el-option label="已作废" value="已作废" />
+                <el-option v-for="s in statusValues('approvalStatus')" :key="s" :label="s" :value="s" />
               </el-select>
             </el-form-item>
             <el-form-item label="租金类型">
@@ -433,10 +427,7 @@
           <el-form :inline="true">
             <el-form-item label="审批状态">
               <el-select v-model="approvalFilter" clearable placeholder="全部" style="width:130px">
-                <el-option label="待审批" value="待审批" />
-                <el-option label="审批中" value="审批中" />
-                <el-option label="已通过" value="已通过" />
-                <el-option label="已驳回" value="已驳回" />
+                <el-option v-for="s in statusValues('approvalStatus')" :key="s" :label="s" :value="s" />
               </el-select>
             </el-form-item>
           </el-form>
@@ -1398,6 +1389,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { todayISO, toISODate, statusValues, nextSeqNo } from '../../utils/model'
 import { useRouter } from 'vue-router'
 import { useAssetStore } from '../../store/asset'
 import { useContractStore } from '../../store/contract'
@@ -1418,6 +1411,11 @@ const contractStore = useContractStore()
 const partyStore = usePartyStore()
 const userStore = useUserStore()
 const mortgageStore = useMortgageStore()
+// P1：合同附属台账统一由合同 store 持有（跨模块共享 + 自动持久化），本页用 storeToRefs 保持原有 .value 写法
+const {
+  letterList, templates, archiveList, approvalList, tenantLedger,
+  approvalContracts: acContracts
+} = storeToRefs(contractStore)
 // 审批台是本页自带的演示数据，按登录公司过滤；合同列表本身走 store 的 visibleContracts
 const currentCompany = computed(() => userStore.user?.org || '城投集团')
 const activeTab = ref('list')
@@ -1453,16 +1451,7 @@ const letterForm = ref({
   remark: ''
 })
 
-const letterList = ref([
-  { id: 'YXS-2026-001', lessor: '城投集团', lessee: '福州××商业管理有限公司', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', intentArea: 320, startDate: '2026-07-01', endDate: '2031-06-30', intentAmount: 10, rentFreeType: '有', freeMonths: 2, feeReduction: '固定租金', status: '洽谈中', remark: '意向承租方为连锁品牌' },
-  { id: 'YXS-2026-002', lessor: '领航公司', lessee: '福建××科技有限公司', assetId: 'CT-004', assetName: '首占新区保障房 1# 楼', intentArea: 1200, startDate: '2026-08-01', endDate: '2029-07-31', intentAmount: 20, rentFreeType: '无', freeMonths: 0, feeReduction: '物业费', status: '洽谈中', remark: '仅承租部分楼层' },
-  { id: 'YXS-2026-003', lessor: '产投集团', lessee: '长乐××物流有限公司', assetId: 'CT-006', assetName: '玉田镇旧工业厂房', intentArea: 2400, startDate: '2026-09-01', endDate: '2028-08-31', intentAmount: 15, rentFreeType: '有', freeMonths: 1, feeReduction: '', status: '洽谈中', remark: '需确认消防验收情况' },
-  { id: 'YXS-2026-004', lessor: '城投集团', lessee: '福州××餐饮管理有限公司', assetId: 'CT-005', assetName: '江田镇仓储用地', intentArea: 5000, startDate: '2026-10-01', endDate: '2029-09-30', intentAmount: 8, rentFreeType: '无', freeMonths: 0, feeReduction: '固定租金', status: '已终止', remark: '承租方放弃租赁' },
-  { id: 'YXS-2026-005', lessor: '水投集团', lessee: '长乐××教育培训有限公司', assetId: 'CT-003', assetName: '营前标准厂房 2#', intentArea: 800, startDate: '2026-09-15', endDate: '2029-09-14', intentAmount: 5, rentFreeType: '有', freeMonths: 3, feeReduction: '管理费', status: '洽谈中', remark: '' },
-  { id: 'YXS-2026-006', lessor: '领航公司', lessee: '福建××电子商务有限公司', assetId: 'CT-007', assetName: '吴航农贸市场', intentArea: 600, startDate: '2026-11-01', endDate: '2029-10-31', intentAmount: 12, rentFreeType: '无', freeMonths: 0, feeReduction: '', status: '洽谈中', remark: '电商企业入驻意向' },
-  { id: 'YXS-2026-007', lessor: '产投集团', lessee: '长乐××新能源科技有限公司', assetId: 'CT-002', assetName: '航城商务楼 3F', intentArea: 1200, startDate: '2026-10-15', endDate: '2031-10-14', intentAmount: 25, rentFreeType: '有', freeMonths: 2, feeReduction: '固定租金', status: '已签约', remark: '' },
-  { id: 'YXS-2026-008', lessor: '领航公司', lessee: '福州××健康管理有限公司', assetId: 'CT-008', assetName: '梅花镇综合楼', intentArea: 500, startDate: '2026-12-01', endDate: '2029-11-30', intentAmount: 6, rentFreeType: '无', freeMonths: 0, feeReduction: '物业费', status: '洽谈中', remark: '资产现为自用，需先调整用途' },
-])
+// letterList 已收编至 contractStore（见文件头 storeToRefs 解构）
 
 const filteredLetters = computed(() => {
   return letterList.value.filter(l => {
@@ -1593,7 +1582,7 @@ function exportLetters() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `意向书台账_${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = `意向书台账_${todayISO()}.csv`
   a.click()
   URL.revokeObjectURL(url)
   ElMessage.success(`已导出 ${filteredLetters.value.length} 条意向书`)
@@ -1849,13 +1838,7 @@ function applyTemplate(templateId) {
   }
 }
 
-// 合同模板
-const templates = ref([
-  { id: 'TPL-001', name: '标准商铺租赁合同', type: '商铺租赁', version: 'V2.1', updateTime: '2026-06-15', useCount: 28, content: '<p>第一条 甲方将位于____的商铺出租给乙方经营使用。</p><p>第二条 租赁期限为____年，自____年____月____日起至____年____月____日止。</p><p>第三条 年租金为人民币____万元，租金按半年缴纳。</p><p>第四条 乙方应缴纳保证金人民币____万元。</p>' },
-  { id: 'TPL-002', name: '厂房租赁合同', type: '厂房租赁', version: 'V1.3', updateTime: '2026-05-20', useCount: 15, content: '<p>第一条 甲方将位于____的厂房出租给乙方作为生产用地。</p><p>第二条 厂房面积____平方米，年租金为人民币____万元。</p><p>第三条 乙方不得擅自改变厂房结构或用途。</p>' },
-  { id: 'TPL-003', name: '办公楼租赁合同', type: '办公楼租赁', version: 'V1.0', updateTime: '2026-04-10', useCount: 8, content: '<p>第一条 甲方将位于____的办公楼____层出租给乙方办公使用。</p><p>第二条 租赁面积____平方米，月租金为人民币____元/平方米。</p>' },
-  { id: 'TPL-004', name: '仓储设施租赁合同', type: '仓储租赁', version: 'V1.1', updateTime: '2026-03-08', useCount: 5, content: '<p>第一条 甲方将位于____的仓储设施出租给乙方使用。</p><p>第二条 仓储面积____平方米，年租金为人民币____万元。</p>' },
-])
+// 合同模板：templates 已收编至 contractStore
 
 const showTemplateDialog = ref(false)
 const showTemplatePreview = ref(false)
@@ -1912,7 +1895,7 @@ function handleCreateTemplate() {
       t.name = templateForm.value.name
       t.type = templateForm.value.type
       t.content = templateForm.value.content
-      t.updateTime = new Date().toISOString().slice(0, 10)
+      t.updateTime = todayISO()
       const [prefix, num] = t.version.replace(/^V/, '').split('.')
       t.version = `V${prefix}.${Number(num || 0) + 1}`
     }
@@ -1922,13 +1905,13 @@ function handleCreateTemplate() {
     ElMessage.success('模板已更新')
     return
   }
-  const newId = `TPL-${String(templates.value.length + 1).padStart(3, '0')}`
+  const newId = nextSeqNo('TPL-', templates.value.map(t => t.id), 3)
   templates.value.push({
     id: newId,
     name: templateForm.value.name,
     type: templateForm.value.type,
     version: 'V1.0',
-    updateTime: new Date().toISOString().slice(0, 10),
+    updateTime: todayISO(),
     useCount: 0,
     content: templateForm.value.content
   })
@@ -1991,13 +1974,7 @@ const archiveKeyword = ref('')
 const showArchiveDrawer = ref(false)
 const currentArchive = ref(null)
 
-const archiveList = ref([
-  { id: 'HT-2025-001', assetName: '城关商铺A-01', tenant: '福州长乐融辉贸易有限公司', archiveDate: '2025-03-15', archiveNo: 'DA-2025-001', storageType: '电子+纸质' },
-  { id: 'HT-2025-002', assetName: '航城厂房1#', tenant: '福建省长乐市鸿运纺织有限公司', archiveDate: '2025-04-20', archiveNo: 'DA-2025-002', storageType: '电子' },
-  { id: 'HT-2025-003', assetName: '漳港办公楼2层', tenant: '长乐区鑫源投资有限公司', archiveDate: '2025-06-10', archiveNo: 'DA-2025-003', storageType: '电子+纸质' },
-  { id: 'HT-2024-001', assetName: '营前仓库B-03', tenant: '福州航城物流有限公司', archiveDate: '2024-02-28', archiveNo: 'DA-2024-001', storageType: '纸质' },
-  { id: 'HT-2024-005', assetName: '首占商铺C-08', tenant: '长乐吴航街道陈氏食品店', archiveDate: '2024-08-15', archiveNo: 'DA-2024-005', storageType: '电子' },
-])
+// archiveList 已收编至 contractStore
 
 const filteredArchives = computed(() => {
   return archiveList.value.filter(a => {
@@ -2024,8 +2001,8 @@ function handleArchive(row) {
       id: row.id,
       assetName: row.assetName,
       tenant: row.tenant,
-      archiveDate: new Date().toISOString().slice(0, 10),
-      archiveNo: `DA-${new Date().getFullYear()}-${String(archiveList.value.length + 1).padStart(3, '0')}`,
+      archiveDate: todayISO(),
+      archiveNo: nextSeqNo(`DA-${new Date().getFullYear()}-`, archiveList.value.map(a => a.archiveNo), 3),
       storageType: row.electronic ? '电子' : '电子+纸质'
     })
     ElMessage.success('合同已归档')
@@ -2052,44 +2029,7 @@ const showApprovalDrawer = ref(false)
 const currentApproval = ref(null)
 const approveOpinion = ref('')
 
-const approvalList = ref([
-  {
-    leaseNo: 'ZL-2026-015', assetName: '城关商铺A-05', tenant: '长乐区某餐饮管理有限公司', startDate: '2026-10-01', endDate: '2029-09-30', annualRent: 8.5, applyTime: '2026-09-12', status: '待审批',
-    steps: [
-      { name: '提交申请', handler: '经办人：王芳', time: '2026-09-12 10:20', status: '已完成' },
-      { name: '初审', handler: '资产管理部：李强', time: '', status: '进行中' },
-      { name: '复审', handler: '财务部：陈敏', time: '', status: '未开始' },
-      { name: '审批', handler: '分管领导：郑总', time: '', status: '未开始' },
-    ]
-  },
-  {
-    leaseNo: 'ZL-2026-014', assetName: '航城厂房2#', tenant: '福建某智能装备有限公司', startDate: '2026-10-15', endDate: '2031-10-14', annualRent: 45, applyTime: '2026-09-05', status: '审批中',
-    steps: [
-      { name: '提交申请', handler: '经办人：王芳', time: '2026-09-05 14:30', status: '已完成' },
-      { name: '初审', handler: '资产管理部：李强', time: '2026-09-07 09:15', status: '已完成' },
-      { name: '复审', handler: '财务部：陈敏', time: '', status: '进行中' },
-      { name: '审批', handler: '分管领导：郑总', time: '', status: '未开始' },
-    ]
-  },
-  {
-    leaseNo: 'ZL-2026-013', assetName: '漳港办公楼3层', tenant: '长乐区鑫源投资有限公司', startDate: '2026-09-01', endDate: '2028-08-31', annualRent: 12, applyTime: '2026-08-20', status: '已通过',
-    steps: [
-      { name: '提交申请', handler: '经办人：赵磊', time: '2026-08-20 11:00', status: '已完成' },
-      { name: '初审', handler: '资产管理部：李强', time: '2026-08-21 15:40', status: '已完成' },
-      { name: '复审', handler: '财务部：陈敏', time: '2026-08-23 10:05', status: '已完成' },
-      { name: '审批', handler: '分管领导：郑总', time: '2026-08-25 16:20', status: '已完成' },
-    ]
-  },
-  {
-    leaseNo: 'ZL-2026-012', assetName: '首占商铺C-12', tenant: '陈某', startDate: '2026-09-01', endDate: '2027-08-31', annualRent: 2.4, applyTime: '2026-08-10', status: '已驳回',
-    steps: [
-      { name: '提交申请', handler: '经办人：赵磊', time: '2026-08-10 09:30', status: '已完成' },
-      { name: '初审', handler: '资产管理部：李强', time: '2026-08-12 14:10', status: '已驳回' },
-      { name: '复审', handler: '财务部：陈敏', time: '', status: '未开始' },
-      { name: '审批', handler: '分管领导：郑总', time: '', status: '未开始' },
-    ]
-  },
-])
+// approvalList 已收编至 contractStore
 
 const filteredApprovals = computed(() =>
   approvalFilter.value ? approvalList.value.filter(a => a.status === approvalFilter.value) : approvalList.value
@@ -2154,13 +2094,7 @@ const showTenantDrawer = ref(false)
 const currentTenant = ref(null)
 const tenantForm = ref({ isEdit: false, tenantNo: '', name: '', type: '企业', idNo: '', contact: '', phone: '' })
 
-const tenantLedger = ref([
-  { tenantNo: 'CZF-001', name: '福州长乐融辉贸易有限公司', type: '企业', idNo: '91350112MA31XXXX2K', contact: '王经理', phone: '13805910001', contractCount: 2, registerTime: '2024-03-15' },
-  { tenantNo: 'CZF-002', name: '福建省长乐市鸿运纺织有限公司', type: '企业', idNo: '913501827XXXXXX35B', contact: '林总', phone: '13905910002', contractCount: 1, registerTime: '2024-05-20' },
-  { tenantNo: 'CZF-003', name: '长乐区鑫源投资有限公司', type: '企业', idNo: '91350112MAXXXX8T7Q', contact: '陈经理', phone: '13705910003', contractCount: 1, registerTime: '2025-01-10' },
-  { tenantNo: 'CZF-004', name: '张某', type: '个人', idNo: '3501821990XXXX1234', contact: '张某', phone: '15859100004', contractCount: 1, registerTime: '2025-06-08' },
-  { tenantNo: 'CZF-005', name: '长乐吴航街道陈氏食品店', type: '个人', idNo: '92350112MAXXXX6L6D', contact: '陈某', phone: '15959100005', contractCount: 1, registerTime: '2024-08-15' },
-])
+// tenantLedger 已收编至 contractStore
 
 const filteredTenants = computed(() => tenantLedger.value.filter(t => {
   if (tenantTypeFilter.value && t.type !== tenantTypeFilter.value) return false
@@ -2195,9 +2129,9 @@ function saveTenant() {
     ElMessage.success('承租方信息已更新')
   } else {
     tenantLedger.value.unshift({
-      tenantNo: `CZF-${String(tenantLedger.value.length + 1).padStart(3, '0')}`,
+      tenantNo: nextSeqNo('CZF-', tenantLedger.value.map(t => t.tenantNo), 3),
       name: f.name, type: f.type, idNo: f.idNo, contact: f.contact, phone: f.phone,
-      contractCount: 0, registerTime: new Date().toISOString().slice(0, 10)
+      contractCount: 0, registerTime: todayISO()
     })
     ElMessage.success('承租方已新增')
   }
@@ -2368,7 +2302,7 @@ function openSettlement(contract, action) {
   if (action === 'renew') {
     renewForm.value = {
       startDate: contract.endDate,
-      endDate: new Date(end.getFullYear() + 3, end.getMonth(), end.getDate()).toISOString().slice(0, 10),
+      endDate: toISODate(new Date(end.getFullYear() + 3, end.getMonth(), end.getDate())),
       annualRent: contract.annualRent
     }
   } else {
@@ -2408,7 +2342,7 @@ function submitSettlement() {
       source: `续租${c.id}`
     })
     c.settlementStatus = '已续租'
-    c.settlementDate = new Date().toISOString().slice(0, 10)
+    c.settlementDate = todayISO()
     c.settlementAction = 'renew'
     c.settlementItems = calcSettlementItems(c, 'renew')
     c.newContractId = newContract.id
@@ -2430,7 +2364,7 @@ function submitSettlement() {
     contractStore.updateContract(c.id, {
       status: '退租',
       settlementStatus: '已退租',
-      settlementDate: new Date().toISOString().slice(0, 10),
+      settlementDate: todayISO(),
       settlementAction: 'terminate',
       settlementItems: items,
       terminateDate: terminateForm.value.date,
@@ -2467,7 +2401,8 @@ function maskId(idNo) {
   return s.slice(0, 4) + '*'.repeat(s.length - 8) + s.slice(-4)
 }
 
-const acContracts = ref([
+// P2：审批台合同表运行时数据归 store；seed 仅在首次加载时灌入一次
+if (!acContracts.value.length) acContracts.value = [
   {
     id: 'HT-2026-031', company: '城投集团', partyA: '长乐区城投集团', partyB: '福州××商业管理有限公司', phone: '13805910001',
     lessee: { type: '企业', name: '福州××商业管理有限公司', contact: '王经理', phone: '13805910001', idNo: '91350112MA31AB2K9X' },
@@ -2633,7 +2568,7 @@ const acContracts = ref([
       { title: '财务复审', auditor: '陈敏', time: '2026-03-08 10:30' }
     ]
   }
-])
+]
 
 const myAcContracts = computed(() =>
   userStore.isEnt ? acContracts.value.filter(c => c.company === currentCompany.value) : acContracts.value
@@ -2708,7 +2643,7 @@ function acDownloadTemplate() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `合同导入模板_${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = `合同导入模板_${todayISO()}.csv`
   a.click()
   URL.revokeObjectURL(url)
   ElMessage.success('合同导入模板已下载')
@@ -2753,7 +2688,7 @@ function acExportApproved() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `审批完成合同_${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = `审批完成合同_${todayISO()}.csv`
   a.click()
   URL.revokeObjectURL(url)
   ElMessage.success(`已导出 ${approved.length} 条审批完成合同`)
@@ -2816,7 +2751,7 @@ function confirmAcRenew() {
   const now = new Date()
   const newEndDate = new Date(row.endDate)
   newEndDate.setFullYear(newEndDate.getFullYear() + 1)
-  const newEndStr = newEndDate.toISOString().slice(0, 10)
+  const newEndStr = toISODate(newEndDate)
   Object.assign(row, {
     endDate: newEndStr,
     leaseTime: `${row.signDate} ~ ${newEndStr}`,
@@ -2839,7 +2774,7 @@ function openAcRefund(row) {
     const refundAmount = Math.round(row.deposit * 0.8)
     Object.assign(row, {
       status: '已退租',
-      refundDate: now.toISOString().slice(0, 10),
+      refundDate: toISODate(now),
       refundAmount: refundAmount,
       arrearsMonths: 0
     })
@@ -2958,10 +2893,10 @@ function handleAcImportConfirm() {
     id: `HT-${new Date().getFullYear()}-${String(acContracts.value.length + 30).padStart(3, '0')}`,
     company: currentCompany.value, partyA: `长乐区${currentCompany.value}`, partyB: '导入承租方', phone: '13800000000',
     lessee: { type: '企业', name: '导入承租方', contact: '联系人', phone: '13800000000', idNo: '91350112000000000X' },
-    signDate: new Date().toISOString().slice(0, 10),
-    leaseTime: `${new Date().toISOString().slice(0, 10)} ~ ${new Date(Date.now() + 3 * 365 * 86400000).toISOString().slice(0, 10)}`,
-    endDate: new Date(Date.now() + 3 * 365 * 86400000).toISOString().slice(0, 10),
-    contractType: '资产租赁', rentType: '固定租金', usage: '商业经营', payCycle: '季缴', payDeadline: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+    signDate: todayISO(),
+    leaseTime: `${todayISO()} ~ ${toISODate(new Date(Date.now() + 3 * 365 * 86400000))}`,
+    endDate: toISODate(new Date(Date.now() + 3 * 365 * 86400000)),
+    contractType: '资产租赁', rentType: '固定租金', usage: '商业经营', payCycle: '季缴', payDeadline: toISODate(new Date(Date.now() + 30 * 86400000)),
     monthlyRent: 10000, reduction: 0, deposit: 30000, arrearsMonths: 0,
     flow: '一级审批流程', status: '待审批', attachment: acImportFileList.value[0]?.name || '导入合同.pdf', agreement: '',
     assets: [{ region: '福建省福州市长乐区', project: '导入项目', zone: '-', name: '导入资产', code: 'IMPORT', location: '长乐区', company: currentCompany.value, leaseType: '整租' }],
@@ -3005,7 +2940,7 @@ function acExportDetail() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `合同详情_${row.id}_${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = `合同详情_${row.id}_${todayISO()}.csv`
   a.click()
   URL.revokeObjectURL(url)
   ElMessage.success(`合同 ${row.id} 详情已导出`)
@@ -3019,7 +2954,7 @@ function acDownloadSign(step) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `签名附件_${step.title}_${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = `签名附件_${step.title}_${todayISO()}.csv`
   a.click()
   URL.revokeObjectURL(url)
   ElMessage.success(`已下载「${step.title}」签名附件`)

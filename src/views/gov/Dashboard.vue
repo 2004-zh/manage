@@ -20,7 +20,7 @@
 
     <div class="chart-row chart-row-1-1">
       <el-card class="chart-card">
-        <template #header>资产权属分布</template>
+        <template #header>资产归属分布</template>
         <div ref="ownershipPieRef" class="chart-box"></div>
       </el-card>
       <el-card class="chart-card">
@@ -115,11 +115,24 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import { useReportStore } from '../../store/report'
 import { useWarningStore } from '../../store/warning'
+import { useAssetStore } from '../../store/asset'
+import { normalizeStatus } from '../../utils/model'
 
 const reportStore = useReportStore()
 const warningStore = useWarningStore()
+const assetStore = useAssetStore()
 
 const metricYear = ref(2026)
+const assetList = computed(() => assetStore.allAssets || [])
+const PIE_COLORS = ['#1668DC', '#18A058', '#E8912A', '#722ed1', '#13c2c2', '#D93026', '#eb2f96']
+
+function groupCount(values) {
+  const map = new Map()
+  values.forEach(v => map.set(v, (map.get(v) || 0) + 1))
+  return Array.from(map.entries()).map(([name, value], i) => ({
+    name, value, itemStyle: { color: PIE_COLORS[i % PIE_COLORS.length] }
+  }))
+}
 
 const rows = computed(() => reportStore.getAllCompaniesLatestData())
 const total = computed(() => {
@@ -151,21 +164,50 @@ const total = computed(() => {
   return t
 })
 
+// P1 续：KPI 全部来自主数据；没有历史快照，因此不再展示写死的「较上年」趋势
+const operatingCount = computed(() => assetList.value.filter(a => {
+  const s = normalizeStatus('assetStatus', a.status)
+  return s === '已出租' || s === '部分出租' || s === '自用'
+}).length)
+
+const warningTotal = computed(() => {
+  const w = warningStore.warnings || {}
+  return (w.arrears?.total || 0) + (w.idle?.total || 0) + (w.uncert?.total || 0) + (w.expiring?.total || 0)
+})
+
+const ownershipPieData = computed(() =>
+  groupCount(assetList.value.map(a => a.group || '未分类'))
+)
+
+const typePieData = computed(() => {
+  const base = groupCount(assetList.value.map(a => a.assetCategory || a.type || '其他'))
+  if (total.value.intangibleCount) {
+    base.push({ name: '无形资产', value: total.value.intangibleCount, itemStyle: { color: '#13c2c2' } })
+  }
+  if (total.value.equityCount) {
+    base.push({ name: '股权投资', value: total.value.equityCount, itemStyle: { color: '#eb2f96' } })
+  }
+  return base
+})
+
 const kpiList = computed(() => [
-  { label: '总资产(万元)', value: total.value.bookValue.toLocaleString(), color: '#1668DC', trend: 5.2 },
-  { label: '资产总数', value: String(total.value.assets), color: '#722ed1', trend: 8.1 },
-  { label: '运营总数', value: '59', color: '#13c2c2', trend: 12 },
-  { label: '预警数', value: '41', color: '#D93026', trend: -3 },
-  { label: '出租率', value: (total.value.rentalRate ?? 0).toFixed(1), unit: '%', color: '#18A058', trend: 1.2 },
-  { label: '当年度实收(亿)', value: (total.value.yearActual ?? 0).toFixed(4), color: '#18A058', trend: 6.8 }
+  { label: '总资产(万元)', value: total.value.bookValue.toLocaleString(), color: '#1668DC' },
+  { label: '资产总数', value: String(total.value.assets), color: '#722ed1' },
+  { label: '运营总数', value: String(operatingCount.value), color: '#13c2c2' },
+  { label: '预警数', value: String(warningTotal.value), color: '#D93026' },
+  { label: '出租率', value: (total.value.rentalRate ?? 0).toFixed(1), unit: '%', color: '#18A058' },
+  { label: '当年度实收(亿)', value: (total.value.yearActual ?? 0).toFixed(4), color: '#18A058' }
 ])
 
-const warningCards = [
-  { label: '欠费预警', count: warningStore.warnings.arrears.total, color: '#E8912A', byGroup: warningStore.warnings.arrears.byGroup },
-  { label: '闲置超期', count: warningStore.warnings.idle.total, color: '#94A3B8', byGroup: warningStore.warnings.idle.byGroup },
-  { label: '未办证', count: warningStore.warnings.uncert.total, color: '#D93026', byGroup: warningStore.warnings.uncert.byGroup },
-  { label: '合同临期', count: warningStore.warnings.expiring.total, color: '#1668DC', byGroup: warningStore.warnings.expiring.byGroup }
-]
+const warningCards = computed(() => {
+  const w = warningStore.warnings || {}
+  return [
+    { label: '欠费预警', count: w.arrears?.total ?? 0, color: '#E8912A', byGroup: w.arrears?.byGroup },
+    { label: '闲置超期', count: w.idle?.total ?? 0, color: '#94A3B8', byGroup: w.idle?.byGroup },
+    { label: '未办证', count: w.uncert?.total ?? 0, color: '#D93026', byGroup: w.uncert?.byGroup },
+    { label: '合同临期', count: w.expiring?.total ?? 0, color: '#1668DC', byGroup: w.expiring?.byGroup }
+  ]
+})
 
 const metricRows = computed(() => rows.value)
 
@@ -188,11 +230,7 @@ onMounted(() => {
     series: [{
       type: 'pie', radius: ['40%', '65%'], center: ['50%', '45%'],
       label: { formatter: '{b}\n{d}%', fontSize: 12 },
-      data: [
-        { value: 4200, name: '自持', itemStyle: { color: '#1668DC' } },
-        { value: 1500, name: '委托管理', itemStyle: { color: '#18A058' } },
-        { value: 654, name: '其他', itemStyle: { color: '#E8912A' } }
-      ]
+      data: ownershipPieData.value
     }]
   })
 
@@ -203,14 +241,7 @@ onMounted(() => {
     series: [{
       type: 'pie', radius: ['40%', '65%'], center: ['50%', '45%'],
       label: { formatter: '{b}\n{d}%', fontSize: 12 },
-      data: [
-        { value: 3800, name: '房产类', itemStyle: { color: '#1668DC' } },
-        { value: 1200, name: '土地类', itemStyle: { color: '#18A058' } },
-        { value: 680, name: '设备类', itemStyle: { color: '#722ed1' } },
-        { value: 420, name: '在建工程', itemStyle: { color: '#E8912A' } },
-        { value: total.value.intangibleCount || 7, name: '无形资产', itemStyle: { color: '#13c2c2' } },
-        { value: total.value.equityCount || 0, name: '股权投资', itemStyle: { color: '#eb2f96' } }
-      ]
+      data: typePieData.value
     }]
   })
 
@@ -266,6 +297,12 @@ function updateRevenueRank() {
 watch(metricYear, () => {
   updateBarChart()
   updateRevenueRank()
+})
+
+// 主数据变化时同步刷新两张分布图，避免只在挂载时取一次快照
+watch([ownershipPieData, typePieData], () => {
+  ownershipPie?.setOption({ series: [{ data: ownershipPieData.value }] })
+  typePie?.setOption({ series: [{ data: typePieData.value }] })
 })
 
 onUnmounted(() => {

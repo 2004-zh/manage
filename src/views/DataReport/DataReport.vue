@@ -17,19 +17,19 @@
         <el-tab-pane label="资产统计" name="asset">
           <div class="grid-4">
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #1668DC">1,286</div>
+              <div class="stat-value" style="color: #1668DC">{{ assetStats.total }}</div>
               <div class="stat-label">资产总数</div>
             </el-card>
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #18A058">980</div>
+              <div class="stat-value" style="color: #18A058">{{ assetStats.rented }}</div>
               <div class="stat-label">已出租</div>
             </el-card>
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #E8912A">256</div>
+              <div class="stat-value" style="color: #E8912A">{{ assetStats.selfUse }}</div>
               <div class="stat-label">自用</div>
             </el-card>
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #D93026">50</div>
+              <div class="stat-value" style="color: #D93026">{{ assetStats.idle }}</div>
               <div class="stat-label">闲置</div>
             </el-card>
           </div>
@@ -53,15 +53,15 @@
         <el-tab-pane label="租赁统计" name="lease">
           <div class="grid-3">
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #18A058">98.5%</div>
+              <div class="stat-value" style="color: #18A058">{{ leaseStats.occupancyRate }}%</div>
               <div class="stat-label">出租率</div>
             </el-card>
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #E8912A">12</div>
+              <div class="stat-value" style="color: #E8912A">{{ leaseStats.expiringThisMonth }}</div>
               <div class="stat-label">本月到期</div>
             </el-card>
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #1668DC">8</div>
+              <div class="stat-value" style="color: #1668DC">{{ leaseStats.newThisMonth }}</div>
               <div class="stat-label">本月新签</div>
             </el-card>
           </div>
@@ -110,19 +110,19 @@
         <el-tab-pane label="缴费统计" name="payment">
           <div class="grid-4">
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #1668DC">¥2,580万</div>
+              <div class="stat-value" style="color: #1668DC">¥{{ wanText(paymentStats.receivable) }}万</div>
               <div class="stat-label">年度应收</div>
             </el-card>
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #18A058">¥2,350万</div>
+              <div class="stat-value" style="color: #18A058">¥{{ wanText(paymentStats.received) }}万</div>
               <div class="stat-label">已收金额</div>
             </el-card>
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #E8912A">¥180万</div>
+              <div class="stat-value" style="color: #E8912A">¥{{ wanText(paymentStats.pending) }}万</div>
               <div class="stat-label">待收金额</div>
             </el-card>
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-value" style="color: #D93026">91.1%</div>
+              <div class="stat-value" style="color: #D93026">{{ paymentStats.collectionRate }}%</div>
               <div class="stat-label">收缴率</div>
             </el-card>
           </div>
@@ -146,65 +146,168 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Download } from '@element-plus/icons-vue'
+import { useAssetStore } from '../../store/asset'
+import { useContractStore } from '../../store/contract'
+import { useFinanceStore } from '../../store/finance'
+import { normalizeStatus, formatMoney, todayISO, toISODate } from '../../utils/model'
 
 const activeTab = ref('asset')
 const dateRange = ref([])
 
-const assetTypeData = ref([
-  { name: '保障房', count: 500, percent: 38.9, color: '#1668DC' },
-  { name: '商铺', count: 300, percent: 23.3, color: '#18A058' },
-  { name: '写字楼', count: 200, percent: 15.6, color: '#E8912A' },
-  { name: '厂房', count: 186, percent: 14.5, color: '#722ed1' },
-  { name: '农贸市场', count: 100, percent: 7.7, color: '#13c2c2' }
-])
+// P1：报表不再内置写死数字，全部由资产 / 合同 / 财务主数据实时聚合
+const assetStore = useAssetStore()
+const contractStore = useContractStore()
+const financeStore = useFinanceStore()
 
-const leaseTrend = ref([
-  { month: '10月', rate: 95.2 },
-  { month: '11月', rate: 95.8 },
-  { month: '12月', rate: 96.1 },
-  { month: '1月', rate: 96.5 },
-  { month: '2月', rate: 96.8 },
-  { month: '3月', rate: 97.2 },
-  { month: '4月', rate: 97.5 },
-  { month: '5月', rate: 97.8 },
-  { month: '6月', rate: 98.0 },
-  { month: '7月', rate: 98.2 },
-  { month: '8月', rate: 98.3 },
-  { month: '9月', rate: 98.5 }
-])
+const assets = computed(() => assetStore.visibleAssets || [])
+const contracts = computed(() => contractStore.visibleContracts || [])
+const bills = computed(() => financeStore.bills || [])
 
-const leaseExpiringList = ref([
-  { contractNo: 'HT2024010', assetName: '万达广场商铺A101', tenant: 'XX餐饮公司', endDate: '2026-09-20', remainDays: 5 },
-  { contractNo: 'HT2025015', assetName: '阳光花园3号楼301室', tenant: '王五', endDate: '2026-09-25', remainDays: 10 },
-  { contractNo: 'HT2025020', assetName: '万达广场商铺B102', tenant: 'XX服装店', endDate: '2026-09-28', remainDays: 13 },
-  { contractNo: 'HT2025025', assetName: '国贸写字楼B座601', tenant: 'XX贸易公司', endDate: '2026-09-30', remainDays: 15 }
-])
+const TYPE_COLORS = ['#1668DC', '#18A058', '#E8912A', '#722ed1', '#13c2c2', '#D93026']
+const pad2 = n => String(n).padStart(2, '0')
+const statusOf = a => normalizeStatus('assetStatus', a.status)
+const isRented = s => s === '已出租' || s === '部分出租'
 
-const ledgerReport = ref([
-  { assetType: '保障房', totalCount: 500, rentedCount: 480, selfUseCount: 10, vacantCount: 10, totalArea: 30000, rentedArea: 28800, occupancyRate: 96.0 },
-  { assetType: '商铺', totalCount: 300, rentedCount: 280, selfUseCount: 10, vacantCount: 10, totalArea: 15000, rentedArea: 14000, occupancyRate: 93.3 },
-  { assetType: '写字楼', totalCount: 200, rentedCount: 180, selfUseCount: 15, vacantCount: 5, totalArea: 50000, rentedArea: 45000, occupancyRate: 90.0 },
-  { assetType: '厂房', totalCount: 186, rentedCount: 40, selfUseCount: 121, vacantCount: 25, totalArea: 100000, rentedArea: 20000, occupancyRate: 20.0 },
-  { assetType: '农贸市场', totalCount: 100, rentedCount: 100, selfUseCount: 0, vacantCount: 0, totalArea: 20000, rentedArea: 20000, occupancyRate: 100.0 }
-])
+function inRange(iso, range) {
+  if (!range || range.length !== 2 || !range[0] || !range[1]) return true
+  const s = toISODate(range[0])
+  const e = toISODate(range[1])
+  if (!s || !e || !iso) return true
+  return iso >= s && iso <= e
+}
 
-const paymentTrend = ref([
-  { month: '10月', rate: 88.5 },
-  { month: '11月', rate: 89.2 },
-  { month: '12月', rate: 90.1 },
-  { month: '1月', rate: 89.8 },
-  { month: '2月', rate: 90.5 },
-  { month: '3月', rate: 91.0 },
-  { month: '4月', rate: 90.8 },
-  { month: '5月', rate: 91.2 },
-  { month: '6月', rate: 91.5 },
-  { month: '7月', rate: 91.0 },
-  { month: '8月', rate: 91.3 },
-  { month: '9月', rate: 91.1 }
-])
+function last12Months() {
+  const now = new Date()
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+    return { ym: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`, label: `${d.getMonth() + 1}月` }
+  })
+}
+
+const assetStats = computed(() => {
+  const list = assets.value
+  return {
+    total: list.length,
+    rented: list.filter(a => isRented(statusOf(a))).length,
+    selfUse: list.filter(a => statusOf(a) === '自用').length,
+    idle: list.filter(a => statusOf(a) === '闲置').length
+  }
+})
+
+const assetTypeData = computed(() => {
+  const map = new Map()
+  assets.value.forEach(a => {
+    const key = a.assetCategory || a.type || '其他'
+    map.set(key, (map.get(key) || 0) + 1)
+  })
+  const total = assets.value.length || 1
+  return Array.from(map.entries())
+    .sort((x, y) => y[1] - x[1])
+    .map(([name, count], i) => ({
+      name, count,
+      percent: Math.round(count / total * 1000) / 10,
+      color: TYPE_COLORS[i % TYPE_COLORS.length]
+    }))
+})
+
+const scopedContracts = computed(() =>
+  contracts.value.filter(c => inRange(c.startDate || c.endDate, dateRange.value))
+)
+
+const leaseStats = computed(() => {
+  const ym = todayISO().slice(0, 7)
+  const list = scopedContracts.value
+  const total = assets.value.length || 1
+  return {
+    occupancyRate: Math.round(assetStats.value.rented / total * 1000) / 10,
+    expiringThisMonth: list.filter(c => (c.endDate || '').slice(0, 7) === ym).length,
+    newThisMonth: list.filter(c => (c.startDate || '').slice(0, 7) === ym).length
+  }
+})
+
+const leaseTrend = computed(() => {
+  const total = assets.value.length || 1
+  return last12Months().map(m => {
+    const from = `${m.ym}-01`
+    const to = `${m.ym}-31`
+    const active = contracts.value.filter(c =>
+      (!c.startDate || c.startDate <= to) && (!c.endDate || c.endDate >= from)
+    ).length
+    return { month: m.label, rate: Math.min(100, Math.round(active / total * 1000) / 10) }
+  })
+})
+
+const leaseExpiringList = computed(() => {
+  const today = todayISO()
+  return contracts.value
+    .filter(c => c.endDate && c.endDate >= today && normalizeStatus('contractStatus', c.status) !== '已终止')
+    .map(c => ({
+      contractNo: c.id,
+      assetName: c.assetName || '',
+      tenant: c.tenant || '',
+      endDate: c.endDate,
+      remainDays: Math.max(0, Math.round(
+        (new Date(`${c.endDate}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000
+      ))
+    }))
+    .filter(c => c.remainDays <= 90 && inRange(c.endDate, dateRange.value))
+    .sort((a, b) => a.remainDays - b.remainDays)
+    .slice(0, 20)
+})
+
+const ledgerReport = computed(() => {
+  const map = new Map()
+  assets.value.forEach(a => {
+    const key = a.assetCategory || a.type || '其他'
+    if (!map.has(key)) {
+      map.set(key, { assetType: key, totalCount: 0, rentedCount: 0, selfUseCount: 0, vacantCount: 0, totalArea: 0, rentedArea: 0 })
+    }
+    const r = map.get(key)
+    const s = statusOf(a)
+    const area = Number(a.area) || 0
+    r.totalCount++
+    if (isRented(s)) { r.rentedCount++; r.rentedArea += Number(a.leaseArea) || area }
+    else if (s === '自用') r.selfUseCount++
+    else if (s === '闲置') r.vacantCount++
+    r.totalArea += area
+  })
+  return Array.from(map.values()).map(r => ({
+    ...r,
+    totalArea: Math.round(r.totalArea * 100) / 100,
+    rentedArea: Math.round(r.rentedArea * 100) / 100,
+    occupancyRate: r.totalCount ? Math.round(r.rentedCount / r.totalCount * 1000) / 10 : 0
+  }))
+})
+
+const scopedBills = computed(() =>
+  bills.value.filter(b => inRange(b.billMonth ? `${b.billMonth}-01` : b.dueDate, dateRange.value))
+)
+
+const paymentStats = computed(() => {
+  const list = scopedBills.value
+  const receivable = list.reduce((s, b) => s + (Number(b.receivable) || 0), 0)
+  const received = list.reduce((s, b) => s + (Number(b.received) || 0), 0)
+  return {
+    receivable,
+    received,
+    pending: Math.max(0, receivable - received),
+    collectionRate: receivable ? Math.round(received / receivable * 1000) / 10 : 0
+  }
+})
+
+const paymentTrend = computed(() =>
+  last12Months().map(m => {
+    const list = scopedBills.value.filter(b => (b.billMonth || '').slice(0, 7) === m.ym)
+    const rec = list.reduce((s, b) => s + (Number(b.receivable) || 0), 0)
+    const got = list.reduce((s, b) => s + (Number(b.received) || 0), 0)
+    return { month: m.label, rate: rec ? Math.round(got / rec * 1000) / 10 : 0 }
+  })
+)
+
+const wanText = yuan => formatMoney(yuan, { unit: '万元', digits: 0 })
 
 const handleExport = () => {
   let headers = []
@@ -230,7 +333,7 @@ const handleExport = () => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `报表_${tab}_${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = `报表_${tab}_${todayISO()}.csv`
   a.click()
   URL.revokeObjectURL(url)
   ElMessage.success('报表导出成功')

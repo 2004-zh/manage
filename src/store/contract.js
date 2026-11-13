@@ -8,10 +8,95 @@ import { useRevitalizeStore } from './revitalize'
 import { useNotifyStore } from './notify'
 import { useUserStore } from './user'
 import { useFinanceStore } from './finance'
+import { todayISO, toISODate, wanToYuan, nextSeqNo } from '../utils/model'
+
+// P1 收编：原 Contract.vue 内各自维护的合同附属台账，统一由合同 store 持有并持久化。
+// 字段暂沿用页面历史命名，字段级统一（意向书/审批单与合同主数据的映射）留待 P2。
+const SEED_INTENT_LETTERS = [
+  { id: 'YXS-2026-001', lessor: '城投集团', lessee: '福州××商业管理有限公司', assetId: 'CT-001', assetName: '吴航街道商业街 A-01 商铺', intentArea: 320, startDate: '2026-07-01', endDate: '2031-06-30', intentAmount: 10, rentFreeType: '有', freeMonths: 2, feeReduction: '固定租金', status: '洽谈中', remark: '意向承租方为连锁品牌' },
+  { id: 'YXS-2026-002', lessor: '领航公司', lessee: '福建××科技有限公司', assetId: 'CT-004', assetName: '首占新区保障房 1# 楼', intentArea: 1200, startDate: '2026-08-01', endDate: '2029-07-31', intentAmount: 20, rentFreeType: '无', freeMonths: 0, feeReduction: '物业费', status: '洽谈中', remark: '仅承租部分楼层' },
+  { id: 'YXS-2026-003', lessor: '产投集团', lessee: '长乐××物流有限公司', assetId: 'CT-006', assetName: '玉田镇旧工业厂房', intentArea: 2400, startDate: '2026-09-01', endDate: '2028-08-31', intentAmount: 15, rentFreeType: '有', freeMonths: 1, feeReduction: '', status: '洽谈中', remark: '需确认消防验收情况' },
+  { id: 'YXS-2026-004', lessor: '城投集团', lessee: '福州××餐饮管理有限公司', assetId: 'CT-005', assetName: '江田镇仓储用地', intentArea: 5000, startDate: '2026-10-01', endDate: '2029-09-30', intentAmount: 8, rentFreeType: '无', freeMonths: 0, feeReduction: '固定租金', status: '已终止', remark: '承租方放弃租赁' },
+  { id: 'YXS-2026-005', lessor: '水投集团', lessee: '长乐××教育培训有限公司', assetId: 'CT-003', assetName: '营前标准厂房 2#', intentArea: 800, startDate: '2026-09-15', endDate: '2029-09-14', intentAmount: 5, rentFreeType: '有', freeMonths: 3, feeReduction: '管理费', status: '洽谈中', remark: '' },
+  { id: 'YXS-2026-006', lessor: '领航公司', lessee: '福建××电子商务有限公司', assetId: 'CT-007', assetName: '吴航农贸市场', intentArea: 600, startDate: '2026-11-01', endDate: '2029-10-31', intentAmount: 12, rentFreeType: '无', freeMonths: 0, feeReduction: '', status: '洽谈中', remark: '电商企业入驻意向' },
+  { id: 'YXS-2026-007', lessor: '产投集团', lessee: '长乐××新能源科技有限公司', assetId: 'CT-002', assetName: '航城商务楼 3F', intentArea: 1200, startDate: '2026-10-15', endDate: '2031-10-14', intentAmount: 25, rentFreeType: '有', freeMonths: 2, feeReduction: '固定租金', status: '已签约', remark: '' },
+  { id: 'YXS-2026-008', lessor: '领航公司', lessee: '福州××健康管理有限公司', assetId: 'CT-008', assetName: '梅花镇综合楼', intentArea: 500, startDate: '2026-12-01', endDate: '2029-11-30', intentAmount: 6, rentFreeType: '无', freeMonths: 0, feeReduction: '物业费', status: '洽谈中', remark: '资产现为自用，需先调整用途' }
+]
+
+const SEED_CONTRACT_TEMPLATES = [
+  { id: 'TPL-001', name: '标准商铺租赁合同', type: '商铺租赁', version: 'V2.1', updateTime: '2026-06-15', useCount: 28, content: '<p>第一条 甲方将位于____的商铺出租给乙方经营使用。</p><p>第二条 租赁期限为____年，自____年____月____日起至____年____月____日止。</p><p>第三条 年租金为人民币____万元，租金按半年缴纳。</p><p>第四条 乙方应缴纳保证金人民币____万元。</p>' },
+  { id: 'TPL-002', name: '厂房租赁合同', type: '厂房租赁', version: 'V1.3', updateTime: '2026-05-20', useCount: 15, content: '<p>第一条 甲方将位于____的厂房出租给乙方作为生产用地。</p><p>第二条 厂房面积____平方米，年租金为人民币____万元。</p><p>第三条 乙方不得擅自改变厂房结构或用途。</p>' },
+  { id: 'TPL-003', name: '办公楼租赁合同', type: '办公楼租赁', version: 'V1.0', updateTime: '2026-04-10', useCount: 8, content: '<p>第一条 甲方将位于____的办公楼____层出租给乙方办公使用。</p><p>第二条 租赁面积____平方米，月租金为人民币____元/平方米。</p>' },
+  { id: 'TPL-004', name: '仓储设施租赁合同', type: '仓储租赁', version: 'V1.1', updateTime: '2026-03-08', useCount: 5, content: '<p>第一条 甲方将位于____的仓储设施出租给乙方使用。</p><p>第二条 仓储面积____平方米，年租金为人民币____万元。</p>' }
+]
+
+const SEED_CONTRACT_ARCHIVES = [
+  { id: 'HT-2025-001', assetName: '城关商铺A-01', tenant: '福州长乐融辉贸易有限公司', archiveDate: '2025-03-15', archiveNo: 'DA-2025-001', storageType: '电子+纸质' },
+  { id: 'HT-2025-002', assetName: '航城厂房1#', tenant: '福建省长乐市鸿运纺织有限公司', archiveDate: '2025-04-20', archiveNo: 'DA-2025-002', storageType: '电子' },
+  { id: 'HT-2025-003', assetName: '漳港办公楼2层', tenant: '长乐区鑫源投资有限公司', archiveDate: '2025-06-10', archiveNo: 'DA-2025-003', storageType: '电子+纸质' },
+  { id: 'HT-2024-001', assetName: '营前仓库B-03', tenant: '福州航城物流有限公司', archiveDate: '2024-02-28', archiveNo: 'DA-2024-001', storageType: '纸质' },
+  { id: 'HT-2024-005', assetName: '首占商铺C-08', tenant: '长乐吴航街道陈氏食品店', archiveDate: '2024-08-15', archiveNo: 'DA-2024-005', storageType: '电子' }
+]
+
+const SEED_CONTRACT_APPROVALS = [
+  {
+    leaseNo: 'ZL-2026-015', assetName: '城关商铺A-05', tenant: '长乐区某餐饮管理有限公司', startDate: '2026-10-01', endDate: '2029-09-30', annualRent: 8.5, applyTime: '2026-09-12', status: '待审批',
+    steps: [
+      { name: '提交申请', handler: '经办人：王芳', time: '2026-09-12 10:20', status: '已完成' },
+      { name: '初审', handler: '资产管理部：李强', time: '', status: '进行中' },
+      { name: '复审', handler: '财务部：陈敏', time: '', status: '未开始' },
+      { name: '审批', handler: '分管领导：郑总', time: '', status: '未开始' }
+    ]
+  },
+  {
+    leaseNo: 'ZL-2026-014', assetName: '航城厂房2#', tenant: '福建某智能装备有限公司', startDate: '2026-10-15', endDate: '2031-10-14', annualRent: 45, applyTime: '2026-09-05', status: '审批中',
+    steps: [
+      { name: '提交申请', handler: '经办人：王芳', time: '2026-09-05 14:30', status: '已完成' },
+      { name: '初审', handler: '资产管理部：李强', time: '2026-09-07 09:15', status: '已完成' },
+      { name: '复审', handler: '财务部：陈敏', time: '', status: '进行中' },
+      { name: '审批', handler: '分管领导：郑总', time: '', status: '未开始' }
+    ]
+  },
+  {
+    leaseNo: 'ZL-2026-013', assetName: '漳港办公楼3层', tenant: '长乐区鑫源投资有限公司', startDate: '2026-09-01', endDate: '2028-08-31', annualRent: 12, applyTime: '2026-08-20', status: '已通过',
+    steps: [
+      { name: '提交申请', handler: '经办人：赵磊', time: '2026-08-20 11:00', status: '已完成' },
+      { name: '初审', handler: '资产管理部：李强', time: '2026-08-21 15:40', status: '已完成' },
+      { name: '复审', handler: '财务部：陈敏', time: '2026-08-23 10:05', status: '已完成' },
+      { name: '审批', handler: '分管领导：郑总', time: '2026-08-25 16:20', status: '已完成' }
+    ]
+  },
+  {
+    leaseNo: 'ZL-2026-012', assetName: '首占商铺C-12', tenant: '陈某', startDate: '2026-09-01', endDate: '2027-08-31', annualRent: 2.4, applyTime: '2026-08-10', status: '已驳回',
+    steps: [
+      { name: '提交申请', handler: '经办人：赵磊', time: '2026-08-10 09:30', status: '已完成' },
+      { name: '初审', handler: '资产管理部：李强', time: '2026-08-12 14:10', status: '已驳回' },
+      { name: '复审', handler: '财务部：陈敏', time: '', status: '未开始' },
+      { name: '审批', handler: '分管领导：郑总', time: '', status: '未开始' }
+    ]
+  }
+]
+
+const SEED_TENANT_LEDGER = [
+  { tenantNo: 'CZF-001', name: '福州长乐融辉贸易有限公司', type: '企业', idNo: '91350112MA31XXXX2K', contact: '王经理', phone: '13805910001', contractCount: 2, registerTime: '2024-03-15' },
+  { tenantNo: 'CZF-002', name: '福建省长乐市鸿运纺织有限公司', type: '企业', idNo: '913501827XXXXXX35B', contact: '林总', phone: '13905910002', contractCount: 1, registerTime: '2024-05-20' },
+  { tenantNo: 'CZF-003', name: '长乐区鑫源投资有限公司', type: '企业', idNo: '91350112MAXXXX8T7Q', contact: '陈经理', phone: '13705910003', contractCount: 1, registerTime: '2025-01-10' },
+  { tenantNo: 'CZF-004', name: '张某', type: '个人', idNo: '3501821990XXXX1234', contact: '张某', phone: '15859100004', contractCount: 1, registerTime: '2025-06-08' },
+  { tenantNo: 'CZF-005', name: '长乐吴航街道陈氏食品店', type: '个人', idNo: '92350112MAXXXX6L6D', contact: '陈某', phone: '15959100005', contractCount: 1, registerTime: '2024-08-15' }
+]
 
 export const useContractStore = defineStore('contract', () => {
   const contracts = ref([...initialContracts])
   const feeRecords = ref([...initialFees])
+
+  // P1 收编自 Contract.vue 的 5 套附属台账（随后由 storeToRefs 交还页面使用）
+  const letterList = ref(JSON.parse(JSON.stringify(SEED_INTENT_LETTERS)))
+  const templates = ref(JSON.parse(JSON.stringify(SEED_CONTRACT_TEMPLATES)))
+  const archiveList = ref(JSON.parse(JSON.stringify(SEED_CONTRACT_ARCHIVES)))
+  const approvalList = ref(JSON.parse(JSON.stringify(SEED_CONTRACT_APPROVALS)))
+  const tenantLedger = ref(JSON.parse(JSON.stringify(SEED_TENANT_LEDGER)))
+  // P2：审批台合同表（原 Contract.vue 的 acContracts），运行时数据归 store
+  const approvalContracts = ref([])
 
   const allContracts = computed(() => contracts.value)
   const allFees = computed(() => feeRecords.value)
@@ -110,7 +195,7 @@ export const useContractStore = defineStore('contract', () => {
     const d = new Date(dateStr)
     if (isNaN(d.getTime())) return dateStr
     d.setMonth(d.getMonth() + months)
-    return d.toISOString().slice(0, 10)
+    return toISODate(d)
   }
 
   function activeContractsOfAsset(assetId) {
@@ -174,13 +259,99 @@ export const useContractStore = defineStore('contract', () => {
     return Math.round(months * (annualRent / 12) * 100) / 100
   }
 
+  // ---- P2：合同级收款计划，递增 / 免租 / 付款周期结构化后参与金额计算 ----
+  const paymentPlans = ref([])
+  const PAY_CYCLE_MONTHS = { 月: 1, 季: 3, 半年: 6, 年: 12 }
+
+  function normalizeBillingRules(c) {
+    const text = String(c.increment || '')
+    const m = text.match(/(\d+(?:\.\d+)?)\s*%/)
+    const rate = m ? Number(m[1]) / 100 : 0
+    const cycleMonths = text.includes('半年') ? 6 : (text.includes('季') ? 3 : 12)
+    return {
+      payCycle: c.payCycle || '半年',
+      payDay: Number(c.payDay) || 15,
+      increment: { type: rate ? '比例' : '固定', rate, cycleMonths },
+      free: { months: Number(c.freeMonths) || 0, scope: c.freeScope || '租金' },
+      lateFeeRate: Number(c.lateFeeRate) || 0.001
+    }
+  }
+
+  function addMonths(date, months) {
+    const d = new Date(date)
+    const day = d.getDate()
+    d.setDate(1)
+    d.setMonth(d.getMonth() + months)
+    d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()))
+    return d
+  }
+
+  function fmtDate(d) {
+    const p = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  }
+
+  function buildPaymentPlan(contract) {
+    const rules = normalizeBillingRules(contract)
+    const span = PAY_CYCLE_MONTHS[rules.payCycle] || 6
+    const start = new Date(contract.startDate)
+    const end = new Date(contract.endDate)
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return []
+    const annualRent = Number(contract.annualRent) || 0
+    const rows = []
+    let cursor = new Date(start)
+    let index = 0
+    while (cursor < end && index < 240) {
+      let periodEnd = addMonths(cursor, span)
+      if (periodEnd > end) periodEnd = new Date(end)
+      const months = Math.max(1,
+        (periodEnd.getFullYear() - cursor.getFullYear()) * 12 + periodEnd.getMonth() - cursor.getMonth())
+      const elapsed = (cursor.getFullYear() - start.getFullYear()) * 12 + cursor.getMonth() - start.getMonth()
+      let amount = annualRent / 12 * months
+      const steps = Math.floor(elapsed / rules.increment.cycleMonths)
+      amount *= Math.pow(1 + rules.increment.rate, steps)
+      const freeLeft = Math.max(0, rules.free.months - elapsed)
+      if (freeLeft > 0) amount *= Math.max(0, (months - Math.min(freeLeft, months)) / months)
+      const due = new Date(cursor.getFullYear(), cursor.getMonth(), rules.payDay)
+      rows.push({
+        id: `${contract.id}-P${String(index + 1).padStart(2, '0')}`,
+        contractId: contract.id,
+        seq: index + 1,
+        payCycle: rules.payCycle,
+        period: `${fmtDate(cursor)} 至 ${fmtDate(periodEnd)}`,
+        periodStart: fmtDate(cursor),
+        periodEnd: fmtDate(periodEnd),
+        amount: Math.round(amount * 100) / 100,
+        paidAmount: 0,
+        dueDate: fmtDate(due),
+        status: '待缴',
+        billNo: ''
+      })
+      cursor = addMonths(cursor, months)
+      index++
+    }
+    return rows
+  }
+
+  function getPaymentPlan(contractId) {
+    return paymentPlans.value.filter(p => p.contractId === contractId)
+  }
+
+  // 已有合同（seed / 历史）首次加载时补建收款计划；新合同在 signContract 中生成
+  if (!paymentPlans.value.length) {
+    contracts.value.forEach(c => paymentPlans.value.push(...buildPaymentPlan(c)))
+  }
+
   function signContract(payload) {
     const assetStore = useAssetStore()
     const before = assetStore.getAssetById(payload.assetId)
     const wasIdle = !!before && (before.status === '闲置' || before.status === '空置')
 
     const contract = addContract(payload)
-    const num = feeRecords.value.length + 1
+    const plan = buildPaymentPlan(contract)
+    paymentPlans.value.push(...plan)
+    const firstAmount = plan.length ? (plan[0]?.amount ?? 0) : computeAccruedRent(contract)
+    const num = Math.max(0, ...feeRecords.value.map(r => Number(r.id) || 0)) + 1
     const accrued = computeAccruedRent(contract)
     feeRecords.value.push({
       id: num,
@@ -199,7 +370,7 @@ export const useContractStore = defineStore('contract', () => {
 
     // 已起租且挂到真实资产的合同，签约即生成首期租金账单，供收费大厅收款并计入工作台应收
     const signedAsset = assetStore.getAssetById(contract.assetId)
-    if (signedAsset && accrued > 0) {
+    if (signedAsset && firstAmount > 0) {
       const now = new Date()
       const p = n => String(n).padStart(2, '0')
       const billMonth = `${now.getFullYear()}-${p(now.getMonth() + 1)}`
@@ -211,8 +382,8 @@ export const useContractStore = defineStore('contract', () => {
         assetName: contract.assetName || signedAsset.name,
         feeType: '租金',
         billMonth,
-        billPeriod: billMonth,
-        receivable: Math.round(accrued * 10000),
+        billPeriod: plan[0]?.period || billMonth,
+        receivable: wanToYuan(firstAmount),
         received: 0,
         dueDate: `${due.getFullYear()}-${p(due.getMonth() + 1)}-${p(due.getDate())}`,
         status: '待缴费'
@@ -228,7 +399,7 @@ export const useContractStore = defineStore('contract', () => {
         assetId: signedAsset.id,
         assetName: contract.assetName || signedAsset.name,
         depositType: '租赁保证金',
-        amount: Math.round((contract.deposit || 0) * 10000),
+        amount: wanToYuan(contract.deposit || 0),
         payDate: contract.startDate || todayStr(),
         payStatus: '待收',
         assets: [{
@@ -437,9 +608,106 @@ export const useContractStore = defineStore('contract', () => {
     }
   }
 
+  // P1 续：意向书台账适配层。IntentLedger.vue 与合同主页面共用同一份 letterList，
+  // 这里把合同域字段投影成台账页历史字段，避免页面再自带一份 intentData。
+  const intentLedgerRows = computed(() => letterList.value.map(l => ({
+    id: l.id,
+    intentNo: l.id,
+    customer: l.lessee || '',
+    contact: l.contact || '',
+    assetName: l.assetName || '',
+    intentArea: Number(l.intentArea) || 0,
+    intentRent: l.intentRent != null ? Number(l.intentRent) : Math.round(wanToYuan(Number(l.intentAmount) || 0) / 12),
+    purpose: l.purpose || l.remark || '',
+    follower: l.operator || l.lessor || '',
+    registerDate: l.registerDate || l.startDate || '',
+    status: l.status === '已签约' ? '已签约' : (l.status === '已终止' ? '已放弃' : '洽谈中'),
+    remark: l.remark || ''
+  })))
+
+  function addIntent(payload) {
+    const year = new Date().getFullYear()
+    const prefix = `YXS-${year}-`
+    const intentId = nextSeqNo(prefix, letterList.value.map(l => l.id), 3)
+    const rent = Number(payload.intentRent) || 0
+    const row = {
+      id: intentId,
+      lessor: '',
+      lessee: payload.customer || '',
+      contact: payload.contact || '',
+      assetId: '',
+      assetName: payload.assetName || '',
+      intentArea: Number(payload.intentArea) || 0,
+      intentRent: rent,
+      intentAmount: Math.round(rent * 12 / 1000) / 10,
+      startDate: todayISO(),
+      endDate: '',
+      rentFreeType: '无',
+      freeMonths: 0,
+      feeReduction: '',
+      purpose: payload.purpose || '',
+      operator: payload.follower || '',
+      registerDate: todayISO(),
+      status: '洽谈中',
+      remark: payload.remark || ''
+    }
+    letterList.value.unshift(row)
+    return row
+  }
+
+  function updateIntent(id, payload) {
+    const row = letterList.value.find(l => l.id === id)
+    if (!row) return null
+    const rent = Number(payload.intentRent ?? row.intentRent) || 0
+    Object.assign(row, {
+      lessee: payload.customer ?? row.lessee,
+      contact: payload.contact ?? row.contact,
+      assetName: payload.assetName ?? row.assetName,
+      intentArea: Number(payload.intentArea ?? row.intentArea) || 0,
+      intentRent: rent,
+      intentAmount: Math.round(rent * 12 / 1000) / 10,
+      purpose: payload.purpose ?? row.purpose,
+      operator: payload.follower ?? row.operator,
+      remark: payload.remark ?? row.remark
+    })
+    return row
+  }
+
+  // 转合同：真正创建正式合同（含应收、首期账单、保证金、资产租赁态联动），不再只改本地状态
+  function convertIntentToContract(id) {
+    const row = letterList.value.find(l => l.id === id)
+    if (!row || row.status === '已签约') return null
+    const contract = signContract({
+      assetId: row.assetId || '',
+      assetName: row.assetName || '',
+      tenant: row.lessee || '',
+      leaseArea: row.intentArea || 0,
+      startDate: row.startDate || todayISO(),
+      endDate: row.endDate || '',
+      annualRent: Number(row.intentAmount) || 0,
+      status: '正常'
+    })
+    row.status = '已签约'
+    return contract
+  }
+
   return {
     contracts,
     feeRecords,
+    paymentPlans,
+    letterList,
+    approvalContracts,
+    intentLedgerRows,
+    addIntent,
+    updateIntent,
+    convertIntentToContract,
+    normalizeBillingRules,
+    buildPaymentPlan,
+    getPaymentPlan,
+    templates,
+    archiveList,
+    approvalList,
+    tenantLedger,
     allContracts,
     allFees,
     visibleContracts,

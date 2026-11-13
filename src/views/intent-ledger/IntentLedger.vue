@@ -39,7 +39,7 @@
         <el-table-column prop="assetName" label="意向资产" min-width="200" show-overflow-tooltip />
         <el-table-column prop="intentArea" label="意向面积(㎡)" width="120" align="right" />
         <el-table-column prop="intentRent" label="意向租金(元/月)" width="140" align="right">
-          <template #default="{ row }">{{ row.intentRent.toLocaleString() }}</template>
+          <template #default="{ row }">{{ formatMoney(row.intentRent) }}</template>
         </el-table-column>
         <el-table-column prop="follower" label="跟进人" width="90" />
         <el-table-column prop="registerDate" label="登记日期" width="110" />
@@ -123,6 +123,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useContractStore } from '../../store/contract'
+import { todayISO, formatMoney } from '../../utils/model'
+
+// P1 续：意向书台账与合同主页面共用 contractStore.letterList，
+// intentLedgerRows 是 store 提供的字段适配视图（本页历史字段名保持不变）
+const contractStore = useContractStore()
 
 const page = ref(1)
 const pageSize = 15
@@ -130,16 +136,7 @@ const pageSize = 15
 const filters = ref({ keyword: '', intentStatus: '', assetType: '' })
 const selectedRows = ref([])
 
-const intentData = ref([
-  { id: 1, intentNo: 'YX2026001', customer: '华联超市', contact: '13800001001', assetName: '万达广场商铺B101', intentArea: 200, intentRent: 40000, purpose: '超市经营', follower: '张伟', registerDate: '2026-09-10', status: '洽谈中', remark: '' },
-  { id: 2, intentNo: 'YX2026002', customer: '启航教育培训', contact: '13900002002', assetName: '城投大厦A座605', intentArea: 150, intentRent: 30000, purpose: '教育培训中心', follower: '李娜', registerDate: '2026-09-08', status: '洽谈中', remark: '需要改造会议室' },
-  { id: 3, intentNo: 'YX2026003', customer: '瑞丰连锁酒店', contact: '13700003003', assetName: '滨江商铺C区整栋', intentArea: 800, intentRent: 120000, purpose: '连锁酒店', follower: '王磊', registerDate: '2026-09-05', status: '已签约', remark: '签约5年' },
-  { id: 4, intentNo: 'YX2026004', customer: '陈小明', contact: '13600004004', assetName: '阳光花园2号楼301', intentArea: 68, intentRent: 2200, purpose: '自住', follower: '赵敏', registerDate: '2026-08-28', status: '已签约', remark: '' },
-  { id: 5, intentNo: 'YX2026005', customer: '鼎盛物流公司', contact: '13500005005', assetName: '城南仓储物流中心A区', intentArea: 1500, intentRent: 45000, purpose: '物流仓储', follower: '孙强', registerDate: '2026-08-20', status: '洽谈中', remark: '需要确认消防验收' },
-  { id: 6, intentNo: 'YX2026006', customer: '美嘉美容美发', contact: '13800006006', assetName: '朝阳农贸市场外围商铺03', intentArea: 60, intentRent: 8000, purpose: '美容美发店', follower: '周芳', registerDate: '2026-08-15', status: '已放弃', remark: '客户资金不足' },
-  { id: 7, intentNo: 'YX2026007', customer: '博远医药集团', contact: '13900007007', assetName: '国贸写字楼A座整层15F', intentArea: 500, intentRent: 100000, purpose: '区域总部办公', follower: '吴涛', registerDate: '2026-08-10', status: '洽谈中', remark: '高管团队已实地考察' },
-  { id: 8, intentNo: 'YX2026008', customer: '乐享健身俱乐部', contact: '13700008008', assetName: '高新技术产业园配套综合楼', intentArea: 600, intentRent: 36000, purpose: '健身房', follower: '郑洁', registerDate: '2026-08-05', status: '已放弃', remark: '选址变更' }
-])
+const intentData = computed(() => contractStore.intentLedgerRows)
 
 const getStatusType = (status) => {
   const map = { '洽谈中': 'warning', '已签约': 'success', '已放弃': 'info' }
@@ -192,27 +189,10 @@ function handleSubmit() {
     return
   }
   if (isEdit.value) {
-    const item = intentData.value.find(d => d.id === editingId.value)
-    if (item) {
-      Object.assign(item, { customer: form.value.customer, contact: form.value.contact, assetName: form.value.assetName, intentArea: form.value.intentArea, intentRent: form.value.intentRent, purpose: form.value.purpose, follower: form.value.follower, remark: form.value.remark })
-    }
+    contractStore.updateIntent(editingId.value, form.value)
     ElMessage.success('编辑成功')
   } else {
-    const no = 'YX2026' + String(intentData.value.length + 1).padStart(3, '0')
-    intentData.value.unshift({
-      id: Date.now(),
-      intentNo: no,
-      customer: form.value.customer,
-      contact: form.value.contact,
-      assetName: form.value.assetName,
-      intentArea: form.value.intentArea,
-      intentRent: form.value.intentRent,
-      purpose: form.value.purpose,
-      follower: form.value.follower,
-      registerDate: new Date().toISOString().slice(0, 10),
-      status: '洽谈中',
-      remark: form.value.remark
-    })
+    contractStore.addIntent(form.value)
     ElMessage.success('新增意向成功')
   }
   dialogVisible.value = false
@@ -227,8 +207,8 @@ function handleView(row) {
 
 function handleConvertSingle(row) {
   ElMessageBox.confirm(`确定将意向"${row.intentNo}"（${row.customer}）转为正式合同？`, '转合同确认', { type: 'info' }).then(() => {
-    row.status = '已签约'
-    ElMessage.success('已成功转为合同')
+    const contract = contractStore.convertIntentToContract(row.id)
+    ElMessage.success(contract ? `已成功转为合同 ${contract.id}` : '该意向已签约')
   }).catch(() => {})
 }
 
@@ -241,8 +221,8 @@ function handleConvert() {
     return
   }
   ElMessageBox.confirm(`确定将选中的 ${convertible.length} 条意向记录转为正式合同？`, '批量转合同确认', { type: 'info' }).then(() => {
-    convertible.forEach(row => { row.status = '已签约' })
-    ElMessage.success(`已成功转换 ${convertible.length} 条记录为合同`)
+    const created = convertible.map(row => contractStore.convertIntentToContract(row.id)).filter(Boolean)
+    ElMessage.success(`已成功转换 ${created.length} 条记录为合同`)
   }).catch(() => {})
 }
 
@@ -261,7 +241,7 @@ function handleExport() {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `导出_意向书台账_${new Date().toISOString().slice(0, 10)}.csv`
+  link.download = `导出_意向书台账_${todayISO()}.csv`
   link.click()
   URL.revokeObjectURL(url)
   ElMessage.success('导出成功')

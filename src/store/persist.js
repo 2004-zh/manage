@@ -1,9 +1,13 @@
 import { watch } from 'vue'
 
-const PERSIST_IDS = [
+// 白名单按 store 的 $id 匹配（注意 specialAsset.js 的 $id 是 'special'）。
+// 有意不持久化：app（纯 UI 状态）、user（自行使用 sessionStorage）。
+// report 是业务 store（有上报单据、留痕与通知），此前遗漏导致刷新即丢，P0 补齐。
+export const PERSIST_IDS = [
   'asset', 'contract', 'project', 'audit', 'party', 'notify', 'org',
   'revitalize', 'finance', 'inventory', 'control', 'credential',
-  'special', 'supervise', 'mortgage', 'warning', 'lease', 'fixedAsset', 'inspection', 'dispose'
+  'special', 'supervise', 'mortgage', 'warning', 'lease', 'fixedAsset', 'inspection', 'dispose',
+  'report'
 ]
 const PREFIX = 'ams:'
 
