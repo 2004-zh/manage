@@ -29,3 +29,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 工具/临时产物（agent 生成，勿提交）
+.qoder-credits/
+.tmp-p0/
